@@ -40,7 +40,9 @@ const en = {
   routeMapSub: "Temples, offices and pilgrim amenities on a live map",
   places: "Places to know",
   all: "All",
-  searchPlaces: "Search a place",
+  moreCats: "More",
+  collapse: "Collapse",
+  searchPlaces: "Search places",
   noPlaces: "No places in this category yet",
   loading: "Loading…",
   errorLoad: "Couldn't load information",
@@ -136,6 +138,8 @@ const te: Dict = {
   routeMapSub: "ఆలయాలు, కార్యాలయాలు, భక్తుల సౌకర్యాలు పటంలో",
   places: "తెలుసుకోవలసిన ప్రదేశాలు",
   all: "అన్నీ",
+  moreCats: "మరిన్ని",
+  collapse: "కుదించు",
   searchPlaces: "ప్రదేశం వెతకండి",
   noPlaces: "ఈ విభాగంలో ఇంకా ప్రదేశాలు లేవు",
   loading: "లోడ్ అవుతోంది…",
@@ -230,6 +234,8 @@ const ta: Dict = {
   routeMapSub: "கோவில்கள், அலுவலகங்கள், வசதிகள் வரைபடத்தில்",
   places: "அறிய வேண்டிய இடங்கள்",
   all: "அனைத்தும்",
+  moreCats: "மேலும்",
+  collapse: "சுருக்கு",
   searchPlaces: "இடத்தைத் தேடு",
   noPlaces: "இந்த வகையில் இன்னும் இடங்கள் இல்லை",
   loading: "ஏற்றுகிறது…",
@@ -324,6 +330,8 @@ const kn: Dict = {
   routeMapSub: "ದೇವಾಲಯಗಳು, ಕಚೇರಿಗಳು, ಸೌಲಭ್ಯಗಳು ನಕ್ಷೆಯಲ್ಲಿ",
   places: "ತಿಳಿಯಬೇಕಾದ ಸ್ಥಳಗಳು",
   all: "ಎಲ್ಲಾ",
+  moreCats: "ಇನ್ನಷ್ಟು",
+  collapse: "ಕುಗ್ಗಿಸಿ",
   searchPlaces: "ಸ್ಥಳ ಹುಡುಕಿ",
   noPlaces: "ಈ ವಿಭಾಗದಲ್ಲಿ ಇನ್ನೂ ಸ್ಥಳಗಳಿಲ್ಲ",
   loading: "ಲೋಡ್ ಆಗುತ್ತಿದೆ…",
@@ -418,6 +426,8 @@ const ml: Dict = {
   routeMapSub: "ക്ഷേത്രങ്ങൾ, ഓഫീസുകൾ, സൗകര്യങ്ങൾ മാപ്പിൽ",
   places: "അറിയേണ്ട സ്ഥലങ്ങൾ",
   all: "എല്ലാം",
+  moreCats: "കൂടുതൽ",
+  collapse: "ചുരുക്കുക",
   searchPlaces: "സ്ഥലം തിരയുക",
   noPlaces: "ഈ വിഭാഗത്തിൽ ഇതുവരെ സ്ഥലങ്ങളില്ല",
   loading: "ലോഡ് ചെയ്യുന്നു…",
@@ -512,6 +522,8 @@ const hi: Dict = {
   routeMapSub: "मंदिर, कार्यालय और सुविधाएँ नक्शे पर",
   places: "जानने योग्य स्थान",
   all: "सभी",
+  moreCats: "और",
+  collapse: "छोटा करें",
   searchPlaces: "स्थान खोजें",
   noPlaces: "इस श्रेणी में अभी कोई स्थान नहीं",
   loading: "लोड हो रहा है…",
@@ -606,6 +618,8 @@ const or: Dict = {
   routeMapSub: "ମନ୍ଦିର, କାର୍ଯ୍ୟାଳୟ ଓ ସୁବିଧା ମାନଚିତ୍ରରେ",
   places: "ଜାଣିବା ଦରକାର ସ୍ଥାନ",
   all: "ସମସ୍ତ",
+  moreCats: "ଅଧିକ",
+  collapse: "ଛୋଟ କରନ୍ତୁ",
   searchPlaces: "ସ୍ଥାନ ଖୋଜନ୍ତୁ",
   noPlaces: "ଏହି ବର୍ଗରେ ଏପର୍ଯ୍ୟନ୍ତ ସ୍ଥାନ ନାହିଁ",
   loading: "ଲୋଡ୍ ହେଉଛି…",
@@ -684,7 +698,9 @@ export function pickLocalized(obj: unknown, lang: Lang): string {
 }
 
 type Ctx = { lang: Lang; setLang: (l: Lang) => void; t: (k: DictKey) => string };
-const I18nContext = createContext<Ctx | null>(null);
+// Keep one context instance across hot reloads so provider and consumers always match.
+const g = globalThis as { __tgI18nCtx?: React.Context<Ctx | null> };
+const I18nContext = (g.__tgI18nCtx ??= createContext<Ctx | null>(null));
 
 export function I18nProvider({ children }: { children: ReactNode }) {
   const [lang, setLangState] = useState<Lang>(DEFAULT_LANG);
