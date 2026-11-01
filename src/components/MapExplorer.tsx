@@ -24,6 +24,10 @@ type MapData = { roads: { h: string; n?: string; te?: string; c: LatLng[] }[]; b
 
 const css = (name: string) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
 const FOOT = new Set(["footway", "steps", "pedestrian", "path", "living_street"]);
+/** Markers closer than CLUSTER_PX on screen are grouped until this zoom; above it every marker shows. */
+const CLUSTER_MAX_ZOOM = 18;
+const CLUSTER_PX = 44;
+const PRIMARY_CATS: string[] = ["temple", "food", "toilet", "medical", "transport"];
 
 export default function MapExplorer({ initialSlug }: { initialSlug?: string | undefined }) {
   const { t, lang } = useI18n();
@@ -57,11 +61,18 @@ export default function MapExplorer({ initialSlug }: { initialSlug?: string | un
   const [stale, setStale] = useState(false);
   const [nearbyM, setNearbyM] = useState(NAV_CONFIG.defaultNearbyMeters);
   const [nav, setNav] = useState<Nav>({ state: "off" });
-  const [panel, setPanel] = useState<"none" | "nearby" | "legend">("none");
+  const [panel, setPanel] = useState<"none" | "nearby" | "legend" | "cats">("none");
+  const [zoom, setZoom] = useState(16);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [collapsed, setCollapsed] = useState(false);
+  const [dismissed, setDismissed] = useState<string | null>(null);
 
   const places = useMemo(() => (data ?? []).filter((p) => p.visible), [data]);
   const mapped = useMemo(() => places.filter(hasVerifiedCoords), [places]);
-  const filtered = mapped.filter((p) => cat === "all" || p.category === cat);
+  const filtered = useMemo(() => mapped.filter((p) => cat === "all" || p.category === cat), [mapped, cat]);
+  const catCounts = useMemo(() => CATEGORIES.map((c) => ({ ...c, n: mapped.filter((p) => p.category === c.id).length })).filter((c) => c.n > 0), [mapped]);
+  const topCats = PRIMARY_CATS.filter((id) => catCounts.some((c) => c.id === id));
+  const moreCats = catCounts.filter((c) => !topCats.includes(c.id));
   const sel = places.find((p) => p.slug === selected);
   const here = fix && isInsideTirumala(...fix.pos) ? fix.pos : null;
   const nearby = useMemo(() => (here ? nearbySorted(mapped, here, nearbyM) : []), [here, mapped, nearbyM]);
@@ -76,9 +87,10 @@ export default function MapExplorer({ initialSlug }: { initialSlug?: string | un
       maxZoom: 19,
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
     }).addTo(map);
-    L.control.zoom({ position: "bottomright" }).addTo(map);
+    if (window.matchMedia("(min-width: 768px)").matches) L.control.zoom({ position: "bottomright" }).addTo(map);
     baseRef.current = L.layerGroup().addTo(map);
     layerRef.current = L.layerGroup().addTo(map);
+    map.on("zoomend", () => setZoom(map.getZoom()));
     mapRef.current = map;
     return () => {
       map.remove();
@@ -103,24 +115,48 @@ export default function MapExplorer({ initialSlug }: { initialSlug?: string | un
     });
   }, [mapData.data, lang]);
 
-  // place markers, coloured by state
+  // place markers, coloured by state; nearby markers are grouped into clusters below CLUSTER_MAX_ZOOM
   useEffect(() => {
     const layer = layerRef.current;
-    if (!layer) return;
+    const map = mapRef.current;
+    if (!layer || !map) return;
     layer.clearLayers();
-    filtered.forEach((p) => {
+    const single = (p: Place & { lat: number; lng: number }) => {
       const state = p.slug === selected ? "is-active" : nearbyIds.has(p.id) ? "is-nearby" : "";
+      const big = state === "is-active";
       const icon = L.divIcon({
         className: "",
         html: `<div class="tg-marker ${state}"><span>${catIcon(p.category)}</span></div>`,
-        iconSize: state === "is-active" ? [44, 44] : [34, 34],
-        iconAnchor: state === "is-active" ? [22, 44] : [17, 34],
+        iconSize: big ? [38, 38] : [24, 24],
+        iconAnchor: big ? [19, 38] : [12, 12],
       });
-      L.marker([p.lat, p.lng], { icon, title: pickLocalized(p.name, lang), keyboard: true, zIndexOffset: state === "is-active" ? 1000 : state ? 500 : 0 })
+      L.marker([p.lat, p.lng], { icon, title: pickLocalized(p.name, lang), keyboard: true, zIndexOffset: big ? 1000 : state ? 500 : 0 })
         .on("click", () => setSelected(p.slug))
         .addTo(layer);
+    };
+    const pts = filtered.filter(hasVerifiedCoords);
+    if (zoom >= CLUSTER_MAX_ZOOM) return pts.forEach(single);
+    const cells = new Map<string, typeof pts>();
+    pts.forEach((p) => {
+      if (p.slug === selected) return single(p);
+      const pt = map.project([p.lat, p.lng], zoom);
+      const k = `${Math.floor(pt.x / CLUSTER_PX)}:${Math.floor(pt.y / CLUSTER_PX)}`;
+      cells.set(k, [...(cells.get(k) ?? []), p]);
     });
-  }, [filtered, selected, lang, nearbyIds]);
+    cells.forEach((group) => {
+      if (group.length === 1) return single(group[0]!);
+      const lat = group.reduce((s, p) => s + p.lat, 0) / group.length;
+      const lng = group.reduce((s, p) => s + p.lng, 0) / group.length;
+      const near = group.some((p) => nearbyIds.has(p.id));
+      L.marker([lat, lng], {
+        icon: L.divIcon({ className: "", html: `<div class="tg-cluster ${near ? "is-nearby" : ""}">${group.length}</div>`, iconSize: [30, 30], iconAnchor: [15, 15] }),
+        title: `${group.length}`,
+        keyboard: true,
+      })
+        .on("click", () => map.fitBounds(L.latLngBounds(group.map((p) => [p.lat, p.lng] as LatLng)), { padding: [60, 60], maxZoom: CLUSTER_MAX_ZOOM }))
+        .addTo(layer);
+    });
+  }, [filtered, selected, lang, nearbyIds, zoom]);
 
   // fly to selection
   useEffect(() => {
