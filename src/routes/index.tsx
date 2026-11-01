@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { AppShell } from "@/components/AppShell";
 import { PlacesGrid, RouteMapCard, StatusCards, Ticker } from "@/components/HomeSections";
 import { useI18n } from "@/lib/i18n";
-import heroImg from "@/assets/hero-venkateswara.jpg";
+import heroAsset from "@/assets/venkateswara-idol.jpg.asset.json";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -23,7 +23,7 @@ function Index() {
   return (
     <AppShell>
       <section className="relative overflow-hidden bg-aubergine-deep text-primary-foreground">
-        <img src={heroImg} alt="Lord Sri Venkateswara Swamy" width={1024} height={1280} fetchPriority="high" className="absolute inset-0 h-full w-full object-cover object-top opacity-90" />
+        <img src={heroAsset.url} alt="Lord Sri Venkateswara Swamy" width={686} height={1536} fetchPriority="high" className="absolute inset-0 h-full w-full object-cover object-[50%_18%] opacity-90" />
         <div className="absolute inset-0 bg-hero-fade" />
         <div className="relative mx-auto flex min-h-[78svh] max-w-5xl flex-col justify-end px-5 pb-10 pt-40 sm:min-h-[70vh]">
           <p className="animate-rise text-sm font-semibold tracking-wide text-accent">{t("tagline")}</p>

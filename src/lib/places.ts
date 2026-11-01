@@ -38,6 +38,10 @@ export type Place = {
   image_height: number | null;
   image_bytes: number | null;
   updated_at: string;
+  osm_id: string | null;
+  osm_tags: Record<string, string>;
+  coords_source: string | null;
+  needs_review: boolean;
   imageSrc?: string | null;
 };
 
