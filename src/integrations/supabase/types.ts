@@ -41,6 +41,7 @@ export type Database = {
       places: {
         Row: {
           category: string
+          coords_source: string | null
           coords_verified: boolean
           created_at: string
           description: Json
@@ -54,6 +55,9 @@ export type Database = {
           lat: number | null
           lng: number | null
           name: Json
+          needs_review: boolean
+          osm_id: string | null
+          osm_tags: Json
           slug: string
           sort_order: number
           updated_at: string
@@ -61,6 +65,7 @@ export type Database = {
         }
         Insert: {
           category?: string
+          coords_source?: string | null
           coords_verified?: boolean
           created_at?: string
           description?: Json
@@ -74,6 +79,9 @@ export type Database = {
           lat?: number | null
           lng?: number | null
           name?: Json
+          needs_review?: boolean
+          osm_id?: string | null
+          osm_tags?: Json
           slug: string
           sort_order?: number
           updated_at?: string
@@ -81,6 +89,7 @@ export type Database = {
         }
         Update: {
           category?: string
+          coords_source?: string | null
           coords_verified?: boolean
           created_at?: string
           description?: Json
@@ -94,6 +103,9 @@ export type Database = {
           lat?: number | null
           lng?: number | null
           name?: Json
+          needs_review?: boolean
+          osm_id?: string | null
+          osm_tags?: Json
           slug?: string
           sort_order?: number
           updated_at?: string
