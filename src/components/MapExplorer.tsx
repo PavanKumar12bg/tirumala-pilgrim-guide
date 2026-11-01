@@ -459,8 +459,8 @@ export default function MapExplorer({ initialSlug }: { initialSlug?: string | un
   );
 }
 
-function SelectedCard({ place, fix, nav, onClose, onStart, onStop, onRetry }: {
-  place: Place; fix: Fix | null; nav: Nav; onClose: () => void; onStart: () => void; onStop: () => void; onRetry: () => void;
+function SelectedCard({ place, fix, nav, collapsed, onToggle, onClose, onStart, onStop, onRetry }: {
+  place: Place; fix: Fix | null; nav: Nav; collapsed: boolean; onToggle: () => void; onClose: () => void; onStart: () => void; onStop: () => void; onRetry: () => void;
 }) {
   const { t, lang } = useI18n();
   const name = pickLocalized(place.name, lang);
@@ -468,72 +468,70 @@ function SelectedCard({ place, fix, nav, onClose, onStart, onStop, onRetry }: {
   const verified = hasVerifiedCoords(place);
   const straight = verified && fix ? haversineMeters(fix.pos, [place.lat!, place.lng!]) : null;
   const tags = place.osm_tags ?? {};
+  const btn = "flex h-11 items-center justify-center gap-1.5 rounded-full px-4 text-sm font-semibold";
+  const summary = nav.state === "active" ? `${formatDistance(nav.remaining)} · ~${walkingMinutes(nav.remaining)} ${t("min")}` : straight != null ? `${formatDistance(straight)} · ${t("straightLineLabel")}` : null;
 
   return (
-    <div className="animate-rise overflow-hidden rounded-2xl bg-card shadow-lift ring-1 ring-border">
-      <div className="flex gap-3 p-3">
-        <div className="size-20 shrink-0 overflow-hidden rounded-xl">
+    <div className="animate-rise overflow-hidden rounded-2xl bg-card shadow-lift">
+      <div className="flex items-center gap-2.5 p-2.5">
+        <div className={cn("shrink-0 overflow-hidden rounded-xl", collapsed ? "size-10" : "size-14")}>
           <PlaceImage src={place.imageSrc} category={place.category} alt={name} />
         </div>
         <div className="min-w-0 flex-1">
-          <p className="text-[11px] font-semibold uppercase tracking-wide text-gold">{t(catKey(place.category))}</p>
-          <h2 className="text-lg leading-snug text-foreground">{name}</h2>
-          {desc ? <p className="mt-0.5 line-clamp-2 text-sm text-muted-foreground">{desc}</p> : null}
+          <p className="truncate text-[11px] font-semibold uppercase tracking-wide text-gold">{t(catKey(place.category))}{summary && collapsed ? ` · ${summary}` : ""}</p>
+          <h2 className="truncate text-base leading-snug text-foreground">{name}</h2>
+          {!collapsed && summary ? <p className="text-xs text-muted-foreground">{summary}</p> : null}
         </div>
-        <button onClick={onClose} aria-label={t("close")} className="grid size-10 shrink-0 place-items-center rounded-full hover:bg-muted"><X className="size-5" /></button>
+        <button onClick={onToggle} aria-label={collapsed ? t("moreCats") : t("collapse")} aria-expanded={!collapsed} className="grid size-9 shrink-0 place-items-center rounded-full hover:bg-muted">
+          {collapsed ? <ChevronUp className="size-4" /> : <ChevronDown className="size-4" />}
+        </button>
+        {nav.state !== "active" ? <button onClick={onClose} aria-label={t("close")} className="grid size-9 shrink-0 place-items-center rounded-full hover:bg-muted"><X className="size-4" /></button> : null}
       </div>
 
-      {nav.state === "off" ? (
-        <details className="px-3 pb-2 text-xs text-muted-foreground">
-          <summary className="min-h-8 cursor-pointer">{t("coordinates")} · {t("source")}</summary>
-          {verified ? <p>{place.lat!.toFixed(6)}, {place.lng!.toFixed(6)}</p> : null}
-          <p>{t("source")}: {place.coords_source === "osm" ? `OpenStreetMap (${place.osm_id})` : place.coords_source ?? "—"}</p>
-          {tags["opening_hours"] ? <p>{t("openingHours")}: {tags["opening_hours"]}</p> : null}
-          {tags["alt_name"] ? <p>{tags["alt_name"]}</p> : null}
-          {tags["website"] ? <p>{t("website")}: <a className="underline" href={tags["website"]} target="_blank" rel="noreferrer">{tags["website"]}</a></p> : null}
-        </details>
-      ) : null}
-
-      {!verified ? (
-        <p className="border-t bg-muted/50 p-3 text-sm text-muted-foreground">⏳ {t("coordsPending")}</p>
+      {collapsed ? (
+        nav.state === "active" ? (
+          <div className="px-2.5 pb-2.5"><button onClick={onStop} className={cn(btn, "w-full bg-destructive text-destructive-foreground")}><Square className="size-4" aria-hidden /> {t("stopNav")}</button></div>
+        ) : null
+      ) : !verified ? (
+        <p className="border-t px-3 py-2 text-sm text-muted-foreground">⏳ {t("coordsPending")}</p>
       ) : nav.state === "active" ? (
-        <div className="border-t bg-muted/50 p-3">
+        <div className="border-t px-3 py-2">
           <div className="grid grid-cols-3 gap-2">
             <Stat label={t("remaining")} value={formatDistance(nav.remaining)} />
             <Stat label={t("routeDistance")} value={formatDistance(nav.route.distance)} />
             <Stat label={t("walkTime")} value={`~${walkingMinutes(nav.remaining)} ${t("min")}`} />
           </div>
-          <p className="mt-1 text-[11px] text-muted-foreground">{t("routeBy")} · {t("tracking")}{fix ? ` · ${t("accuracy")} ±${Math.round(fix.accuracy)} m` : ""}</p>
-          <button onClick={onStop} className="mt-2 flex min-h-12 w-full items-center justify-center gap-2 rounded-full bg-destructive text-sm font-semibold text-destructive-foreground">
-            <Square className="size-4" aria-hidden /> {t("stopNav")}
-          </button>
+          <p className="mt-1 text-[11px] text-muted-foreground">{t("routeBy")} · {t("tracking")}{fix ? ` · ±${Math.round(fix.accuracy)} m` : ""}</p>
+          <button onClick={onStop} className={cn(btn, "mt-2 w-full bg-destructive text-destructive-foreground")}><Square className="size-4" aria-hidden /> {t("stopNav")}</button>
         </div>
       ) : nav.state === "routing" ? (
-        <p className="flex items-center gap-2 border-t bg-muted/50 p-3 text-sm"><Loader2 className="size-4 animate-spin" /> {nav.reroute ? t("rerouting") : t("routing")}</p>
+        <p className="flex items-center gap-2 border-t px-3 py-3 text-sm"><Loader2 className="size-4 animate-spin" /> {nav.reroute ? t("rerouting") : t("routing")}</p>
       ) : nav.state === "arrived" ? (
-        <div className="border-t bg-muted/50 p-3">
-          <p className="flex items-center gap-2 font-display text-lg text-success"><CheckCircle2 className="size-5" /> {t("arrived")}</p>
-          <button onClick={onStop} className="mt-2 min-h-12 w-full rounded-full bg-primary text-sm font-semibold text-primary-foreground">{t("close")}</button>
+        <div className="flex items-center justify-between gap-2 border-t px-3 py-2">
+          <p className="flex items-center gap-2 font-display text-base text-success"><CheckCircle2 className="size-5" /> {t("arrived")}</p>
+          <button onClick={onStop} className={cn(btn, "bg-primary text-primary-foreground")}>{t("close")}</button>
         </div>
       ) : (
-        <div className="border-t bg-muted/50 p-3">
+        <div className="border-t px-3 py-2">
           {nav.state === "error" ? (
             <div className="mb-2 flex items-center justify-between gap-2 text-sm text-destructive" role="alert">
               <span>{t(nav.msg)}</span>
-              {nav.msg === "routeFailed" ? <button onClick={onRetry} className="flex min-h-10 items-center gap-1 font-semibold text-primary"><RefreshCw className="size-4" />{t("retry")}</button> : null}
+              {nav.msg === "routeFailed" ? <button onClick={onRetry} className="flex h-9 items-center gap-1 font-semibold text-primary"><RefreshCw className="size-4" />{t("retry")}</button> : null}
             </div>
           ) : null}
-          {straight != null ? (
-            <div className="mb-2 flex items-center gap-4">
-              <Stat label={`${t("distance")} (${t("straightLineLabel")})`} value={formatDistance(straight)} />
-              <Stat label={t("walkTime")} value={<><Footprints className="mr-1 inline size-4" aria-hidden />~{walkingMinutes(straight)} {t("min")}</>} />
-            </div>
-          ) : (
-            <p className="mb-2 text-sm text-muted-foreground">{t("enableGpsHint")}</p>
-          )}
-          <button onClick={onStart} className="flex min-h-12 w-full items-center justify-center gap-2 rounded-full bg-primary text-sm font-semibold text-primary-foreground">
-            <Navigation className="size-4" aria-hidden /> {t("startNav")}
-          </button>
+          {desc ? <p className="mb-2 line-clamp-2 text-xs text-muted-foreground">{desc}</p> : null}
+          {straight == null ? <p className="mb-2 text-xs text-muted-foreground">{t("enableGpsHint")}</p> : null}
+          <div className="flex items-center gap-2">
+            <button onClick={onStart} className={cn(btn, "flex-1 bg-primary text-primary-foreground")}><Navigation className="size-4" aria-hidden /> {t("startNav")}</button>
+            {straight != null ? <span className="flex shrink-0 items-center gap-1 text-xs text-muted-foreground"><Footprints className="size-3.5" aria-hidden />~{walkingMinutes(straight)} {t("min")}</span> : null}
+          </div>
+          <details className="mt-1 text-[11px] text-muted-foreground">
+            <summary className="min-h-8 cursor-pointer leading-8">{t("coordinates")} · {t("source")}</summary>
+            <p>{place.lat!.toFixed(6)}, {place.lng!.toFixed(6)}</p>
+            <p>{t("source")}: {place.coords_source === "osm" ? `OpenStreetMap (${place.osm_id})` : place.coords_source ?? "—"}</p>
+            {tags["opening_hours"] ? <p>{t("openingHours")}: {tags["opening_hours"]}</p> : null}
+            {tags["website"] ? <p>{t("website")}: <a className="underline" href={tags["website"]} target="_blank" rel="noreferrer">{tags["website"]}</a></p> : null}
+          </details>
         </div>
       )}
     </div>
@@ -544,7 +542,7 @@ function Stat({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <div className="min-w-0">
       <p className="truncate text-[11px] text-muted-foreground">{label}</p>
-      <p className="font-display text-lg text-primary">{value}</p>
+      <p className="font-display text-base text-primary">{value}</p>
     </div>
   );
 }
