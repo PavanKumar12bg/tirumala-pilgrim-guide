@@ -34,7 +34,7 @@ export async function identifyPlacePhoto(apiKey: string, dataUrl: string, candid
         role: "user",
         content: [
           { type: "text", text: `Candidate places (id | name | category):\n${list}` },
-          { type: "image", image: dataUrl },
+          { type: "file", mediaType: dataUrl.slice(5, dataUrl.indexOf(";")), data: dataUrl },
         ],
       },
     ],
