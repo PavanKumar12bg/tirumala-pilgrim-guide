@@ -12,4 +12,20 @@ export default defineConfig({
     // nitro/vite builds from this
     server: { entry: "server" },
   },
+  vite: {
+    // Pre-bundle UI libraries so the dev server never re-optimizes mid-session
+    // (that mixes two React copies and crashes with "reading 'useMemo'").
+    optimizeDeps: {
+      include: [
+        "@radix-ui/react-dropdown-menu",
+        "@radix-ui/react-tabs",
+        "@radix-ui/react-switch",
+        "@radix-ui/react-dialog",
+        "@radix-ui/react-label",
+        "@radix-ui/react-slot",
+        "leaflet",
+        "sonner",
+      ],
+    },
+  },
 });
