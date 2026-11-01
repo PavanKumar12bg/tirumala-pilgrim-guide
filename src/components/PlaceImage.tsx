@@ -4,7 +4,7 @@ import { useI18n } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 
 /** Shows the place photo, or a neutral category placeholder when missing or broken. */
-export function PlaceImage({ src, category, alt, className }: { src?: string | null; category: string; alt: string; className?: string }) {
+export function PlaceImage({ src, category, alt, className }: { src?: string | null | undefined; category: string; alt: string; className?: string | undefined }) {
   const [failed, setFailed] = useState(false);
   const { t } = useI18n();
   if (src && !failed) {

@@ -1,6 +1,6 @@
 import { queryOptions } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import type { DictKey } from "./i18n";
+import type { DictKey, Lang } from "./i18n";
 
 export const CATEGORIES = [
   { id: "temple", icon: "🛕" },
@@ -20,7 +20,7 @@ export type CategoryId = (typeof CATEGORIES)[number]["id"];
 export const catKey = (id: string) => `cat_${id}` as DictKey;
 export const catIcon = (id: string) => CATEGORIES.find((c) => c.id === id)?.icon ?? "✦";
 
-export type Localized = Partial<Record<string, string>>;
+export type Localized = { [K in Lang]?: string | undefined };
 export type Place = {
   id: string;
   slug: string;

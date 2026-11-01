@@ -75,7 +75,7 @@ function StatusEditor() {
       darshan_note: note,
     }).eq("id", 1);
     setBusy(false);
-    if (error) return toast.error(error.message);
+    if (error) { toast.error(error.message); return; }
     toast.success("Status updated");
     qc.invalidateQueries({ queryKey: ["site_status"] });
   };
@@ -113,9 +113,9 @@ function TickerEditor() {
   const refresh = () => qc.invalidateQueries({ queryKey: ["announcements"] });
 
   const add = async () => {
-    if (!draft.te?.trim() && !draft.en?.trim()) return toast.error("Enter Telugu or English text");
+    if (!draft.te?.trim() && !draft.en?.trim()) { toast.error("Enter Telugu or English text"); return; }
     const { error } = await supabase.from("announcements").insert({ text: draft, sort_order: (data?.length ?? 0) + 1 });
-    if (error) return toast.error(error.message);
+    if (error) { toast.error(error.message); return; }
     setDraft({});
     refresh();
   };
@@ -204,18 +204,18 @@ function PlaceForm({ place, onDone }: { place: Place | null; onDone: () => void 
   const refresh = () => qc.invalidateQueries({ queryKey: ["places"] });
 
   const save = async () => {
-    if (!name.te?.trim() && !name.en?.trim()) return toast.error("Enter a Telugu or English name");
+    if (!name.te?.trim() && !name.en?.trim()) { toast.error("Enter a Telugu or English name"); return; }
     const latN = lat === "" ? null : Number(lat);
     const lngN = lng === "" ? null : Number(lng);
-    if ((latN == null) !== (lngN == null)) return toast.error("Enter both latitude and longitude, or neither");
-    if (verified && latN == null) return toast.error("Cannot mark as verified without coordinates");
+    if ((latN == null) !== (lngN == null)) { toast.error("Enter both latitude and longitude, or neither"); return; }
+    if (verified && latN == null) { toast.error("Cannot mark as verified without coordinates"); return; }
     setBusy(true);
     const row = { name, description: desc, category, lat: latN, lng: lngN, coords_verified: verified && latN != null, visible, featured, sort_order: Number(sort) || 100 };
     const { error } = place
       ? await supabase.from("places").update(row).eq("id", place.id)
       : await supabase.from("places").insert({ ...row, slug: slugify(name.en || name.te || "") + "-" + Math.random().toString(36).slice(2, 6) });
     setBusy(false);
-    if (error) return toast.error(error.message);
+    if (error) { toast.error(error.message); return; }
     toast.success("Saved");
     refresh();
     onDone();
@@ -248,7 +248,7 @@ function PlaceForm({ place, onDone }: { place: Place | null; onDone: () => void 
     await supabase.storage.from(IMAGE_BUCKET).remove([imagePath]);
     const { error } = await supabase.from("places").update({ image_path: null, image_width: null, image_height: null, image_bytes: null }).eq("id", place.id);
     setImgBusy(false);
-    if (error) return toast.error(error.message);
+    if (error) { toast.error(error.message); return; }
     setImagePath(null);
     setImageSrc(null);
     refresh();
@@ -323,7 +323,7 @@ function PlaceForm({ place, onDone }: { place: Place | null; onDone: () => void 
             if (!confirm("Delete this place permanently?")) return;
             if (imagePath) await supabase.storage.from(IMAGE_BUCKET).remove([imagePath]);
             const { error } = await supabase.from("places").delete().eq("id", place.id);
-            if (error) return toast.error(error.message);
+            if (error) { toast.error(error.message); return; }
             refresh();
             onDone();
           }}><Trash2 className="size-4" /></Button>

@@ -462,8 +462,8 @@ export const DICTS: Record<Lang, Dict> = { en, te, ta, kn, ml, hi, or };
 /** Pick a localized string from a {lang: text} object with sensible fallbacks. */
 export function pickLocalized(obj: unknown, lang: Lang): string {
   if (!obj || typeof obj !== "object") return "";
-  const o = obj as Record<string, string | undefined>;
-  return o[lang]?.trim() || (lang === "te" ? o.en : o.en || o.te)?.trim() || o.te?.trim() || "";
+  const o = obj as { [K in Lang]?: string };
+  return o[lang]?.trim() || o.en?.trim() || o.te?.trim() || "";
 }
 
 type Ctx = { lang: Lang; setLang: (l: Lang) => void; t: (k: DictKey) => string };

@@ -12,7 +12,7 @@ import { cn } from "@/lib/utils";
 
 type Gps = { state: "idle" } | { state: "locating" } | { state: "ok"; pos: [number, number] } | { state: "error"; msg: "gpsDenied" | "gpsUnavailable" };
 
-export default function MapExplorer({ initialSlug }: { initialSlug?: string }) {
+export default function MapExplorer({ initialSlug }: { initialSlug?: string | undefined }) {
   const { t, lang } = useI18n();
   const navigate = useNavigate();
   const { data, isLoading, isError, refetch } = useQuery(placesQuery());

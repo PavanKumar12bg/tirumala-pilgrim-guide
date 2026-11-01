@@ -7,8 +7,8 @@ import { useI18n } from "@/lib/i18n";
 const MapExplorer = lazy(() => import("@/components/MapExplorer"));
 
 export const Route = createFileRoute("/map")({
-  validateSearch: (s: Record<string, unknown>): { place?: string } => ({
-    place: typeof s.place === "string" ? s.place : undefined,
+  validateSearch: (s: Record<string, unknown>): { place?: string | undefined } => ({
+    place: typeof s["place"] === "string" ? s["place"] : undefined,
   }),
   head: () => ({
     meta: [
