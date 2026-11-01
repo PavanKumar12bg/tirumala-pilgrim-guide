@@ -698,7 +698,9 @@ export function pickLocalized(obj: unknown, lang: Lang): string {
 }
 
 type Ctx = { lang: Lang; setLang: (l: Lang) => void; t: (k: DictKey) => string };
-const I18nContext = createContext<Ctx | null>(null);
+// Keep one context instance across hot reloads so provider and consumers always match.
+const g = globalThis as { __tgI18nCtx?: React.Context<Ctx | null> };
+const I18nContext = (g.__tgI18nCtx ??= createContext<Ctx | null>(null));
 
 export function I18nProvider({ children }: { children: ReactNode }) {
   const [lang, setLangState] = useState<Lang>(DEFAULT_LANG);
