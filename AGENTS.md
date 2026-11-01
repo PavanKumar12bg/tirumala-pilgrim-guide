@@ -16,3 +16,5 @@
 - Admin rights come from `user_roles` + `has_role()`; RLS enforces writes. `claim_first_admin()` only works while no admin exists.
 - In-app walking routes come from the keyless FOSSGIS OSRM foot profile (`src/lib/routing.ts`); never draw straight-line routes or open external navigation, and keep re-route requests rate-limited via `NAV_CONFIG`.
 - Map layers and place imports are generated from the uploaded OSM GeoJSON by `scripts/build_geo.py` (converts [lon,lat] to [lat,lng]); places are keyed by unique `osm_id` so re-imports update rather than duplicate.
+- AI photo identification runs only in the admin-checked server function `src/lib/photo-identify.functions.ts` (model call in `photo-identify.server.ts`); the AI only suggests a place id from existing records and the admin confirms before any save.
+- Map markers declutter with a built-in screen-grid clustering in `MapExplorer` (no plugin); floating map controls live in the same bottom stack as the place card so they cannot overlap it.
