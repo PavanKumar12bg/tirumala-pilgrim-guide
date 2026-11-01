@@ -105,7 +105,7 @@ function StatusEditor() {
   if (isLoading) return <Loader2 className="size-5 animate-spin" />;
   return (
     <div className="space-y-4 rounded-2xl bg-card p-5 shadow-soft ring-1 ring-border">
-      <p className="text-sm text-muted-foreground">These values are shown publicly as “set by admin”, with the update time. Leave empty to show “Not updated yet”.</p>
+      <p className="text-sm text-muted-foreground">Enter the latest confirmed darshan and crowd information. Saved values appear in the home page status cards and announcement ticker with their update time, labeled as admin-entered—not a live feed. Leave empty if unknown.</p>
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-1.5">
           <Label htmlFor="hours">Darshan waiting time (hours)</Label>
@@ -149,7 +149,7 @@ function TickerEditor() {
         <Button onClick={add} className="min-h-12"><Plus className="size-4" /> Add to ticker</Button>
       </div>
       {isLoading ? <Loader2 className="size-5 animate-spin" /> : null}
-      {!isLoading && !data?.length ? <p className="text-sm text-muted-foreground">No announcements yet. The ticker is hidden until you add one.</p> : null}
+      {!isLoading && !data?.length ? <p className="text-sm text-muted-foreground">No announcements yet. Saved darshan and crowd updates still appear in the ticker.</p> : null}
       <ul className="space-y-2">
         {data?.map((a) => (
           <li key={a.id} className="flex items-center gap-3 rounded-xl bg-card p-3 ring-1 ring-border">
