@@ -87,7 +87,7 @@ export default function MapExplorer({ initialSlug }: { initialSlug?: string | un
       maxZoom: 19,
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
     }).addTo(map);
-    if (window.matchMedia("(min-width: 768px)").matches) L.control.zoom({ position: "bottomright" }).addTo(map);
+    if (window.matchMedia("(min-width: 768px)").matches) L.control.zoom({ position: "bottomleft" }).addTo(map);
     baseRef.current = L.layerGroup().addTo(map);
     layerRef.current = L.layerGroup().addTo(map);
     map.on("zoomend", () => setZoom(map.getZoom()));
