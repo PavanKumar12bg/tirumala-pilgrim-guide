@@ -27,8 +27,8 @@ export function PhotoIdentifier({ places, onUse }: { places: Place[]; onUse: (pl
   const [pick, setPick] = useState("");
 
   const run = async (file: File) => {
-    if (!file.type.startsWith("image/")) return toast.error("Please choose a photo");
-    if (file.size > 25 * 1024 * 1024) return toast.error("Photo is larger than 25 MB");
+    if (!file.type.startsWith("image/")) { toast.error("Please choose a photo"); return; }
+    if (file.size > 25 * 1024 * 1024) { toast.error("Photo is larger than 25 MB"); return; }
     setBusy(true);
     setRes(null);
     try {
