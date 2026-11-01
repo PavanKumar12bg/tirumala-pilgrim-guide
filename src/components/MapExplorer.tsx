@@ -387,21 +387,8 @@ export default function MapExplorer({ initialSlug }: { initialSlug?: string | un
         ) : null}
       </div>
 
-      {/* right-side controls */}
-      <div className="absolute bottom-[calc(env(safe-area-inset-bottom)+0.75rem)] right-3 z-[500] flex flex-col items-end gap-2" style={sel ? { bottom: collapsed ? "5.5rem" : "13rem" } : undefined}>
-        {here ? (
-          <button onClick={() => setPanel(panel === "nearby" ? "none" : "nearby")} aria-expanded={panel === "nearby"} className="flex h-8 items-center rounded-full bg-map-nearby px-3 text-xs font-semibold text-primary-foreground shadow-lift">
-            {t("nearby")} · {nearby.length}
-          </button>
-        ) : null}
-        <button onClick={() => setPanel(panel === "legend" ? "none" : "legend")} aria-label={t("legend")} aria-expanded={panel === "legend"} className={fab}><Layers className="size-4" /></button>
-        <button onClick={() => (nav.state === "active" ? recenter() : startWatch())} aria-label={nav.state === "active" ? t("recenter") : t("myLocation")} className={fab}>
-          {gps === "locating" ? <Loader2 className="size-5 animate-spin" aria-hidden /> : <LocateFixed className={cn("size-5", gps === "watching" ? "text-map-me" : "text-primary")} aria-hidden />}
-        </button>
-      </div>
-
       {panel === "legend" ? (
-        <div className="absolute bottom-20 right-16 z-[550] w-52 rounded-2xl bg-card p-3 text-xs shadow-lift">
+        <div className="absolute bottom-16 right-16 z-[650] w-52 rounded-2xl bg-card p-3 text-xs shadow-lift">
           <ul className="space-y-1.5">
             <li className="flex items-center gap-2"><span className="size-3 rounded-full bg-map-me ring-2 ring-card" /> {t("you")}</li>
             <li className="flex items-center gap-2"><span className="size-3 rounded-full bg-accent ring-2 ring-primary" /> {t("destination")}</li>
@@ -446,16 +433,27 @@ export default function MapExplorer({ initialSlug }: { initialSlug?: string | un
         </div>
       ) : null}
 
-      {/* bottom sheet: only when a place is selected */}
-      {sel ? (
-        <div className="absolute inset-x-0 bottom-0 z-[600] px-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)]">
-          <div className="mx-auto max-w-md">
+      {/* bottom stack: floating controls sit above the place card, so they never overlap */}
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 z-[600] flex flex-col gap-2 px-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)]">
+        <div className="pointer-events-auto flex flex-col items-end gap-2 self-end">
+        {here ? (
+          <button onClick={() => setPanel(panel === "nearby" ? "none" : "nearby")} aria-expanded={panel === "nearby"} className="flex h-8 items-center rounded-full bg-map-nearby px-3 text-xs font-semibold text-primary-foreground shadow-lift">
+            {t("nearby")} · {nearby.length}
+          </button>
+        ) : null}
+        <button onClick={() => setPanel(panel === "legend" ? "none" : "legend")} aria-label={t("legend")} aria-expanded={panel === "legend"} className={fab}><Layers className="size-4" /></button>
+        <button onClick={() => (nav.state === "active" ? recenter() : startWatch())} aria-label={nav.state === "active" ? t("recenter") : t("myLocation")} className={fab}>
+          {gps === "locating" ? <Loader2 className="size-5 animate-spin" aria-hidden /> : <LocateFixed className={cn("size-5", gps === "watching" ? "text-map-me" : "text-primary")} aria-hidden />}
+        </button>
+        </div>
+        {sel ? (
+          <div className="pointer-events-auto mx-auto w-full max-w-md">
             <SelectedCard place={sel} fix={here ? fix : null} nav={nav} collapsed={collapsed} onToggle={() => setCollapsed(!collapsed)}
               onClose={() => { choose(undefined); setCollapsed(false); }} onStart={startNav} onStop={stopNav}
               onRetry={() => { if (here && hasVerifiedCoords(sel)) void requestRoute(here, [sel.lat, sel.lng], false); else startNav(); }} />
           </div>
-        </div>
-      ) : null}
+        ) : null}
+      </div>
     </div>
   );
 }
