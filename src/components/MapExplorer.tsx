@@ -1,7 +1,7 @@
 import L from "leaflet";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
-import { AlertTriangle, CheckCircle2, Crosshair, Footprints, Layers, Loader2, LocateFixed, Navigation, RefreshCw, Search, Square, X } from "lucide-react";
+import { AlertTriangle, CheckCircle2, ChevronDown, ChevronUp, Footprints, Layers, Loader2, LocateFixed, Navigation, RefreshCw, Search, SlidersHorizontal, Square, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { catIcon, catKey, CATEGORIES, hasVerifiedCoords, placesQuery, type Place } from "@/lib/places";
 import { formatDistance, haversineMeters, isInsideTirumala, locateOnRoute, NAV_CONFIG, nearbySorted, TEMPLE_CENTER, TIRUMALA_BOUNDS, walkingMinutes, type LatLng } from "@/lib/geo";
@@ -302,92 +302,128 @@ export default function MapExplorer({ initialSlug }: { initialSlug?: string | un
   const searchResults = query.trim()
     ? places.filter((p) => Object.values(p.name).some((n) => n?.toLowerCase().includes(query.trim().toLowerCase()))).slice(0, 6)
     : [];
-  const pending = places.filter((p) => !hasVerifiedCoords(p));
   const gpsMsg: DictKey | null = gps === "denied" ? "gpsDenied" : gps === "unavailable" ? "gpsUnavailable" : gps === "timeout" ? "gpsTimeout" : stale ? "gpsLost" : fix && fix.accuracy > NAV_CONFIG.warnAccuracyMeters ? "lowAccuracy" : fix && !here ? "outsideArea" : null;
+  const showNotice = gpsMsg && dismissed !== gpsMsg;
+  const chip = (active: boolean) => cn("flex h-8 shrink-0 items-center gap-1 rounded-full px-3 text-xs font-semibold shadow-soft transition-colors", active ? "bg-primary text-primary-foreground" : "bg-card/95 text-foreground");
+  const fab = "grid size-11 place-items-center rounded-full bg-card shadow-lift";
 
   return (
-    <div className="relative h-full">
+    <div className="relative h-full overflow-hidden">
       <div ref={elRef} className="absolute inset-0 z-0 bg-secondary" aria-label={t("routeMapTitle")} role="application" />
 
-      {/* search + filters */}
-      <div className="pointer-events-none absolute inset-x-0 top-0 z-[500] space-y-2 p-3">
-        <div className="pointer-events-auto relative mx-auto max-w-xl">
-          <Search className="absolute left-4 top-1/2 size-5 -translate-y-1/2 text-muted-foreground" aria-hidden />
-          <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder={t("searchPlaces")} aria-label={t("searchPlaces")}
-            className="h-12 w-full rounded-full bg-card pl-12 pr-4 text-base shadow-lift ring-1 ring-border outline-none focus:ring-2 focus:ring-ring" />
-          {searchResults.length ? (
-            <ul className="absolute inset-x-0 top-14 overflow-hidden rounded-2xl bg-card shadow-lift ring-1 ring-border">
+      {/* compact search + filter chips */}
+      <div className="pointer-events-none absolute inset-x-0 top-0 z-[500] space-y-2 px-3 pt-2">
+        <div className="pointer-events-auto relative mx-auto max-w-md">
+          {searchOpen ? (
+            <div className="flex h-10 items-center gap-2 rounded-full bg-card pl-3 pr-1 shadow-lift">
+              <Search className="size-4 shrink-0 text-muted-foreground" aria-hidden />
+              <input autoFocus value={query} onChange={(e) => setQuery(e.target.value)} placeholder={t("searchPlaces")} aria-label={t("searchPlaces")}
+                onKeyDown={(e) => e.key === "Escape" && (setQuery(""), setSearchOpen(false))}
+                className="min-w-0 flex-1 bg-transparent text-base outline-none" />
+              <button onClick={() => { setQuery(""); setSearchOpen(false); }} aria-label={t("close")} className="grid size-8 shrink-0 place-items-center rounded-full hover:bg-muted"><X className="size-4" /></button>
+            </div>
+          ) : (
+            <button onClick={() => setSearchOpen(true)} className="flex h-10 w-full items-center gap-2 rounded-full bg-card/95 px-3 text-sm text-muted-foreground shadow-lift">
+              <Search className="size-4" aria-hidden /> {t("searchPlaces")}
+              {isLoading || mapData.isLoading ? <Loader2 className="ml-auto size-4 animate-spin" aria-label={t("loading")} /> : null}
+            </button>
+          )}
+          {searchOpen && searchResults.length ? (
+            <ul className="absolute inset-x-0 top-12 max-h-72 overflow-y-auto rounded-2xl bg-card py-1 shadow-lift">
               {searchResults.map((p) => (
                 <li key={p.id}>
-                  <button className="flex min-h-12 w-full items-center gap-3 px-4 text-left hover:bg-muted" onClick={() => { choose(p.slug); setQuery(""); }}>
+                  <button className="flex min-h-11 w-full items-center gap-2.5 px-3 text-left text-sm hover:bg-muted" onClick={() => { choose(p.slug); setQuery(""); setSearchOpen(false); }}>
                     <span aria-hidden>{catIcon(p.category)}</span>
-                    <span className="flex-1">{pickLocalized(p.name, lang)}</span>
-                    {!hasVerifiedCoords(p) ? <span className="text-xs text-muted-foreground">⏳</span> : null}
+                    <span className="min-w-0 flex-1 truncate">{pickLocalized(p.name, lang)}</span>
+                    {!hasVerifiedCoords(p) ? <span className="text-[11px] text-muted-foreground">⏳ {t("coordsPending")}</span> : null}
                   </button>
                 </li>
               ))}
             </ul>
           ) : null}
         </div>
-        <div className="pointer-events-auto -mx-3 flex gap-2 overflow-x-auto px-3 pb-1">
-          {[{ id: "all" }, ...CATEGORIES.filter((c) => mapped.some((p) => p.category === c.id))].map((c) => (
-            <button key={c.id} onClick={() => setCat(c.id)} aria-pressed={cat === c.id}
-              className={cn("min-h-10 shrink-0 rounded-full px-4 text-sm font-semibold shadow-soft ring-1", cat === c.id ? "bg-primary text-primary-foreground ring-primary" : "bg-card ring-border")}>
-              {c.id === "all" ? t("all") : `${catIcon(c.id)} ${t(catKey(c.id))}`}
-            </button>
-          ))}
-        </div>
-        {isError ? <div className="pointer-events-auto mx-auto max-w-xl"><ErrorBox onRetry={() => refetch()} /></div> : null}
-        {mapData.isError ? (
-          <div className="pointer-events-auto mx-auto flex max-w-xl items-center justify-between gap-2 rounded-xl bg-card px-4 py-2 text-sm shadow-soft">
-            <span className="text-destructive">{t("mapDataError")}</span>
-            <button className="min-h-10 font-semibold text-primary" onClick={() => mapData.refetch()}>{t("retry")}</button>
+        {!searchOpen ? (
+          <div className="pointer-events-auto -mx-3 flex gap-1.5 overflow-x-auto px-3 pb-1 [scrollbar-width:none]" role="toolbar" aria-label={t("legend")}>
+            <button onClick={() => setCat("all")} aria-pressed={cat === "all"} className={chip(cat === "all")}>{t("all")}</button>
+            {topCats.map((id) => (
+              <button key={id} onClick={() => setCat(id)} aria-pressed={cat === id} className={chip(cat === id)}>
+                <span aria-hidden>{catIcon(id)}</span>{t(catKey(id))}
+              </button>
+            ))}
+            {moreCats.some((c) => c.id === cat) ? (
+              <button aria-pressed className={chip(true)}><span aria-hidden>{catIcon(cat)}</span>{t(catKey(cat))}</button>
+            ) : null}
+            {moreCats.length ? (
+              <button onClick={() => setPanel(panel === "cats" ? "none" : "cats")} aria-expanded={panel === "cats"} className={chip(false)}>
+                <SlidersHorizontal className="size-3.5" aria-hidden />{t("moreCats")}
+              </button>
+            ) : null}
           </div>
         ) : null}
-        {isLoading || mapData.isLoading ? <p className="pointer-events-auto mx-auto w-fit rounded-full bg-card px-4 py-2 text-sm shadow-soft">{t("loading")}</p> : null}
+        {panel === "cats" ? (
+          <div className="pointer-events-auto ml-auto w-52 rounded-2xl bg-card p-1.5 shadow-lift">
+            {moreCats.map((c) => (
+              <button key={c.id} onClick={() => { setCat(c.id); setPanel("none"); }} className={cn("flex min-h-10 w-full items-center gap-2 rounded-xl px-2.5 text-left text-sm", cat === c.id ? "bg-primary text-primary-foreground" : "hover:bg-muted")}>
+                <span aria-hidden>{c.icon}</span><span className="flex-1 truncate">{t(catKey(c.id))}</span><span className="text-xs opacity-70">{c.n}</span>
+              </button>
+            ))}
+          </div>
+        ) : null}
+        {isError || mapData.isError ? (
+          <div className="pointer-events-auto mx-auto flex max-w-md items-center gap-2 rounded-full bg-card py-1 pl-3 pr-1 text-xs shadow-soft" role="alert">
+            <AlertTriangle className="size-3.5 shrink-0 text-destructive" aria-hidden />
+            <span className="min-w-0 flex-1 truncate">{t("mapDataError")}</span>
+            <button className="h-8 rounded-full px-3 font-semibold text-primary" onClick={() => { void refetch(); void mapData.refetch(); }}>{t("retry")}</button>
+          </div>
+        ) : null}
+        {showNotice ? (
+          <div className="pointer-events-auto mx-auto flex max-w-md items-center gap-2 rounded-full bg-card py-1 pl-3 pr-1 text-xs shadow-soft" role="status">
+            <AlertTriangle className="size-3.5 shrink-0 text-warning" aria-hidden />
+            <span className="min-w-0 flex-1 truncate">{t(gpsMsg)}{fix && gpsMsg === "lowAccuracy" ? ` (±${Math.round(fix.accuracy)} m)` : ""}</span>
+            {gpsMsg !== "outsideArea" && gpsMsg !== "lowAccuracy" ? <button className="h-8 rounded-full px-2 font-semibold text-primary" onClick={() => { setDismissed(null); startWatch(); }}>{t("retry")}</button> : null}
+            <button onClick={() => setDismissed(gpsMsg)} aria-label={t("close")} className="grid size-8 place-items-center rounded-full hover:bg-muted"><X className="size-3.5" /></button>
+          </div>
+        ) : null}
       </div>
 
       {/* right-side controls */}
-      <div className="absolute right-3 top-36 z-[500] flex flex-col items-end gap-2">
-        <button onClick={startWatch} aria-label={t("myLocation")} className="flex min-h-12 items-center gap-2 rounded-full bg-card px-4 text-sm font-semibold shadow-lift ring-1 ring-border">
-          {gps === "locating" ? <Loader2 className="size-5 animate-spin" aria-hidden /> : <Crosshair className={cn("size-5", gps === "watching" ? "text-map-me" : "text-primary")} aria-hidden />}
-          <span className="hidden sm:inline">{gps === "locating" ? t("locating") : t("myLocation")}</span>
-        </button>
-        <button onClick={recenter} aria-label={t("recenter")} className="grid size-12 place-items-center rounded-full bg-card shadow-lift ring-1 ring-border"><LocateFixed className="size-5" /></button>
-        <button onClick={() => setPanel(panel === "legend" ? "none" : "legend")} aria-label={t("legend")} aria-expanded={panel === "legend"} className="grid size-12 place-items-center rounded-full bg-card shadow-lift ring-1 ring-border"><Layers className="size-5" /></button>
+      <div className="absolute bottom-[calc(env(safe-area-inset-bottom)+0.75rem)] right-3 z-[500] flex flex-col items-end gap-2" style={sel ? { bottom: collapsed ? "5.5rem" : "13rem" } : undefined}>
         {here ? (
-          <button onClick={() => setPanel(panel === "nearby" ? "none" : "nearby")} aria-expanded={panel === "nearby"} className="flex min-h-12 items-center gap-1.5 rounded-full bg-map-nearby px-4 text-sm font-semibold text-primary-foreground shadow-lift">
+          <button onClick={() => setPanel(panel === "nearby" ? "none" : "nearby")} aria-expanded={panel === "nearby"} className="flex h-8 items-center rounded-full bg-map-nearby px-3 text-xs font-semibold text-primary-foreground shadow-lift">
             {t("nearby")} · {nearby.length}
           </button>
         ) : null}
+        <button onClick={() => setPanel(panel === "legend" ? "none" : "legend")} aria-label={t("legend")} aria-expanded={panel === "legend"} className={fab}><Layers className="size-4" /></button>
+        <button onClick={() => (nav.state === "active" ? recenter() : startWatch())} aria-label={nav.state === "active" ? t("recenter") : t("myLocation")} className={fab}>
+          {gps === "locating" ? <Loader2 className="size-5 animate-spin" aria-hidden /> : <LocateFixed className={cn("size-5", gps === "watching" ? "text-map-me" : "text-primary")} aria-hidden />}
+        </button>
       </div>
 
       {panel === "legend" ? (
-        <div className="absolute right-16 top-36 z-[550] w-56 rounded-2xl bg-card p-3 text-sm shadow-lift ring-1 ring-border">
-          <p className="mb-2 font-semibold">{t("legend")}</p>
+        <div className="absolute bottom-20 right-16 z-[550] w-52 rounded-2xl bg-card p-3 text-xs shadow-lift">
           <ul className="space-y-1.5">
-            <li className="flex items-center gap-2"><span className="size-3.5 rounded-full bg-map-me ring-2 ring-card" /> {t("you")}</li>
-            <li className="flex items-center gap-2"><span className="size-3.5 rounded-full bg-accent ring-2 ring-primary" /> {t("destination")}</li>
-            <li className="flex items-center gap-2"><span className="h-1.5 w-5 rounded-full bg-map-route" /> {t("route")}</li>
-            <li className="flex items-center gap-2"><span className="size-3.5 rounded-full bg-map-nearby" /> {t("nearby")}</li>
-            <li className="flex items-center gap-2"><span className="size-3.5 rounded-full bg-primary" /> {t("otherPlaces")}</li>
+            <li className="flex items-center gap-2"><span className="size-3 rounded-full bg-map-me ring-2 ring-card" /> {t("you")}</li>
+            <li className="flex items-center gap-2"><span className="size-3 rounded-full bg-accent ring-2 ring-primary" /> {t("destination")}</li>
+            <li className="flex items-center gap-2"><span className="h-1 w-4 rounded-full bg-map-route" /> {t("route")}</li>
+            <li className="flex items-center gap-2"><span className="size-3 rounded-full ring-[3px] ring-map-nearby" /> {t("nearby")}</li>
+            <li className="flex items-center gap-2"><span className="size-3 rounded-full ring-2 ring-primary" /> {t("otherPlaces")}</li>
           </ul>
-          <ul className="mt-2 grid grid-cols-2 gap-1 border-t pt-2 text-xs">
+          <ul className="mt-2 grid grid-cols-2 gap-1 border-t pt-2 text-[11px]">
             {CATEGORIES.map((c) => <li key={c.id} className="truncate">{c.icon} {t(catKey(c.id))}</li>)}
           </ul>
         </div>
       ) : null}
 
       {panel === "nearby" && here ? (
-        <div className="absolute inset-x-3 top-36 z-[550] mx-auto max-h-[45%] max-w-xl overflow-y-auto rounded-2xl bg-card p-3 shadow-lift ring-1 ring-border sm:right-20">
+        <div className="absolute inset-x-3 bottom-3 z-[650] mx-auto max-h-[55%] max-w-md overflow-y-auto rounded-2xl bg-card p-3 shadow-lift">
           <div className="flex items-center justify-between gap-2">
-            <p className="font-semibold">{t("nearby")}</p>
-            <button onClick={() => setPanel("none")} aria-label={t("close")} className="grid size-10 place-items-center rounded-full hover:bg-muted"><X className="size-4" /></button>
+            <p className="text-sm font-semibold">{t("nearby")}</p>
+            <button onClick={() => setPanel("none")} aria-label={t("close")} className="grid size-9 place-items-center rounded-full hover:bg-muted"><X className="size-4" /></button>
           </div>
           <div className="mt-1 flex gap-1.5" role="radiogroup" aria-label={t("within")}>
             {NAV_CONFIG.nearbyOptions.map((m) => (
               <button key={m} role="radio" aria-checked={nearbyM === m} onClick={() => setNearbyM(m)}
-                className={cn("min-h-9 flex-1 rounded-full text-xs font-semibold ring-1", nearbyM === m ? "bg-map-nearby text-primary-foreground ring-map-nearby" : "ring-border")}>
+                className={cn("h-8 flex-1 rounded-full text-xs font-semibold", nearbyM === m ? "bg-map-nearby text-primary-foreground" : "bg-muted")}>
                 {formatDistance(m)}
               </button>
             ))}
@@ -396,10 +432,10 @@ export default function MapExplorer({ initialSlug }: { initialSlug?: string | un
             <ul className="mt-2 divide-y">
               {nearby.map(({ item, meters }) => (
                 <li key={item.id}>
-                  <button className="flex min-h-12 w-full items-center gap-3 py-1 text-left" onClick={() => { choose(item.slug); setPanel("none"); }}>
+                  <button className="flex min-h-11 w-full items-center gap-2.5 py-1 text-left text-sm" onClick={() => { choose(item.slug); setPanel("none"); }}>
                     <span aria-hidden>{catIcon(item.category)}</span>
                     <span className="min-w-0 flex-1 truncate">{pickLocalized(item.name, lang)}</span>
-                    <span className="shrink-0 text-sm font-semibold text-map-nearby">{formatDistance(meters)}</span>
+                    <span className="shrink-0 text-xs font-semibold text-map-nearby">{formatDistance(meters)}</span>
                   </button>
                 </li>
               ))}
@@ -409,32 +445,16 @@ export default function MapExplorer({ initialSlug }: { initialSlug?: string | un
         </div>
       ) : null}
 
-      {/* bottom sheet */}
-      <div className="absolute inset-x-0 bottom-0 z-[600] p-3">
-        <div className="mx-auto max-w-xl">
-          {gpsMsg ? (
-            <p className="mb-2 flex items-center gap-2 rounded-xl bg-card px-4 py-2 text-sm text-warning shadow-soft" role="status">
-              <AlertTriangle className="size-4 shrink-0" aria-hidden /> {t(gpsMsg)}
-              {fix && gpsMsg === "lowAccuracy" ? ` (±${Math.round(fix.accuracy)} m)` : ""}
-            </p>
-          ) : null}
-          {sel ? (
-            <SelectedCard place={sel} fix={here ? fix : null} nav={nav} onClose={() => choose(undefined)} onStart={startNav} onStop={stopNav}
+      {/* bottom sheet: only when a place is selected */}
+      {sel ? (
+        <div className="absolute inset-x-0 bottom-0 z-[600] px-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)]">
+          <div className="mx-auto max-w-md">
+            <SelectedCard place={sel} fix={here ? fix : null} nav={nav} collapsed={collapsed} onToggle={() => setCollapsed(!collapsed)}
+              onClose={() => { choose(undefined); setCollapsed(false); }} onStart={startNav} onStop={stopNav}
               onRetry={() => { if (here && hasVerifiedCoords(sel)) void requestRoute(here, [sel.lat, sel.lng], false); else startNav(); }} />
-          ) : (
-            <div className="rounded-2xl bg-card p-3 shadow-lift ring-1 ring-border">
-              <label className="text-xs font-semibold text-muted-foreground" htmlFor="dest">{t("selectDestination")}</label>
-              <select id="dest" className="mt-1 h-12 w-full rounded-xl bg-muted px-3 text-base" value="" onChange={(e) => choose(e.target.value || undefined)}>
-                <option value="">—</option>
-                {places.map((p) => (
-                  <option key={p.id} value={p.slug}>{pickLocalized(p.name, lang)}{hasVerifiedCoords(p) ? "" : ` (${t("coordsPending")})`}</option>
-                ))}
-              </select>
-              {pending.length ? <p className="mt-2 text-xs text-muted-foreground">⏳ {t("pendingList")}: {pending.length}</p> : null}
-            </div>
-          )}
+          </div>
         </div>
-      </div>
+      ) : null}
     </div>
   );
 }
