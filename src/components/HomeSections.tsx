@@ -1,0 +1,188 @@
+import { Link } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
+import { Clock, Megaphone, MapPin, Users, ChevronRight, AlertCircle } from "lucide-react";
+import { useMemo, useState } from "react";
+import { announcementsQuery, catKey, CATEGORIES, hasVerifiedCoords, placesQuery, statusQuery, type CrowdLevel } from "@/lib/places";
+import { pickLocalized, useI18n, type DictKey } from "@/lib/i18n";
+import { PlaceImage } from "./PlaceImage";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+import hillsImg from "@/assets/tirumala-hills.jpg";
+
+export function Ticker() {
+  const { t, lang } = useI18n();
+  const { data } = useQuery(announcementsQuery());
+  const items = (data ?? []).filter((a) => a.active).map((a) => pickLocalized(a.text, lang)).filter(Boolean);
+  if (!items.length) return null;
+  const row = items.map((s, i) => (
+    <span key={i} className="inline-flex items-center gap-3 pr-10">
+      <span aria-hidden className="text-accent">✦</span>
+      {s}
+    </span>
+  ));
+  return (
+    <div className="flex items-stretch overflow-hidden border-y border-accent/30 bg-aubergine-deep text-primary-foreground" role="region" aria-label={t("announcements")}>
+      <div className="z-10 flex shrink-0 items-center gap-1.5 bg-accent px-3 text-xs font-bold text-accent-foreground">
+        <Megaphone className="size-4" aria-hidden />
+        <span className="hidden sm:inline">{t("announcements")}</span>
+      </div>
+      <div className="relative min-w-0 flex-1 py-2.5 text-sm">
+        <div className="animate-ticker flex w-max whitespace-nowrap">
+          {row}
+          <span aria-hidden className="inline-flex">{row}</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+const crowdStyle: Record<CrowdLevel, { bar: string; fill: number }> = {
+  low: { bar: "bg-success", fill: 1 },
+  moderate: { bar: "bg-accent", fill: 2 },
+  high: { bar: "bg-warning", fill: 3 },
+  very_high: { bar: "bg-destructive", fill: 4 },
+};
+
+export function StatusCards() {
+  const { t, lang } = useI18n();
+  const { data, isLoading, isError, refetch } = useQuery(statusQuery());
+  const updated = data?.updated_at && (data.darshan_wait_hours != null || data.crowd_level)
+    ? new Date(data.updated_at).toLocaleString(lang === "en" ? "en-IN" : `${lang}-IN`, { dateStyle: "medium", timeStyle: "short" })
+    : null;
+
+  if (isError) return <ErrorBox onRetry={() => refetch()} />;
+  const note = pickLocalized(data?.darshan_note, lang);
+
+  return (
+    <div className="grid grid-cols-2 gap-3">
+      <div className="rounded-2xl bg-card p-4 shadow-soft ring-1 ring-border">
+        <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground">
+          <Clock className="size-4 text-gold" aria-hidden />
+          {t("darshanWait")}
+        </div>
+        {isLoading ? <Skeleton className="mt-3 h-9 w-20" /> : data?.darshan_wait_hours != null ? (
+          <p className="mt-2 font-display text-3xl text-primary">
+            {Number(data.darshan_wait_hours)} <span className="text-base font-sans text-muted-foreground">{t("hours")}</span>
+          </p>
+        ) : (
+          <p className="mt-3 text-sm font-medium text-muted-foreground">{t("notUpdated")}</p>
+        )}
+        {note ? <p className="mt-1 text-xs text-muted-foreground">{note}</p> : null}
+      </div>
+      <div className="rounded-2xl bg-card p-4 shadow-soft ring-1 ring-border">
+        <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground">
+          <Users className="size-4 text-gold" aria-hidden />
+          {t("crowdStatus")}
+        </div>
+        {isLoading ? <Skeleton className="mt-3 h-9 w-24" /> : data?.crowd_level ? (
+          <>
+            <p className="mt-2 font-display text-2xl text-primary">{t(`crowd_${data.crowd_level}` as DictKey)}</p>
+            <div className="mt-2 flex gap-1" aria-hidden>
+              {[1, 2, 3, 4].map((i) => (
+                <span key={i} className={cn("h-1.5 flex-1 rounded-full", i <= crowdStyle[data.crowd_level!].fill ? crowdStyle[data.crowd_level!].bar : "bg-muted")} />
+              ))}
+            </div>
+          </>
+        ) : (
+          <p className="mt-3 text-sm font-medium text-muted-foreground">{t("notUpdated")}</p>
+        )}
+      </div>
+      <p className="col-span-2 flex items-start gap-1.5 px-1 text-xs text-muted-foreground">
+        <AlertCircle className="mt-0.5 size-3.5 shrink-0" aria-hidden />
+        <span>{t("adminSet")}{updated ? ` · ${t("updated")}: ${updated}` : ""}</span>
+      </p>
+    </div>
+  );
+}
+
+export function RouteMapCard() {
+  const { t } = useI18n();
+  return (
+    <Link to="/map" className="group relative block overflow-hidden rounded-3xl shadow-lift ring-1 ring-border">
+      <img src={hillsImg} alt="" width={1600} height={912} loading="lazy" className="h-44 w-full object-cover transition-transform duration-700 group-hover:scale-105 sm:h-56" />
+      <div className="absolute inset-0 bg-hero-fade" />
+      <div className="absolute inset-x-0 bottom-0 flex items-end justify-between gap-3 p-5 text-primary-foreground">
+        <div>
+          <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-accent">
+            <MapPin className="size-4" aria-hidden /> OpenStreetMap
+          </p>
+          <h2 className="mt-1 text-2xl">{t("routeMapTitle")}</h2>
+          <p className="mt-0.5 text-sm text-primary-foreground/80">{t("routeMapSub")}</p>
+        </div>
+        <span className="grid size-12 shrink-0 place-items-center rounded-full bg-accent text-accent-foreground transition-transform group-hover:translate-x-1">
+          <ChevronRight className="size-6" aria-hidden />
+        </span>
+      </div>
+    </Link>
+  );
+}
+
+export function ErrorBox({ onRetry }: { onRetry: () => void }) {
+  const { t } = useI18n();
+  return (
+    <div className="flex items-center justify-between gap-3 rounded-2xl bg-card p-4 ring-1 ring-destructive/30">
+      <p className="text-sm text-destructive">{t("errorLoad")}</p>
+      <Button variant="outline" size="sm" onClick={onRetry}>{t("retry")}</Button>
+    </div>
+  );
+}
+
+export function PlacesGrid() {
+  const { t, lang } = useI18n();
+  const { data, isLoading, isError, refetch } = useQuery(placesQuery());
+  const [cat, setCat] = useState<string>("all");
+  const places = useMemo(() => (data ?? []).filter((p) => p.visible), [data]);
+  const presentCats = CATEGORIES.filter((c) => places.some((p) => p.category === c.id));
+  const shown = cat === "all" ? places : places.filter((p) => p.category === cat);
+
+  return (
+    <section aria-labelledby="places-h">
+      <h2 id="places-h" className="text-2xl text-primary">{t("places")}</h2>
+      <div className="-mx-4 mt-3 flex gap-2 overflow-x-auto px-4 pb-2" role="tablist">
+        {[{ id: "all" }, ...presentCats].map((c) => (
+          <button
+            key={c.id}
+            role="tab"
+            aria-selected={cat === c.id}
+            onClick={() => setCat(c.id)}
+            className={cn(
+              "min-h-10 shrink-0 rounded-full px-4 text-sm font-semibold ring-1 transition-colors",
+              cat === c.id ? "bg-primary text-primary-foreground ring-primary" : "bg-card text-foreground ring-border",
+            )}
+          >
+            {c.id === "all" ? t("all") : t(catKey(c.id))}
+          </button>
+        ))}
+      </div>
+      {isError ? <ErrorBox onRetry={() => refetch()} /> : null}
+      <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
+        {isLoading
+          ? Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="aspect-[4/5] rounded-2xl" />)
+          : shown.map((p, i) => {
+              const name = pickLocalized(p.name, lang);
+              const onMap = hasVerifiedCoords(p);
+              return (
+                <Link
+                  key={p.id}
+                  to="/map"
+                  search={{ place: p.slug }}
+                  className="animate-rise group flex flex-col overflow-hidden rounded-2xl bg-card shadow-soft ring-1 ring-border"
+                  style={{ animationDelay: `${i * 40}ms` }}
+                >
+                  <div className="aspect-[4/3] overflow-hidden">
+                    <PlaceImage src={p.imageSrc} category={p.category} alt={name} className="transition-transform duration-500 group-hover:scale-105" />
+                  </div>
+                  <div className="flex flex-1 flex-col p-3">
+                    <p className="text-[11px] font-semibold uppercase tracking-wide text-gold">{t(catKey(p.category))}</p>
+                    <h3 className="mt-0.5 text-base leading-snug text-foreground">{name}</h3>
+                    {!onMap ? <p className="mt-auto pt-2 text-[11px] text-muted-foreground">⏳ {t("coordsPending")}</p> : null}
+                  </div>
+                </Link>
+              );
+            })}
+      </div>
+      {!isLoading && !shown.length ? <p className="mt-4 text-sm text-muted-foreground">{t("noPlaces")}</p> : null}
+    </section>
+  );
+}
