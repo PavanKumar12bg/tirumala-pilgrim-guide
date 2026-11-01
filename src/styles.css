@@ -39,6 +39,9 @@
   --color-silver: var(--silver);
   --color-success: var(--success);
   --color-warning: var(--warning);
+  --color-map-me: var(--map-me);
+  --color-map-route: var(--map-route);
+  --color-map-nearby: var(--map-nearby);
   --color-chart-1: var(--chart-1);
   --color-chart-2: var(--chart-2);
   --color-chart-3: var(--chart-3);
@@ -66,7 +69,14 @@
   --marigold: oklch(0.77 0.16 80);
   --gold: oklch(0.68 0.11 78);
   --success: oklch(0.58 0.12 155);
-  --warning: oklch(0.62 0.17 45);
+  --warning: oklch(0.55 0.15 45);
+  --map-me: oklch(0.55 0.2 255);
+  --map-route: oklch(0.5 0.13 210);
+  --map-nearby: oklch(0.52 0.13 150);
+  --map-water: oklch(0.62 0.1 225);
+  --map-building: oklch(0.45 0.05 330);
+  --map-road: oklch(0.72 0.1 75);
+  --map-foot: oklch(0.42 0.09 335);
 
   --background: oklch(0.955 0.007 240);
   --foreground: oklch(0.22 0.06 335);
@@ -201,14 +211,21 @@ html:lang(or) {
   line-height: 1;
 }
 .tg-marker.is-active {
+  width: 44px;
+  height: 44px;
   background: var(--marigold);
-  border-color: var(--aubergine);
+  border: 3px solid var(--aubergine);
+}
+.tg-marker.is-active > span { font-size: 20px; }
+.tg-marker.is-nearby {
+  background: var(--map-nearby);
+  border-color: var(--card);
 }
 .tg-me {
   width: 18px;
   height: 18px;
   border-radius: 9999px;
-  background: oklch(0.6 0.17 250);
+  background: var(--map-me);
   border: 3px solid var(--card);
-  box-shadow: 0 0 0 6px color-mix(in oklab, oklch(0.6 0.17 250) 25%, transparent);
+  box-shadow: 0 0 0 6px color-mix(in oklab, var(--map-me) 30%, transparent);
 }
