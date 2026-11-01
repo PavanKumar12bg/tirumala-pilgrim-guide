@@ -5,5 +5,6 @@
 - [x] Run targeted tests and browser checks (12 tests passed; journey read-back after refresh; no browser errors).
 - [ ] Physical-phone walk: requires user in Tirumala with location permission.
 - [ ] Authorized admin overview check: requires first account signup and admin claim; no auth users exist.
-- [ ] Walk signup, first-admin claim, and persistent place-photo edit using the user's intended administrator account.
-- [ ] Connect actual admin-entered status to the announcement ticker and verify shared values without inventing live data.
+- [ ] Walk signup, first-admin claim, and persistent place-photo edit: waiting for the chosen owner to create/confirm their account and sign in; signup form checked, private photo bucket confirmed.
+- [x] Connect actual admin-entered status to announcement ticker; 3 status tests passed and real homepage checked with unset values (no invented ticker data).
+- [ ] Verify saved status and photo read-back through authorized UI after account setup; no live TTD feed or real reported values supplied.
