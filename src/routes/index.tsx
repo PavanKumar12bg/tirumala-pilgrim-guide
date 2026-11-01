@@ -13,6 +13,8 @@ export const Route = createFileRoute("/")({
       { property: "og:description", content: "Darshan status, route map and every useful place on the Tirumala hills." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
+      { property: "og:image", content: heroAsset.url },
+      { name: "twitter:image", content: heroAsset.url },
     ],
   }),
   component: Index,

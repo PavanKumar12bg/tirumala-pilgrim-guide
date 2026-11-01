@@ -4,7 +4,7 @@ import { Plus, Trash2, Upload, ImageOff, Loader2, Crosshair, Eye, EyeOff } from 
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { announcementsQuery, CATEGORIES, IMAGE_BUCKET, placesQuery, statusQuery, type Localized, type Place } from "@/lib/places";
-import { DICTS, LANGS } from "@/lib/i18n";
+import { DICTS, LANGS, useI18n } from "@/lib/i18n";
 import { isInsideTirumala } from "@/lib/geo";
 import { compressToWebp } from "@/lib/image-compress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -21,14 +21,32 @@ import { PhotoIdentifier, type PreparedPhoto } from "./PhotoIdentifier";
 const selectCls = "h-11 w-full rounded-md border border-input bg-card px-3 text-base";
 
 export function AdminPanel() {
+  const { t } = useI18n();
+  const [tab, setTab] = useState("overview");
+  const places = useQuery(placesQuery({ admin: true }));
   return (
-    <Tabs defaultValue="status">
-      <TabsList className="grid h-12 w-full grid-cols-4">
+    <Tabs value={tab} onValueChange={setTab}>
+      <TabsList className="flex h-auto min-h-12 w-full flex-wrap">
+        <TabsTrigger value="overview" className="min-h-10">{t("overview")}</TabsTrigger>
         <TabsTrigger value="status" className="min-h-10">Status</TabsTrigger>
         <TabsTrigger value="ticker" className="min-h-10">Ticker</TabsTrigger>
         <TabsTrigger value="places" className="min-h-10">Places</TabsTrigger>
         <TabsTrigger value="review" className="min-h-10">Review</TabsTrigger>
       </TabsList>
+      <TabsContent value="overview" className="mt-6">
+        <h1 className="text-2xl">{t("admin")} · {t("appName")}</h1>
+        {places.isLoading ? <Loader2 className="mt-4 size-5 animate-spin" /> : places.isError ? <p role="alert" className="mt-4 text-destructive">{t("errorLoad")}</p> : <>
+          <dl className="mt-5 grid grid-cols-2 gap-4 border-y py-5 sm:grid-cols-4">
+            {[
+              { label: t("publicPlaces"), count: places.data?.filter((p) => p.visible).length ?? 0 },
+              { label: t("verifiedPlaces"), count: places.data?.filter((p) => p.coords_verified && p.lat != null && p.lng != null).length ?? 0 },
+              { label: t("missingPhotos"), count: places.data?.filter((p) => !p.image_path).length ?? 0 },
+              { label: t("needsReview"), count: places.data?.filter((p) => p.needs_review || !p.coords_verified).length ?? 0 },
+            ].map((stat) => <div key={stat.label}><dt className="text-sm text-muted-foreground">{stat.label}</dt><dd className="mt-1 font-display text-3xl text-primary">{stat.count}</dd></div>)}
+          </dl>
+          <div className="mt-5 flex flex-wrap gap-3"><Button className="min-h-12" onClick={() => setTab("places")}>{t("managePlaces")}</Button><Button variant="outline" className="min-h-12" onClick={() => setTab("review")}>{t("reviewPlaces")}</Button></div>
+        </>}
+      </TabsContent>
       <TabsContent value="status" className="mt-4"><StatusEditor /></TabsContent>
       <TabsContent value="ticker" className="mt-4"><TickerEditor /></TabsContent>
       <TabsContent value="places" className="mt-4"><PlacesEditor mode="all" /></TabsContent>

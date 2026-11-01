@@ -18,3 +18,4 @@
 - Map layers and place imports are generated from the uploaded OSM GeoJSON by `scripts/build_geo.py` (converts [lon,lat] to [lat,lng]); places are keyed by unique `osm_id` so re-imports update rather than duplicate.
 - AI photo identification runs only in the admin-checked server function `src/lib/photo-identify.functions.ts` (model call in `photo-identify.server.ts`); the AI only suggests a place id from existing records and the admin confirms before any save.
 - Map markers declutter with a built-in screen-grid clustering in `MapExplorer` (no plugin); floating map controls live in the same bottom stack as the place card so they cannot overlap it.
+- The public journey planner stores validated personal itineraries on the current device and references canonical place IDs; arrival plans are manually entered rather than invented travel estimates.
