@@ -137,7 +137,7 @@ export default function MapExplorer({ initialSlug }: { initialSlug?: string | un
       </div>
 
       {/* GPS */}
-      <button onClick={locate} className="absolute right-3 top-32 z-[500] flex min-h-12 items-center gap-2 rounded-full bg-card px-4 text-sm font-semibold shadow-lift ring-1 ring-border">
+      <button onClick={locate} className="absolute right-3 top-48 z-[500] flex min-h-12 items-center gap-2 rounded-full bg-card px-4 text-sm font-semibold shadow-lift ring-1 ring-border">
         {gps.state === "locating" ? <Loader2 className="size-5 animate-spin" aria-hidden /> : <Crosshair className="size-5 text-primary" aria-hidden />}
         {gps.state === "locating" ? t("locating") : t("myLocation")}
       </button>
