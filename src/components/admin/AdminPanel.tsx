@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { announcementsQuery, CATEGORIES, IMAGE_BUCKET, placesQuery, statusQuery, type Localized, type Place } from "@/lib/places";
 import { DICTS, LANGS } from "@/lib/i18n";
+import { isInsideTirumala } from "@/lib/geo";
 import { compressToWebp } from "@/lib/image-compress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -21,14 +22,16 @@ const selectCls = "h-11 w-full rounded-md border border-input bg-card px-3 text-
 export function AdminPanel() {
   return (
     <Tabs defaultValue="status">
-      <TabsList className="grid h-12 w-full grid-cols-3">
+      <TabsList className="grid h-12 w-full grid-cols-4">
         <TabsTrigger value="status" className="min-h-10">Status</TabsTrigger>
         <TabsTrigger value="ticker" className="min-h-10">Ticker</TabsTrigger>
         <TabsTrigger value="places" className="min-h-10">Places</TabsTrigger>
+        <TabsTrigger value="review" className="min-h-10">Review</TabsTrigger>
       </TabsList>
       <TabsContent value="status" className="mt-4"><StatusEditor /></TabsContent>
       <TabsContent value="ticker" className="mt-4"><TickerEditor /></TabsContent>
-      <TabsContent value="places" className="mt-4"><PlacesEditor /></TabsContent>
+      <TabsContent value="places" className="mt-4"><PlacesEditor mode="all" /></TabsContent>
+      <TabsContent value="review" className="mt-4"><PlacesEditor mode="review" /></TabsContent>
     </Tabs>
   );
 }
@@ -146,12 +149,45 @@ function TickerEditor() {
   );
 }
 
-function PlacesEditor() {
-  const { data, isLoading, isError } = useQuery(placesQuery({ admin: true }));
+function issuesOf(p: Place) {
+  const out: string[] = [];
+  if (p.needs_review) out.push("Needs review");
+  if (!p.coords_verified || p.lat == null) out.push("No verified location");
+  else if (!isInsideTirumala(p.lat, p.lng!)) out.push("Location outside Tirumala area");
+  if (!p.name.te?.trim()) out.push("No Telugu name");
+  if (!p.name.en?.trim()) out.push("No English name");
+  if (!p.image_path) out.push("No photo");
+  if (!p.visible) out.push("Hidden");
+  return out;
+}
+
+const REVIEW_FILTERS = ["All issues", "Needs review", "No verified location", "No Telugu name", "No photo", "Hidden"] as const;
+
+function PlacesEditor({ mode }: { mode: "all" | "review" }) {
+  const { data: all, isLoading, isError } = useQuery(placesQuery({ admin: true }));
   const [editing, setEditing] = useState<Place | "new" | null>(null);
+  const [filter, setFilter] = useState<(typeof REVIEW_FILTERS)[number]>("All issues");
+  const [q, setQ] = useState("");
+  const data = (all ?? []).filter((p) => {
+    if (q && !Object.values(p.name).some((n) => n?.toLowerCase().includes(q.toLowerCase()))) return false;
+    if (mode === "all") return true;
+    const iss = issuesOf(p).filter((i) => i !== "No photo" || filter === "No photo");
+    return filter === "All issues" ? iss.length > 0 : issuesOf(p).includes(filter);
+  });
   return (
     <div className="space-y-3">
-      <Button onClick={() => setEditing("new")} className="min-h-12"><Plus className="size-4" /> Add place</Button>
+      {mode === "all" ? <Button onClick={() => setEditing("new")} className="min-h-12"><Plus className="size-4" /> Add place</Button> : (
+        <div className="space-y-2">
+          <p className="text-sm text-muted-foreground">Places imported from your GeoJSON (OpenStreetMap) or added manually that need attention. “All issues” excludes missing photos; use the “No photo” filter for those.</p>
+          <div className="flex flex-wrap gap-2">
+            {REVIEW_FILTERS.map((f) => (
+              <button key={f} onClick={() => setFilter(f)} className={`min-h-10 rounded-full px-3 text-sm ring-1 ${filter === f ? "bg-primary text-primary-foreground ring-primary" : "ring-border"}`}>{f}</button>
+            ))}
+          </div>
+        </div>
+      )}
+      <Input placeholder="Search places" value={q} onChange={(e) => setQ(e.target.value)} className="h-11 text-base" aria-label="Search places" />
+      <p className="text-xs text-muted-foreground">{data.length} place(s)</p>
       {isLoading ? <Loader2 className="size-5 animate-spin" /> : null}
       {isError ? <p className="text-sm text-destructive">Could not load places.</p> : null}
       <ul className="grid gap-2 sm:grid-cols-2">
@@ -165,7 +201,9 @@ function PlacesEditor() {
                 <div className="mt-1 flex flex-wrap gap-1">
                   <Badge variant="secondary">{DICTS.en[`cat_${p.category}` as keyof typeof DICTS.en] ?? p.category}</Badge>
                   {p.coords_verified && p.lat != null ? <Badge variant="outline">On map</Badge> : <Badge variant="destructive">Needs location</Badge>}
-                  {!p.visible ? <Badge variant="outline">Hidden</Badge> : null}
+                  {p.osm_id ? <Badge variant="outline">OSM</Badge> : null}
+                  {mode === "review" ? issuesOf(p).filter((i) => !i.includes("location")).map((i) => <Badge key={i} variant="secondary">{i}</Badge>) : null}
+                  {mode === "all" && !p.visible ? <Badge variant="outline">Hidden</Badge> : null}
                 </div>
               </div>
             </button>
@@ -196,6 +234,8 @@ function PlaceForm({ place, onDone }: { place: Place | null; onDone: () => void 
   const [verified, setVerified] = useState(place?.coords_verified ?? false);
   const [visible, setVisible] = useState(place?.visible ?? true);
   const [featured, setFeatured] = useState(place?.featured ?? false);
+  const [review, setReview] = useState(place?.needs_review ?? false);
+  const [pending, setPending] = useState<{ blob: Blob; width: number; height: number; url: string } | null>(null);
   const [sort, setSort] = useState(String(place?.sort_order ?? 100));
   const [busy, setBusy] = useState(false);
   const [imgBusy, setImgBusy] = useState(false);
@@ -209,8 +249,9 @@ function PlaceForm({ place, onDone }: { place: Place | null; onDone: () => void 
     const lngN = lng === "" ? null : Number(lng);
     if ((latN == null) !== (lngN == null)) { toast.error("Enter both latitude and longitude, or neither"); return; }
     if (verified && latN == null) { toast.error("Cannot mark as verified without coordinates"); return; }
+    if (latN != null && lngN != null && (!Number.isFinite(latN) || !Number.isFinite(lngN) || !isInsideTirumala(latN, lngN))) { toast.error("Coordinates must be numbers inside the Tirumala map area (latitude ≈ 13.6–13.75, longitude ≈ 79.31–79.47)"); return; }
     setBusy(true);
-    const row = { name, description: desc, category, lat: latN, lng: lngN, coords_verified: verified && latN != null, visible, featured, sort_order: Number(sort) || 100 };
+    const row = { name, description: desc, category, lat: latN, lng: lngN, coords_verified: verified && latN != null, coords_source: latN == null ? null : latN === place?.lat && lngN === place?.lng ? place?.coords_source ?? "admin" : "admin", needs_review: review, visible, featured, sort_order: Number(sort) || 100 };
     const { error } = place
       ? await supabase.from("places").update(row).eq("id", place.id)
       : await supabase.from("places").insert({ ...row, slug: slugify(name.en || name.te || "") + "-" + Math.random().toString(36).slice(2, 6) });
@@ -221,11 +262,27 @@ function PlaceForm({ place, onDone }: { place: Place | null; onDone: () => void 
     onDone();
   };
 
-  const upload = async (file: File) => {
-    if (!place) return;
+  const ACCEPT = ["image/jpeg", "image/png", "image/webp", "image/heic", "image/heif", "image/avif"];
+  const prepare = async (file: File) => {
+    if (!ACCEPT.includes(file.type) && !/\.(jpe?g|png|webp|heic|heif|avif)$/i.test(file.name)) { toast.error("Please choose a JPG, PNG, WebP or HEIC photo"); return; }
+    if (file.size > 25 * 1024 * 1024) { toast.error("Photo is larger than 25 MB"); return; }
     setImgBusy(true);
     try {
-      const { blob, width, height } = await compressToWebp(file);
+      const out = await compressToWebp(file);
+      if (out.blob.size > 1024 * 1024) throw new Error("Compressed photo is still over 1 MB");
+      if (pending) URL.revokeObjectURL(pending.url);
+      setPending({ ...out, url: URL.createObjectURL(out.blob) });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not read this photo (HEIC may not be supported by this browser)");
+    }
+    setImgBusy(false);
+  };
+
+  const upload = async () => {
+    if (!place || !pending) return;
+    setImgBusy(true);
+    try {
+      const { blob, width, height } = pending;
       const path = `${place.id}/${Date.now()}.webp`;
       const { error: upErr } = await supabase.storage.from(IMAGE_BUCKET).upload(path, blob, { contentType: "image/webp" });
       if (upErr) throw upErr;
@@ -233,7 +290,8 @@ function PlaceForm({ place, onDone }: { place: Place | null; onDone: () => void 
       if (error) throw error;
       if (imagePath) await supabase.storage.from(IMAGE_BUCKET).remove([imagePath]);
       setImagePath(path);
-      setImageSrc(URL.createObjectURL(blob));
+      setImageSrc(pending.url);
+      setPending(null);
       toast.success(`Photo saved (${Math.round(blob.size / 1024)} KB, ${width}×${height})`);
       refresh();
     } catch (e) {
@@ -244,6 +302,7 @@ function PlaceForm({ place, onDone }: { place: Place | null; onDone: () => void 
 
   const removeImage = async () => {
     if (!place || !imagePath) return;
+    if (!confirm("Remove this photo? The place will show its category placeholder.")) return;
     setImgBusy(true);
     await supabase.storage.from(IMAGE_BUCKET).remove([imagePath]);
     const { error } = await supabase.from("places").update({ image_path: null, image_width: null, image_height: null, image_bytes: null }).eq("id", place.id);
@@ -265,14 +324,23 @@ function PlaceForm({ place, onDone }: { place: Place | null; onDone: () => void 
       <section className="space-y-2">
         <p className="text-sm font-semibold">Photo</p>
         <div className="aspect-[4/3] overflow-hidden rounded-xl ring-1 ring-border">
-          <PlaceImage src={imageSrc} category={category} alt={name.en ?? ""} />
+          <PlaceImage src={pending?.url ?? imageSrc} category={category} alt={name.en ?? ""} />
         </div>
-        {place ? (
+        {pending ? (
+          <div className="space-y-2 rounded-xl bg-accent/20 p-3">
+            <p className="text-sm font-semibold">Preview — not saved yet</p>
+            <p className="text-xs text-muted-foreground">WebP · {pending.width}×{pending.height} · {Math.round(pending.blob.size / 1024)} KB{pending.blob.size > 300 * 1024 ? " (above 300 KB target)" : ""}</p>
+            <div className="flex gap-2">
+              <Button className="min-h-12 flex-1" onClick={upload} disabled={imgBusy}>{imgBusy ? <Loader2 className="size-4 animate-spin" /> : imagePath ? "Save & replace photo" : "Save photo"}</Button>
+              <Button variant="outline" className="min-h-12" onClick={() => { URL.revokeObjectURL(pending.url); setPending(null); }} disabled={imgBusy}>Cancel</Button>
+            </div>
+          </div>
+        ) : place ? (
           <div className="flex gap-2">
             <label className="inline-flex min-h-12 flex-1 cursor-pointer items-center justify-center gap-2 rounded-md bg-primary px-4 text-sm font-semibold text-primary-foreground">
               {imgBusy ? <Loader2 className="size-4 animate-spin" /> : <Upload className="size-4" />}
-              {imagePath ? "Replace photo" : "Upload photo"}
-              <input type="file" accept="image/*" className="sr-only" disabled={imgBusy} onChange={(e) => { const f = e.target.files?.[0]; if (f) void upload(f); e.target.value = ""; }} />
+              {imagePath ? "Choose new photo" : "Choose photo"}
+              <input type="file" accept="image/*" className="sr-only" disabled={imgBusy} onChange={(e) => { const f = e.target.files?.[0]; if (f) void prepare(f); e.target.value = ""; }} />
             </label>
             {imagePath ? <Button variant="outline" className="min-h-12" onClick={removeImage} disabled={imgBusy}><ImageOff className="size-4" /> Remove</Button> : null}
           </div>
@@ -307,6 +375,17 @@ function PlaceForm({ place, onDone }: { place: Place | null; onDone: () => void 
         <span className="flex items-center gap-2">{visible ? <Eye className="size-4" /> : <EyeOff className="size-4" />} Visible to public</span>
         <Switch checked={visible} onCheckedChange={setVisible} />
       </label>
+      <label className="flex min-h-11 items-center justify-between gap-3 text-sm">
+        <span>Needs admin review</span>
+        <Switch checked={review} onCheckedChange={setReview} />
+      </label>
+      {place?.osm_id ? (
+        <div className="rounded-xl bg-muted/60 p-3 text-xs text-muted-foreground">
+          <p className="font-semibold text-foreground">Imported from GeoJSON · {place.osm_id}</p>
+          {place.coords_source ? <p>Coordinates source: {place.coords_source}</p> : null}
+          {Object.entries(place.osm_tags ?? {}).map(([k, v]) => <p key={k}>{k}: {v}</p>)}
+        </div>
+      ) : null}
       <label className="flex min-h-11 items-center justify-between gap-3 text-sm">
         <span>Featured</span>
         <Switch checked={featured} onCheckedChange={setFeatured} />

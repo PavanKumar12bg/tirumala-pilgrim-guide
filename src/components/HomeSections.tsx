@@ -132,9 +132,11 @@ export function PlacesGrid() {
   const { t, lang } = useI18n();
   const { data, isLoading, isError, refetch } = useQuery(placesQuery());
   const [cat, setCat] = useState<string>("all");
+  const [showAll, setShowAll] = useState(false);
   const places = useMemo(() => (data ?? []).filter((p) => p.visible), [data]);
   const presentCats = CATEGORIES.filter((c) => places.some((p) => p.category === c.id));
-  const shown = cat === "all" ? places : places.filter((p) => p.category === cat);
+  const matching = cat === "all" ? places : places.filter((p) => p.category === cat);
+  const shown = showAll ? matching : matching.slice(0, 8);
 
   return (
     <section aria-labelledby="places-h">
@@ -183,6 +185,11 @@ export function PlacesGrid() {
             })}
       </div>
       {!isLoading && !shown.length ? <p className="mt-4 text-sm text-muted-foreground">{t("noPlaces")}</p> : null}
+      {matching.length > shown.length ? (
+        <Button variant="outline" className="mt-4 min-h-12 w-full" onClick={() => setShowAll(true)}>
+          {t("all")} ({matching.length})
+        </Button>
+      ) : null}
     </section>
   );
 }

@@ -1,45 +1,83 @@
 import L from "leaflet";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
-import { Crosshair, Footprints, Loader2, Navigation, Search, X } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { AlertTriangle, CheckCircle2, Crosshair, Footprints, Layers, Loader2, LocateFixed, Navigation, RefreshCw, Search, Square, X } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { catIcon, catKey, CATEGORIES, hasVerifiedCoords, placesQuery, type Place } from "@/lib/places";
-import { formatDistance, haversineMeters, isInsideTirumala, osmWalkingUrl, TEMPLE_CENTER, TIRUMALA_BOUNDS, walkingMinutes } from "@/lib/geo";
-import { pickLocalized, useI18n } from "@/lib/i18n";
+import { formatDistance, haversineMeters, isInsideTirumala, locateOnRoute, NAV_CONFIG, nearbySorted, TEMPLE_CENTER, TIRUMALA_BOUNDS, walkingMinutes, type LatLng } from "@/lib/geo";
+import { fetchWalkingRoute, RoutingError, type WalkingRoute } from "@/lib/routing";
+import { pickLocalized, useI18n, type DictKey } from "@/lib/i18n";
 import { PlaceImage } from "./PlaceImage";
 import { ErrorBox } from "./HomeSections";
 import { cn } from "@/lib/utils";
 
-type Gps = { state: "idle" } | { state: "locating" } | { state: "ok"; pos: [number, number] } | { state: "error"; msg: "gpsDenied" | "gpsUnavailable" };
+type Fix = { pos: LatLng; accuracy: number; at: number };
+type GpsState = "idle" | "locating" | "watching" | "denied" | "unavailable" | "timeout";
+type Nav =
+  | { state: "off" }
+  | { state: "routing"; reroute: boolean }
+  | { state: "active"; route: WalkingRoute; remaining: number; offCount: number }
+  | { state: "arrived" }
+  | { state: "error"; msg: DictKey };
+
+type MapData = { roads: { h: string; n?: string; te?: string; c: LatLng[] }[]; buildings: LatLng[][]; water: LatLng[][]; wood: LatLng[][] };
+
+const css = (name: string) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+const FOOT = new Set(["footway", "steps", "pedestrian", "path", "living_street"]);
 
 export default function MapExplorer({ initialSlug }: { initialSlug?: string | undefined }) {
   const { t, lang } = useI18n();
   const navigate = useNavigate();
   const { data, isLoading, isError, refetch } = useQuery(placesQuery());
+  const mapData = useQuery({
+    queryKey: ["map-data"],
+    queryFn: async () => {
+      const r = await fetch("/data/tirumala-map.json");
+      if (!r.ok) throw new Error(String(r.status));
+      return (await r.json()) as MapData;
+    },
+    staleTime: Infinity,
+  });
+
   const elRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
+  const baseRef = useRef<L.LayerGroup | null>(null);
   const layerRef = useRef<L.LayerGroup | null>(null);
-  const meRef = useRef<L.Marker | null>(null);
+  const meRef = useRef<{ dot: L.Marker; ring: L.Circle } | null>(null);
+  const routeRef = useRef<L.Polyline | null>(null);
+  const watchRef = useRef<number | null>(null);
+  const lastRouteAt = useRef(0);
+  const abortRef = useRef<AbortController | null>(null);
+
   const [cat, setCat] = useState("all");
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState<string | undefined>(initialSlug);
-  const [gps, setGps] = useState<Gps>({ state: "idle" });
+  const [gps, setGps] = useState<GpsState>("idle");
+  const [fix, setFix] = useState<Fix | null>(null);
+  const [stale, setStale] = useState(false);
+  const [nearbyM, setNearbyM] = useState(NAV_CONFIG.defaultNearbyMeters);
+  const [nav, setNav] = useState<Nav>({ state: "off" });
+  const [panel, setPanel] = useState<"none" | "nearby" | "legend">("none");
 
   const places = useMemo(() => (data ?? []).filter((p) => p.visible), [data]);
-  const mapped = places.filter(hasVerifiedCoords);
+  const mapped = useMemo(() => places.filter(hasVerifiedCoords), [places]);
   const filtered = mapped.filter((p) => cat === "all" || p.category === cat);
   const sel = places.find((p) => p.slug === selected);
+  const here = fix && isInsideTirumala(...fix.pos) ? fix.pos : null;
+  const nearby = useMemo(() => (here ? nearbySorted(mapped, here, nearbyM) : []), [here, mapped, nearbyM]);
+  const nearbyIds = useMemo(() => new Set(nearby.map((n) => n.item.id)), [nearby]);
 
   // init map once
   useEffect(() => {
     if (!elRef.current || mapRef.current) return;
     const bounds = L.latLngBounds(TIRUMALA_BOUNDS);
-    const map = L.map(elRef.current, { maxBounds: bounds.pad(0.15), maxBoundsViscosity: 1, minZoom: 14, zoomControl: false }).setView(TEMPLE_CENTER, 16);
+    const map = L.map(elRef.current, { maxBounds: bounds.pad(0.1), maxBoundsViscosity: 1, minZoom: 13, zoomControl: false }).setView(TEMPLE_CENTER, 16);
     L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
       maxZoom: 19,
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
     }).addTo(map);
     L.control.zoom({ position: "bottomright" }).addTo(map);
+    baseRef.current = L.layerGroup().addTo(map);
     layerRef.current = L.layerGroup().addTo(map);
     mapRef.current = map;
     return () => {
@@ -48,52 +86,188 @@ export default function MapExplorer({ initialSlug }: { initialSlug?: string | un
     };
   }, []);
 
-  // markers
+  // GeoJSON-derived layers (already converted to [lat, lng])
+  useEffect(() => {
+    const g = baseRef.current;
+    if (!g || !mapData.data) return;
+    g.clearLayers();
+    const water = css("--map-water"), building = css("--map-building"), road = css("--map-road"), foot = css("--map-foot");
+    mapData.data.water.forEach((p) => L.polygon(p, { color: water, weight: 1, fillOpacity: 0.35, interactive: false }).addTo(g));
+    mapData.data.buildings.forEach((p) => L.polygon(p, { color: building, weight: 0.8, fillOpacity: 0.18, interactive: false }).addTo(g));
+    mapData.data.roads.forEach((r) => {
+      const isFoot = FOOT.has(r.h);
+      const line = L.polyline(r.c, { color: isFoot ? foot : road, weight: isFoot ? 2.5 : 3, opacity: 0.75, dashArray: isFoot ? "4 5" : undefined });
+      const label = (lang === "te" && r.te) || r.n;
+      if (label) line.bindTooltip(label, { sticky: true });
+      line.addTo(g);
+    });
+  }, [mapData.data, lang]);
+
+  // place markers, coloured by state
   useEffect(() => {
     const layer = layerRef.current;
     if (!layer) return;
     layer.clearLayers();
     filtered.forEach((p) => {
+      const state = p.slug === selected ? "is-active" : nearbyIds.has(p.id) ? "is-nearby" : "";
       const icon = L.divIcon({
         className: "",
-        html: `<div class="tg-marker ${p.slug === selected ? "is-active" : ""}"><span>${catIcon(p.category)}</span></div>`,
-        iconSize: [34, 34],
-        iconAnchor: [17, 34],
+        html: `<div class="tg-marker ${state}"><span>${catIcon(p.category)}</span></div>`,
+        iconSize: state === "is-active" ? [44, 44] : [34, 34],
+        iconAnchor: state === "is-active" ? [22, 44] : [17, 34],
       });
-      L.marker([p.lat, p.lng], { icon, title: pickLocalized(p.name, lang), keyboard: true })
+      L.marker([p.lat, p.lng], { icon, title: pickLocalized(p.name, lang), keyboard: true, zIndexOffset: state === "is-active" ? 1000 : state ? 500 : 0 })
         .on("click", () => setSelected(p.slug))
         .addTo(layer);
     });
-  }, [filtered, selected, lang]);
+  }, [filtered, selected, lang, nearbyIds]);
 
   // fly to selection
   useEffect(() => {
-    if (sel && hasVerifiedCoords(sel)) mapRef.current?.flyTo([sel.lat, sel.lng], 17, { duration: 0.6 });
+    if (sel && hasVerifiedCoords(sel) && nav.state === "off") mapRef.current?.flyTo([sel.lat, sel.lng], 17, { duration: 0.6 });
     navigate({ to: "/map", search: { place: selected }, replace: true });
   }, [selected]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const locate = () => {
-    if (!("geolocation" in navigator)) return setGps({ state: "error", msg: "gpsUnavailable" });
-    setGps({ state: "locating" });
-    navigator.geolocation.getCurrentPosition(
+  // user marker + accuracy ring
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !fix) return;
+    if (!meRef.current) {
+      const ring = L.circle(fix.pos, { radius: fix.accuracy, color: css("--map-me"), weight: 1, fillOpacity: 0.12, interactive: false }).addTo(map);
+      const dot = L.marker(fix.pos, { icon: L.divIcon({ className: "", html: '<div class="tg-me"></div>', iconSize: [18, 18] }), zIndexOffset: 2000, title: t("you") }).addTo(map);
+      meRef.current = { dot, ring };
+    } else {
+      meRef.current.dot.setLatLng(fix.pos);
+      meRef.current.ring.setLatLng(fix.pos).setRadius(fix.accuracy);
+    }
+  }, [fix, t]);
+
+  // stale GPS detector
+  useEffect(() => {
+    if (gps !== "watching") return;
+    const id = setInterval(() => setStale(!!fix && Date.now() - fix.at > NAV_CONFIG.staleGpsMs), 5000);
+    return () => clearInterval(id);
+  }, [gps, fix]);
+
+  useEffect(() => () => {
+    if (watchRef.current != null) navigator.geolocation.clearWatch(watchRef.current);
+    abortRef.current?.abort();
+  }, []);
+
+  const startWatch = useCallback(() => {
+    if (!("geolocation" in navigator)) return setGps("unavailable");
+    if (watchRef.current != null) {
+      if (fix && isInsideTirumala(...fix.pos)) mapRef.current?.flyTo(fix.pos, 17);
+      return;
+    }
+    setGps("locating");
+    let first = true;
+    watchRef.current = navigator.geolocation.watchPosition(
       (p) => {
-        const pos: [number, number] = [p.coords.latitude, p.coords.longitude];
-        setGps({ state: "ok", pos });
-        const map = mapRef.current;
-        if (!map) return;
-        meRef.current?.remove();
-        meRef.current = L.marker(pos, { icon: L.divIcon({ className: "", html: '<div class="tg-me"></div>', iconSize: [18, 18] }) }).addTo(map);
-        if (isInsideTirumala(...pos)) map.flyTo(pos, 17);
+        const f: Fix = { pos: [p.coords.latitude, p.coords.longitude], accuracy: p.coords.accuracy, at: Date.now() };
+        setFix(f);
+        setStale(false);
+        setGps("watching");
+        if (first && isInsideTirumala(...f.pos)) mapRef.current?.flyTo(f.pos, 17);
+        first = false;
       },
-      (err) => setGps({ state: "error", msg: err.code === err.PERMISSION_DENIED ? "gpsDenied" : "gpsUnavailable" }),
-      { enableHighAccuracy: true, timeout: 12000 },
+      (err) => {
+        if (err.code === err.PERMISSION_DENIED) {
+          setGps("denied");
+          if (watchRef.current != null) navigator.geolocation.clearWatch(watchRef.current);
+          watchRef.current = null;
+        } else setGps(err.code === err.TIMEOUT ? "timeout" : "unavailable");
+      },
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 5000 },
     );
+  }, [fix]);
+
+  const drawRoute = (route: WalkingRoute, fit: boolean) => {
+    const map = mapRef.current;
+    if (!map) return;
+    routeRef.current?.remove();
+    routeRef.current = L.polyline(route.coords, { color: css("--map-route"), weight: 6, opacity: 0.9, lineCap: "round" }).addTo(map);
+    if (fit) map.fitBounds(routeRef.current.getBounds().extend(route.coords[0]!), { padding: [60, 60], maxZoom: 18 });
+  };
+
+  const requestRoute = useCallback(async (from: LatLng, to: LatLng, reroute: boolean) => {
+    abortRef.current?.abort();
+    const ctrl = new AbortController();
+    abortRef.current = ctrl;
+    lastRouteAt.current = Date.now();
+    setNav({ state: "routing", reroute });
+    try {
+      const route = await fetchWalkingRoute(from, to, ctrl.signal);
+      drawRoute(route, !reroute);
+      setNav({ state: "active", route, remaining: locateOnRoute(from, route.coords).remaining, offCount: 0 });
+    } catch (e) {
+      if ((e as Error).name === "AbortError") return;
+      routeRef.current?.remove();
+      routeRef.current = null;
+      setNav({ state: "error", msg: e instanceof RoutingError && e.kind === "no_route" ? "routeFailed" : "routeFailed" });
+    }
+  }, []);
+
+  const startNav = () => {
+    if (!sel || !hasVerifiedCoords(sel)) return;
+    if (!here) {
+      startWatch();
+      setNav({ state: "error", msg: "needGps" });
+      return;
+    }
+    void requestRoute(here, [sel.lat, sel.lng], false);
+  };
+
+  const stopNav = () => {
+    abortRef.current?.abort();
+    routeRef.current?.remove();
+    routeRef.current = null;
+    setNav({ state: "off" });
+  };
+
+  // live progress, deviation and arrival
+  useEffect(() => {
+    if (!fix || !sel || !hasVerifiedCoords(sel)) return;
+    if (nav.state === "error" && nav.msg === "needGps" && here) {
+      void requestRoute(here, [sel.lat, sel.lng], false);
+      return;
+    }
+    if (nav.state !== "active") return;
+    const good = fix.accuracy <= NAV_CONFIG.goodAccuracyMeters;
+    const toDest = haversineMeters(fix.pos, [sel.lat, sel.lng]);
+    if (good && toDest <= NAV_CONFIG.arrivalMeters) {
+      routeRef.current?.remove();
+      routeRef.current = null;
+      setNav({ state: "arrived" });
+      return;
+    }
+    const { offset, remaining } = locateOnRoute(fix.pos, nav.route.coords);
+    const off = good && offset > NAV_CONFIG.offRouteMeters ? nav.offCount + 1 : 0;
+    if (off >= NAV_CONFIG.offRouteConsecutive && Date.now() - lastRouteAt.current > NAV_CONFIG.rerouteCooldownMs) {
+      void requestRoute(fix.pos, [sel.lat, sel.lng], true);
+      return;
+    }
+    setNav({ ...nav, remaining, offCount: off });
+  }, [fix]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const recenter = () => {
+    const map = mapRef.current;
+    if (!map) return;
+    if (routeRef.current && fix) map.fitBounds(routeRef.current.getBounds().extend(fix.pos), { padding: [60, 60], maxZoom: 18 });
+    else if (here) map.flyTo(here, 17);
+    else map.flyTo(TEMPLE_CENTER, 16);
+  };
+
+  const choose = (slug: string | undefined) => {
+    if (nav.state !== "off") stopNav();
+    setSelected(slug);
   };
 
   const searchResults = query.trim()
     ? places.filter((p) => Object.values(p.name).some((n) => n?.toLowerCase().includes(query.trim().toLowerCase()))).slice(0, 6)
     : [];
   const pending = places.filter((p) => !hasVerifiedCoords(p));
+  const gpsMsg: DictKey | null = gps === "denied" ? "gpsDenied" : gps === "unavailable" ? "gpsUnavailable" : gps === "timeout" ? "gpsTimeout" : stale ? "gpsLost" : fix && fix.accuracy > NAV_CONFIG.warnAccuracyMeters ? "lowAccuracy" : fix && !here ? "outsideArea" : null;
 
   return (
     <div className="relative h-full">
@@ -103,18 +277,13 @@ export default function MapExplorer({ initialSlug }: { initialSlug?: string | un
       <div className="pointer-events-none absolute inset-x-0 top-0 z-[500] space-y-2 p-3">
         <div className="pointer-events-auto relative mx-auto max-w-xl">
           <Search className="absolute left-4 top-1/2 size-5 -translate-y-1/2 text-muted-foreground" aria-hidden />
-          <input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder={t("searchPlaces")}
-            aria-label={t("searchPlaces")}
-            className="h-12 w-full rounded-full bg-card pl-12 pr-4 text-base shadow-lift ring-1 ring-border outline-none focus:ring-2 focus:ring-ring"
-          />
+          <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder={t("searchPlaces")} aria-label={t("searchPlaces")}
+            className="h-12 w-full rounded-full bg-card pl-12 pr-4 text-base shadow-lift ring-1 ring-border outline-none focus:ring-2 focus:ring-ring" />
           {searchResults.length ? (
             <ul className="absolute inset-x-0 top-14 overflow-hidden rounded-2xl bg-card shadow-lift ring-1 ring-border">
               {searchResults.map((p) => (
                 <li key={p.id}>
-                  <button className="flex min-h-12 w-full items-center gap-3 px-4 text-left hover:bg-muted" onClick={() => { setSelected(p.slug); setQuery(""); }}>
+                  <button className="flex min-h-12 w-full items-center gap-3 px-4 text-left hover:bg-muted" onClick={() => { choose(p.slug); setQuery(""); }}>
                     <span aria-hidden>{catIcon(p.category)}</span>
                     <span className="flex-1">{pickLocalized(p.name, lang)}</span>
                     {!hasVerifiedCoords(p) ? <span className="text-xs text-muted-foreground">⏳</span> : null}
@@ -133,25 +302,93 @@ export default function MapExplorer({ initialSlug }: { initialSlug?: string | un
           ))}
         </div>
         {isError ? <div className="pointer-events-auto mx-auto max-w-xl"><ErrorBox onRetry={() => refetch()} /></div> : null}
-        {isLoading ? <p className="pointer-events-auto mx-auto w-fit rounded-full bg-card px-4 py-2 text-sm shadow-soft">{t("loading")}</p> : null}
+        {mapData.isError ? (
+          <div className="pointer-events-auto mx-auto flex max-w-xl items-center justify-between gap-2 rounded-xl bg-card px-4 py-2 text-sm shadow-soft">
+            <span className="text-destructive">{t("mapDataError")}</span>
+            <button className="min-h-10 font-semibold text-primary" onClick={() => mapData.refetch()}>{t("retry")}</button>
+          </div>
+        ) : null}
+        {isLoading || mapData.isLoading ? <p className="pointer-events-auto mx-auto w-fit rounded-full bg-card px-4 py-2 text-sm shadow-soft">{t("loading")}</p> : null}
       </div>
 
-      {/* GPS */}
-      <button onClick={locate} className="absolute right-3 top-48 z-[500] flex min-h-12 items-center gap-2 rounded-full bg-card px-4 text-sm font-semibold shadow-lift ring-1 ring-border">
-        {gps.state === "locating" ? <Loader2 className="size-5 animate-spin" aria-hidden /> : <Crosshair className="size-5 text-primary" aria-hidden />}
-        {gps.state === "locating" ? t("locating") : t("myLocation")}
-      </button>
+      {/* right-side controls */}
+      <div className="absolute right-3 top-36 z-[500] flex flex-col items-end gap-2">
+        <button onClick={startWatch} aria-label={t("myLocation")} className="flex min-h-12 items-center gap-2 rounded-full bg-card px-4 text-sm font-semibold shadow-lift ring-1 ring-border">
+          {gps === "locating" ? <Loader2 className="size-5 animate-spin" aria-hidden /> : <Crosshair className={cn("size-5", gps === "watching" ? "text-map-me" : "text-primary")} aria-hidden />}
+          <span className="hidden sm:inline">{gps === "locating" ? t("locating") : t("myLocation")}</span>
+        </button>
+        <button onClick={recenter} aria-label={t("recenter")} className="grid size-12 place-items-center rounded-full bg-card shadow-lift ring-1 ring-border"><LocateFixed className="size-5" /></button>
+        <button onClick={() => setPanel(panel === "legend" ? "none" : "legend")} aria-label={t("legend")} aria-expanded={panel === "legend"} className="grid size-12 place-items-center rounded-full bg-card shadow-lift ring-1 ring-border"><Layers className="size-5" /></button>
+        {here ? (
+          <button onClick={() => setPanel(panel === "nearby" ? "none" : "nearby")} aria-expanded={panel === "nearby"} className="flex min-h-12 items-center gap-1.5 rounded-full bg-map-nearby px-4 text-sm font-semibold text-primary-foreground shadow-lift">
+            {t("nearby")} · {nearby.length}
+          </button>
+        ) : null}
+      </div>
+
+      {panel === "legend" ? (
+        <div className="absolute right-16 top-36 z-[550] w-56 rounded-2xl bg-card p-3 text-sm shadow-lift ring-1 ring-border">
+          <p className="mb-2 font-semibold">{t("legend")}</p>
+          <ul className="space-y-1.5">
+            <li className="flex items-center gap-2"><span className="size-3.5 rounded-full bg-map-me ring-2 ring-card" /> {t("you")}</li>
+            <li className="flex items-center gap-2"><span className="size-3.5 rounded-full bg-accent ring-2 ring-primary" /> {t("destination")}</li>
+            <li className="flex items-center gap-2"><span className="h-1.5 w-5 rounded-full bg-map-route" /> {t("route")}</li>
+            <li className="flex items-center gap-2"><span className="size-3.5 rounded-full bg-map-nearby" /> {t("nearby")}</li>
+            <li className="flex items-center gap-2"><span className="size-3.5 rounded-full bg-primary" /> {t("otherPlaces")}</li>
+          </ul>
+          <ul className="mt-2 grid grid-cols-2 gap-1 border-t pt-2 text-xs">
+            {CATEGORIES.map((c) => <li key={c.id} className="truncate">{c.icon} {t(catKey(c.id))}</li>)}
+          </ul>
+        </div>
+      ) : null}
+
+      {panel === "nearby" && here ? (
+        <div className="absolute inset-x-3 top-36 z-[550] mx-auto max-h-[45%] max-w-xl overflow-y-auto rounded-2xl bg-card p-3 shadow-lift ring-1 ring-border sm:right-20">
+          <div className="flex items-center justify-between gap-2">
+            <p className="font-semibold">{t("nearby")}</p>
+            <button onClick={() => setPanel("none")} aria-label={t("close")} className="grid size-10 place-items-center rounded-full hover:bg-muted"><X className="size-4" /></button>
+          </div>
+          <div className="mt-1 flex gap-1.5" role="radiogroup" aria-label={t("within")}>
+            {NAV_CONFIG.nearbyOptions.map((m) => (
+              <button key={m} role="radio" aria-checked={nearbyM === m} onClick={() => setNearbyM(m)}
+                className={cn("min-h-9 flex-1 rounded-full text-xs font-semibold ring-1", nearbyM === m ? "bg-map-nearby text-primary-foreground ring-map-nearby" : "ring-border")}>
+                {formatDistance(m)}
+              </button>
+            ))}
+          </div>
+          {nearby.length ? (
+            <ul className="mt-2 divide-y">
+              {nearby.map(({ item, meters }) => (
+                <li key={item.id}>
+                  <button className="flex min-h-12 w-full items-center gap-3 py-1 text-left" onClick={() => { choose(item.slug); setPanel("none"); }}>
+                    <span aria-hidden>{catIcon(item.category)}</span>
+                    <span className="min-w-0 flex-1 truncate">{pickLocalized(item.name, lang)}</span>
+                    <span className="shrink-0 text-sm font-semibold text-map-nearby">{formatDistance(meters)}</span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          ) : <p className="mt-3 text-sm text-muted-foreground">{t("noNearby")}</p>}
+          <p className="mt-2 text-[11px] text-muted-foreground">{t("straightLineLabel")} · {t("accuracy")} ±{Math.round(fix!.accuracy)} m</p>
+        </div>
+      ) : null}
 
       {/* bottom sheet */}
       <div className="absolute inset-x-0 bottom-0 z-[600] p-3">
         <div className="mx-auto max-w-xl">
-          {gps.state === "error" ? <p className="mb-2 rounded-xl bg-card px-4 py-2 text-sm text-destructive shadow-soft" role="status">{t(gps.msg)}</p> : null}
+          {gpsMsg ? (
+            <p className="mb-2 flex items-center gap-2 rounded-xl bg-card px-4 py-2 text-sm text-warning shadow-soft" role="status">
+              <AlertTriangle className="size-4 shrink-0" aria-hidden /> {t(gpsMsg)}
+              {fix && gpsMsg === "lowAccuracy" ? ` (±${Math.round(fix.accuracy)} m)` : ""}
+            </p>
+          ) : null}
           {sel ? (
-            <SelectedCard place={sel} gps={gps} onClose={() => setSelected(undefined)} />
+            <SelectedCard place={sel} fix={here ? fix : null} nav={nav} onClose={() => choose(undefined)} onStart={startNav} onStop={stopNav}
+              onRetry={() => { if (here && hasVerifiedCoords(sel)) void requestRoute(here, [sel.lat, sel.lng], false); else startNav(); }} />
           ) : (
             <div className="rounded-2xl bg-card p-3 shadow-lift ring-1 ring-border">
               <label className="text-xs font-semibold text-muted-foreground" htmlFor="dest">{t("selectDestination")}</label>
-              <select id="dest" className="mt-1 h-12 w-full rounded-xl bg-muted px-3 text-base" value="" onChange={(e) => setSelected(e.target.value || undefined)}>
+              <select id="dest" className="mt-1 h-12 w-full rounded-xl bg-muted px-3 text-base" value="" onChange={(e) => choose(e.target.value || undefined)}>
                 <option value="">—</option>
                 {places.map((p) => (
                   <option key={p.id} value={p.slug}>{pickLocalized(p.name, lang)}{hasVerifiedCoords(p) ? "" : ` (${t("coordsPending")})`}</option>
@@ -166,13 +403,15 @@ export default function MapExplorer({ initialSlug }: { initialSlug?: string | un
   );
 }
 
-function SelectedCard({ place, gps, onClose }: { place: Place; gps: Gps; onClose: () => void }) {
+function SelectedCard({ place, fix, nav, onClose, onStart, onStop, onRetry }: {
+  place: Place; fix: Fix | null; nav: Nav; onClose: () => void; onStart: () => void; onStop: () => void; onRetry: () => void;
+}) {
   const { t, lang } = useI18n();
   const name = pickLocalized(place.name, lang);
   const desc = pickLocalized(place.description, lang);
   const verified = hasVerifiedCoords(place);
-  const from = gps.state === "ok" && isInsideTirumala(...gps.pos) ? gps.pos : null;
-  const dist = verified && from ? haversineMeters(from, [place.lat!, place.lng!]) : null;
+  const straight = verified && fix ? haversineMeters(fix.pos, [place.lat!, place.lng!]) : null;
+  const tags = place.osm_tags ?? {};
 
   return (
     <div className="animate-rise overflow-hidden rounded-2xl bg-card shadow-lift ring-1 ring-border">
@@ -187,25 +426,69 @@ function SelectedCard({ place, gps, onClose }: { place: Place; gps: Gps; onClose
         </div>
         <button onClick={onClose} aria-label={t("close")} className="grid size-10 shrink-0 place-items-center rounded-full hover:bg-muted"><X className="size-5" /></button>
       </div>
-      {verified ? (
+
+      {nav.state === "off" ? (
+        <details className="px-3 pb-2 text-xs text-muted-foreground">
+          <summary className="min-h-8 cursor-pointer">{t("coordinates")} · {t("source")}</summary>
+          {verified ? <p>{place.lat!.toFixed(6)}, {place.lng!.toFixed(6)}</p> : null}
+          <p>{t("source")}: {place.coords_source === "osm" ? `OpenStreetMap (${place.osm_id})` : place.coords_source ?? "—"}</p>
+          {tags["opening_hours"] ? <p>{t("openingHours")}: {tags["opening_hours"]}</p> : null}
+          {tags["alt_name"] ? <p>{tags["alt_name"]}</p> : null}
+          {tags["website"] ? <p>{t("website")}: <a className="underline" href={tags["website"]} target="_blank" rel="noreferrer">{tags["website"]}</a></p> : null}
+        </details>
+      ) : null}
+
+      {!verified ? (
+        <p className="border-t bg-muted/50 p-3 text-sm text-muted-foreground">⏳ {t("coordsPending")}</p>
+      ) : nav.state === "active" ? (
         <div className="border-t bg-muted/50 p-3">
-          {dist != null ? (
-            <div className="flex items-center gap-4">
-              <div><p className="text-xs text-muted-foreground">{t("distance")}</p><p className="font-display text-xl text-primary">{formatDistance(dist)}</p></div>
-              <div><p className="text-xs text-muted-foreground">{t("walkTime")}</p><p className="font-display text-xl text-primary"><Footprints className="mr-1 inline size-4" aria-hidden />~{walkingMinutes(dist)} {t("min")}</p></div>
-            </div>
-          ) : (
-            <p className="text-sm text-muted-foreground">{gps.state === "ok" ? t("outsideArea") : t("enableGpsHint")}</p>
-          )}
-          {dist != null ? <p className="mt-1 text-[11px] text-muted-foreground">{t("straightLine")}</p> : null}
-          <a href={osmWalkingUrl(from, [place.lat!, place.lng!])} target="_blank" rel="noreferrer"
-            className="mt-2 flex min-h-12 items-center justify-center gap-2 rounded-full bg-primary text-sm font-semibold text-primary-foreground">
-            <Navigation className="size-4" aria-hidden /> {t("openDirections")} ↗
-          </a>
+          <div className="grid grid-cols-3 gap-2">
+            <Stat label={t("remaining")} value={formatDistance(nav.remaining)} />
+            <Stat label={t("routeDistance")} value={formatDistance(nav.route.distance)} />
+            <Stat label={t("walkTime")} value={`~${walkingMinutes(nav.remaining)} ${t("min")}`} />
+          </div>
+          <p className="mt-1 text-[11px] text-muted-foreground">{t("routeBy")} · {t("tracking")}{fix ? ` · ${t("accuracy")} ±${Math.round(fix.accuracy)} m` : ""}</p>
+          <button onClick={onStop} className="mt-2 flex min-h-12 w-full items-center justify-center gap-2 rounded-full bg-destructive text-sm font-semibold text-destructive-foreground">
+            <Square className="size-4" aria-hidden /> {t("stopNav")}
+          </button>
+        </div>
+      ) : nav.state === "routing" ? (
+        <p className="flex items-center gap-2 border-t bg-muted/50 p-3 text-sm"><Loader2 className="size-4 animate-spin" /> {nav.reroute ? t("rerouting") : t("routing")}</p>
+      ) : nav.state === "arrived" ? (
+        <div className="border-t bg-muted/50 p-3">
+          <p className="flex items-center gap-2 font-display text-lg text-success"><CheckCircle2 className="size-5" /> {t("arrived")}</p>
+          <button onClick={onStop} className="mt-2 min-h-12 w-full rounded-full bg-primary text-sm font-semibold text-primary-foreground">{t("close")}</button>
         </div>
       ) : (
-        <p className="border-t bg-muted/50 p-3 text-sm text-muted-foreground">⏳ {t("coordsPending")}</p>
+        <div className="border-t bg-muted/50 p-3">
+          {nav.state === "error" ? (
+            <div className="mb-2 flex items-center justify-between gap-2 text-sm text-destructive" role="alert">
+              <span>{t(nav.msg)}</span>
+              {nav.msg === "routeFailed" ? <button onClick={onRetry} className="flex min-h-10 items-center gap-1 font-semibold text-primary"><RefreshCw className="size-4" />{t("retry")}</button> : null}
+            </div>
+          ) : null}
+          {straight != null ? (
+            <div className="mb-2 flex items-center gap-4">
+              <Stat label={`${t("distance")} (${t("straightLineLabel")})`} value={formatDistance(straight)} />
+              <Stat label={t("walkTime")} value={<><Footprints className="mr-1 inline size-4" aria-hidden />~{walkingMinutes(straight)} {t("min")}</>} />
+            </div>
+          ) : (
+            <p className="mb-2 text-sm text-muted-foreground">{t("enableGpsHint")}</p>
+          )}
+          <button onClick={onStart} className="flex min-h-12 w-full items-center justify-center gap-2 rounded-full bg-primary text-sm font-semibold text-primary-foreground">
+            <Navigation className="size-4" aria-hidden /> {t("startNav")}
+          </button>
+        </div>
       )}
+    </div>
+  );
+}
+
+function Stat({ label, value }: { label: string; value: React.ReactNode }) {
+  return (
+    <div className="min-w-0">
+      <p className="truncate text-[11px] text-muted-foreground">{label}</p>
+      <p className="font-display text-lg text-primary">{value}</p>
     </div>
   );
 }
