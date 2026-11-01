@@ -19,3 +19,4 @@
 - AI photo identification runs only in the admin-checked server function `src/lib/photo-identify.functions.ts` (model call in `photo-identify.server.ts`); the AI only suggests a place id from existing records and the admin confirms before any save.
 - Map markers declutter with a built-in screen-grid clustering in `MapExplorer` (no plugin); floating map controls live in the same bottom stack as the place card so they cannot overlap it.
 - The public journey planner stores validated personal itineraries on the current device and references canonical place IDs; arrival plans are manually entered rather than invented travel estimates.
+- Home status cards and ticker consume the same site-status record; only stored, admin-entered values appear, with their update timestamp, so announcements cannot masquerade as an automated live feed.

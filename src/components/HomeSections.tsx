@@ -9,11 +9,22 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import hillsImg from "@/assets/tirumala-hills.jpg";
+import { statusTickerValues } from "@/lib/status-ticker";
 
 export function Ticker() {
   const { t, lang } = useI18n();
   const { data } = useQuery(announcementsQuery());
-  const items = (data ?? []).filter((a) => a.active).map((a) => pickLocalized(a.text, lang)).filter(Boolean);
+  const status = useQuery({ ...statusQuery(), refetchInterval: 60_000 });
+  const stored = statusTickerValues(status.data);
+  const statusItems = stored.map((s) => s.kind === "wait"
+    ? `${t("darshanWait")}: ${s.value} ${t("hours")}`
+    : `${t("crowdStatus")}: ${t(`crowd_${s.value}`)}`);
+  if (statusItems.length && status.data) {
+    const note = pickLocalized(status.data.darshan_note, lang);
+    if (note) statusItems.push(note);
+    statusItems.push(`${t("adminSet")} · ${t("updated")}: ${new Date(status.data.updated_at).toLocaleString(lang, { dateStyle: "medium", timeStyle: "short" })}`);
+  }
+  const items = [...statusItems, ...(data ?? []).filter((a) => a.active).map((a) => pickLocalized(a.text, lang)).filter(Boolean)];
   if (!items.length) return null;
   const row = items.map((s, i) => (
     <span key={i} className="inline-flex items-center gap-3 pr-10">
