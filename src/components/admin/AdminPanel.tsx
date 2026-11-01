@@ -16,6 +16,7 @@ import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { PlaceImage } from "@/components/PlaceImage";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { PhotoIdentifier, type PreparedPhoto } from "./PhotoIdentifier";
 
 const selectCls = "h-11 w-full rounded-md border border-input bg-card px-3 text-base";
 
@@ -166,6 +167,7 @@ const REVIEW_FILTERS = ["All issues", "Needs review", "No verified location", "N
 function PlacesEditor({ mode }: { mode: "all" | "review" }) {
   const { data: all, isLoading, isError } = useQuery(placesQuery({ admin: true }));
   const [editing, setEditing] = useState<Place | "new" | null>(null);
+  const [aiPhoto, setAiPhoto] = useState<PreparedPhoto | null>(null);
   const [filter, setFilter] = useState<(typeof REVIEW_FILTERS)[number]>("All issues");
   const [q, setQ] = useState("");
   const data = (all ?? []).filter((p) => {
@@ -176,6 +178,7 @@ function PlacesEditor({ mode }: { mode: "all" | "review" }) {
   });
   return (
     <div className="space-y-3">
+      {mode === "all" ? <PhotoIdentifier places={all ?? []} onUse={(p, ph) => { setAiPhoto(ph); setEditing(p); }} /> : null}
       {mode === "all" ? <Button onClick={() => setEditing("new")} className="min-h-12"><Plus className="size-4" /> Add place</Button> : (
         <div className="space-y-2">
           <p className="text-sm text-muted-foreground">Places imported from your GeoJSON (OpenStreetMap) or added manually that need attention. “All issues” excludes missing photos; use the “No photo” filter for those.</p>
@@ -210,10 +213,10 @@ function PlacesEditor({ mode }: { mode: "all" | "review" }) {
           </li>
         ))}
       </ul>
-      <Sheet open={!!editing} onOpenChange={(o) => !o && setEditing(null)}>
+      <Sheet open={!!editing} onOpenChange={(o) => { if (!o) { setEditing(null); setAiPhoto(null); } }}>
         <SheetContent side="right" className="w-full overflow-y-auto sm:max-w-lg">
           <SheetHeader><SheetTitle>{editing === "new" ? "New place" : "Edit place"}</SheetTitle></SheetHeader>
-          {editing ? <PlaceForm key={editing === "new" ? "new" : editing.id} place={editing === "new" ? null : editing} onDone={() => setEditing(null)} /> : null}
+          {editing ? <PlaceForm key={editing === "new" ? "new" : editing.id} place={editing === "new" ? null : editing} initialPhoto={aiPhoto} onDone={() => { setEditing(null); setAiPhoto(null); }} /> : null}
         </SheetContent>
       </Sheet>
     </div>
@@ -224,7 +227,7 @@ function slugify(s: string) {
   return s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "") || `place-${Date.now()}`;
 }
 
-function PlaceForm({ place, onDone }: { place: Place | null; onDone: () => void }) {
+function PlaceForm({ place, onDone, initialPhoto }: { place: Place | null; onDone: () => void; initialPhoto?: PreparedPhoto | null }) {
   const qc = useQueryClient();
   const [name, setName] = useState<Localized>(place?.name ?? {});
   const [desc, setDesc] = useState<Localized>(place?.description ?? {});
@@ -235,7 +238,7 @@ function PlaceForm({ place, onDone }: { place: Place | null; onDone: () => void 
   const [visible, setVisible] = useState(place?.visible ?? true);
   const [featured, setFeatured] = useState(place?.featured ?? false);
   const [review, setReview] = useState(place?.needs_review ?? false);
-  const [pending, setPending] = useState<{ blob: Blob; width: number; height: number; url: string } | null>(null);
+  const [pending, setPending] = useState<PreparedPhoto | null>(place ? initialPhoto ?? null : null);
   const [sort, setSort] = useState(String(place?.sort_order ?? 100));
   const [busy, setBusy] = useState(false);
   const [imgBusy, setImgBusy] = useState(false);
