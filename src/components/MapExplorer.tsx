@@ -91,6 +91,7 @@ export default function MapExplorer({ initialSlug }: { initialSlug?: string | un
     baseRef.current = L.layerGroup().addTo(map);
     layerRef.current = L.layerGroup().addTo(map);
     map.on("zoomend", () => setZoom(map.getZoom()));
+    map.on("click", () => { setPanel("none"); setSearchOpen(false); });
     mapRef.current = map;
     return () => {
       map.remove();
