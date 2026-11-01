@@ -1,4 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
+import { JOURNEY_COPY } from "./journey-copy";
 
 export const LANGS = [
   { code: "te", label: "తెలుగు", primary: true },
@@ -109,8 +110,8 @@ const en = {
   selectAnother: "Choose another destination",
   website: "Website",
 };
-export type DictKey = keyof typeof en;
-type Dict = Record<DictKey, string>;
+export type DictKey = keyof typeof en | keyof typeof JOURNEY_COPY.en;
+type Dict = Record<keyof typeof en, string>;
 
 const te: Dict = {
   appName: "తిరుమల గైడ్",
@@ -688,7 +689,12 @@ const or: Dict = {
   website: "ୱେବସାଇଟ୍",
 };
 
-export const DICTS: Record<Lang, Dict> = { en, te, ta, kn, ml, hi, or };
+export const DICTS = {
+  en: { ...en, ...JOURNEY_COPY.en }, te: { ...te, ...JOURNEY_COPY.te },
+  ta: { ...ta, ...JOURNEY_COPY.ta }, kn: { ...kn, ...JOURNEY_COPY.kn },
+  ml: { ...ml, ...JOURNEY_COPY.ml }, hi: { ...hi, ...JOURNEY_COPY.hi },
+  or: { ...or, ...JOURNEY_COPY.or },
+};
 
 /** Pick a localized string from a {lang: text} object with sensible fallbacks. */
 export function pickLocalized(obj: unknown, lang: Lang): string {
@@ -719,7 +725,7 @@ export function I18nProvider({ children }: { children: ReactNode }) {
     localStorage.setItem(STORAGE_KEY, l);
   }, []);
 
-  const t = useCallback((k: DictKey) => DICTS[lang][k] ?? en[k], [lang]);
+  const t = useCallback((k: DictKey) => DICTS[lang][k] ?? DICTS.en[k], [lang]);
   return <I18nContext.Provider value={{ lang, setLang, t }}>{children}</I18nContext.Provider>;
 }
 
