@@ -1,52 +1,14 @@
 import { Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { Clock, Megaphone, MapPin, Users, ChevronRight, AlertCircle } from "lucide-react";
+import { Clock, MapPin, Users, ChevronRight, AlertCircle } from "lucide-react";
 import { useMemo, useState } from "react";
-import { announcementsQuery, catKey, CATEGORIES, hasVerifiedCoords, placesQuery, statusQuery, type CrowdLevel } from "@/lib/places";
+import { catKey, CATEGORIES, hasVerifiedCoords, placesQuery, statusQuery, type CrowdLevel } from "@/lib/places";
 import { pickLocalized, useI18n, type DictKey } from "@/lib/i18n";
 import { PlaceImage } from "./PlaceImage";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import hillsImg from "@/assets/tirumala-hills.jpg";
-import { statusTickerValues } from "@/lib/status-ticker";
-
-export function Ticker() {
-  const { t, lang } = useI18n();
-  const { data } = useQuery(announcementsQuery());
-  const status = useQuery({ ...statusQuery(), refetchInterval: 60_000 });
-  const stored = statusTickerValues(status.data);
-  const statusItems = stored.map((s) => s.kind === "wait"
-    ? `${t("darshanWait")}: ${s.value} ${t("hours")}`
-    : `${t("crowdStatus")}: ${t(`crowd_${s.value}`)}`);
-  if (statusItems.length && status.data) {
-    const note = pickLocalized(status.data.darshan_note, lang);
-    if (note) statusItems.push(note);
-    statusItems.push(`${t("adminSet")} · ${t("updated")}: ${new Date(status.data.updated_at).toLocaleString(lang, { dateStyle: "medium", timeStyle: "short" })}`);
-  }
-  const items = [...statusItems, ...(data ?? []).filter((a) => a.active).map((a) => pickLocalized(a.text, lang)).filter(Boolean)];
-  if (!items.length) return null;
-  const row = items.map((s, i) => (
-    <span key={i} className="inline-flex items-center gap-3 pr-10">
-      <span aria-hidden className="text-accent">✦</span>
-      {s}
-    </span>
-  ));
-  return (
-    <div className="flex items-stretch overflow-hidden border-y border-accent/30 bg-aubergine-deep text-primary-foreground" role="region" aria-label={t("announcements")}>
-      <div className="z-10 flex shrink-0 items-center gap-1.5 bg-accent px-3 text-xs font-bold text-accent-foreground">
-        <Megaphone className="size-4" aria-hidden />
-        <span className="hidden sm:inline">{t("announcements")}</span>
-      </div>
-      <div className="relative min-w-0 flex-1 py-2.5 text-sm">
-        <div className="animate-ticker flex w-max whitespace-nowrap">
-          {row}
-          <span aria-hidden className="inline-flex">{row}</span>
-        </div>
-      </div>
-    </div>
-  );
-}
 
 const crowdStyle: Record<CrowdLevel, { bar: string; fill: number }> = {
   low: { bar: "bg-success", fill: 1 },
@@ -57,7 +19,7 @@ const crowdStyle: Record<CrowdLevel, { bar: string; fill: number }> = {
 
 export function StatusCards() {
   const { t, lang } = useI18n();
-  const { data, isLoading, isError, refetch } = useQuery(statusQuery());
+  const { data, isLoading, isError, refetch } = useQuery({ ...statusQuery(), refetchInterval: 60_000 });
   const updated = data?.updated_at && (data.darshan_wait_hours != null || data.crowd_level)
     ? new Date(data.updated_at).toLocaleString(lang === "en" ? "en-IN" : `${lang}-IN`, { dateStyle: "medium", timeStyle: "short" })
     : null;

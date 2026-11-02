@@ -309,6 +309,8 @@ export default function MapExplorer({ initialSlug, initialCategory, initialComma
 
   const choose = (slug: string | undefined) => {
     if (nav.state !== "off") stopNav();
+    const destination = places.find(p => p.slug === slug);
+    if (destination && cat !== "all" && destination.category !== cat) setCat("all");
     setSelected(slug);
   };
 
