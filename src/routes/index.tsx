@@ -36,10 +36,10 @@ function Index() {
           <img
             src={heroAsset.url}
             alt="Lord Sri Venkateswara Swamy"
-            className="absolute inset-0 h-full w-full object-cover object-[50%_18%]"
+            className="absolute inset-0 h-full w-full object-cover object-[50%_12%]"
           />
           <div className="absolute inset-0 bg-hero-fade" aria-hidden />
-          <div className="relative flex min-h-64 flex-col justify-end gap-2 p-5 sm:min-h-80 sm:p-7">
+          <div className="relative flex min-h-64 flex-col justify-end gap-2 p-5 sm:min-h-[26rem] sm:p-7">
             <h1 className="text-2xl leading-tight text-primary-foreground drop-shadow-sm sm:text-4xl">
               {t("heroTitle")}
             </h1>
