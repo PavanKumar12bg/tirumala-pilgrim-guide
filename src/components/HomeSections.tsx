@@ -2,31 +2,21 @@ import { Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { Clock, MapPin, Users, ChevronRight, AlertCircle } from "lucide-react";
 import { useMemo, useState } from "react";
-import { catKey, CATEGORIES, hasVerifiedCoords, placesQuery, statusQuery, type CrowdLevel } from "@/lib/places";
-import { pickLocalized, useI18n, type DictKey } from "@/lib/i18n";
+import { catKey, CATEGORIES, hasVerifiedCoords, placesQuery, officialStatusQuery } from "@/lib/places";
+import { isCurrentTtdReport } from "@/lib/ttd-report";
+import { pickLocalized, useI18n } from "@/lib/i18n";
 import { PlaceImage } from "./PlaceImage";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import hillsImg from "@/assets/tirumala-hills.jpg";
 
-const crowdStyle: Record<CrowdLevel, { bar: string; fill: number }> = {
-  low: { bar: "bg-success", fill: 1 },
-  moderate: { bar: "bg-accent", fill: 2 },
-  high: { bar: "bg-warning", fill: 3 },
-  very_high: { bar: "bg-destructive", fill: 4 },
-};
-
 export function StatusCards() {
   const { t, lang } = useI18n();
-  const { data, isLoading, isError, refetch } = useQuery({ ...statusQuery(), refetchInterval: 60_000 });
-  const updated = data?.updated_at && (data.darshan_wait_hours != null || data.crowd_level)
-    ? new Date(data.updated_at).toLocaleString(lang === "en" ? "en-IN" : `${lang}-IN`, { dateStyle: "medium", timeStyle: "short" })
-    : null;
+  const { data, isLoading, isError, refetch } = useQuery(officialStatusQuery());
+  const report = data?.report;
 
   if (isError) return <ErrorBox onRetry={() => refetch()} />;
-  const note = pickLocalized(data?.darshan_note, lang);
-  const crowd = data?.crowd_level ? crowdStyle[data.crowd_level] : null;
 
   return (
     <div className="grid grid-cols-2 gap-3">
@@ -35,36 +25,34 @@ export function StatusCards() {
           <Clock className="size-4 text-gold" aria-hidden />
           {t("darshanWait")}
         </div>
-        {isLoading ? <Skeleton className="mt-3 h-9 w-20" /> : data?.darshan_wait_hours != null ? (
+        {isLoading ? <Skeleton className="mt-3 h-9 w-20" /> : report ? (
           <p className="mt-2 font-display text-3xl text-primary">
-            {Number(data.darshan_wait_hours)} <span className="text-base font-sans text-muted-foreground">{t("hours")}</span>
+            {report.wait_min_hours === report.wait_max_hours ? report.wait_min_hours : `${report.wait_min_hours}–${report.wait_max_hours}`} <span className="text-base font-sans text-muted-foreground">{t("hours")}</span>
           </p>
         ) : (
           <p className="mt-3 text-sm font-medium text-muted-foreground">{t("unavailable")}</p>
         )}
-        {note ? <p className="mt-1 text-xs text-muted-foreground">{note}</p> : null}
       </div>
       <div className="min-w-0 rounded-lg bg-card p-3 shadow-soft ring-1 ring-border">
         <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground">
           <Users className="size-4 text-gold" aria-hidden />
-          {t("crowdStatus")}
+          {t("queueCompartments")}
         </div>
-        {isLoading ? <Skeleton className="mt-3 h-9 w-24" /> : data?.crowd_level ? (
-          <>
-            <p className="mt-2 font-display text-2xl text-primary">{t(`crowd_${data.crowd_level}` as DictKey)}</p>
-            <div className="mt-2 flex gap-1" aria-hidden>
-              {[1, 2, 3, 4].map((i) => (
-                <span key={i} className={cn("h-1.5 flex-1 rounded-full", crowd && i <= crowd.fill ? crowd.bar : "bg-muted")} />
-              ))}
-            </div>
-          </>
+        {isLoading ? <Skeleton className="mt-3 h-9 w-24" /> : report?.waiting_compartments != null ? (
+            <p className="mt-2 font-display text-3xl text-primary">{report.waiting_compartments}</p>
         ) : (
           <p className="mt-3 text-sm font-medium text-muted-foreground">{t("unavailable")}</p>
         )}
       </div>
       <p className="col-span-2 flex items-start gap-1.5 px-1 text-xs text-muted-foreground">
         <AlertCircle className="mt-0.5 size-3.5 shrink-0" aria-hidden />
-        <span>{t("adminSet")}{updated ? ` · ${t("updated")}: ${updated}` : ""}</span>
+        <span className="space-y-1">
+          <span className="block">{report ? <a href={report.source_url} target="_blank" rel="noopener noreferrer" className="underline underline-offset-2">{t("officialReport")}</a> : t("reportUnavailable")}{report ? ` · ${t("reportDate")}: ${new Date(`${report.report_date}T00:00:00+05:30`).toLocaleDateString(lang, { timeZone: "Asia/Kolkata" })}` : ""}</span>
+          <span className="block">{t("reportNotLive")}</span>
+          {report && !isCurrentTtdReport(report) ? <span className="block text-warning">{t("reportStale")}</span> : null}
+          {data?.unavailable && report ? <span className="block text-warning">{t("reportUnavailable")}</span> : null}
+          {data?.checked_at ? <span className="block">{t("checkedAt")}: {new Date(data.checked_at).toLocaleString(lang, { timeZone: "Asia/Kolkata" })}</span> : null}
+        </span>
       </p>
     </div>
   );

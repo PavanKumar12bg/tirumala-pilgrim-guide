@@ -1,24 +1,28 @@
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { Megaphone } from "lucide-react";
-import { announcementsQuery, statusQuery } from "@/lib/places";
-import { statusTickerValues } from "@/lib/status-ticker";
+import { announcementsQuery, officialStatusQuery } from "@/lib/places";
+import { isCurrentTtdReport } from "@/lib/ttd-report";
 import { pickLocalized, useI18n } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 export function AnnouncementTicker() {
  const { t, lang } = useI18n();
  const announcements = useQuery({ ...announcementsQuery(), refetchInterval: 60_000 });
- const status = useQuery({ ...statusQuery(), refetchInterval: 60_000 });
+ const status = useQuery(officialStatusQuery());
  const [open, setOpen] = useState(false);
  const [read, setRead] = useState("");
  const active = (announcements.data ?? []).filter(a => a.active);
  const fingerprint = JSON.stringify(active.map(a => [a.id, a.text]));
  useEffect(() => { try { setRead(localStorage.getItem("tg-announcements-read") ?? ""); } catch { /* unavailable storage does not block announcements */ } }, []);
- const items = statusTickerValues(status.data).map(s => s.kind === "wait" ? `${t("darshanWait")}: ${s.value} ${t("hours")}` : `${t("crowdStatus")}: ${t(`crowd_${s.value}`)}`);
- if (items.length && status.data) {
-  const note = pickLocalized(status.data.darshan_note, lang); if (note) items.push(note);
-  items.push(`${t("adminSet")} · ${t("updated")}: ${new Date(status.data.updated_at).toLocaleString(lang)}`);
+ const report = status.data?.report;
+ const items: string[] = [];
+ if (report) {
+  items.push(`${t("officialReport")} · ${t("darshanWait")}: ${report.wait_min_hours === report.wait_max_hours ? report.wait_min_hours : `${report.wait_min_hours}–${report.wait_max_hours}`} ${t("hours")}`);
+  if (report.waiting_compartments != null) items.push(`${t("queueCompartments")}: ${report.waiting_compartments}`);
+  items.push(`${t("reportDate")}: ${report.report_date}`, t("reportNotLive"));
+  if (!isCurrentTtdReport(report)) items.push(t("reportStale"));
+  if (status.data?.unavailable) items.push(t("reportUnavailable"));
  }
  items.push(...active.map(a => pickLocalized(a.text, lang)).filter(Boolean));
  const text = items.length ? items.join("   ✦   ") : t("noAnnouncements");

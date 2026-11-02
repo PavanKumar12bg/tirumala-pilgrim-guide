@@ -1,6 +1,7 @@
 import { queryOptions } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { DictKey, Lang } from "./i18n";
+import { getOfficialTtdReport } from "./ttd-report.functions";
 
 export const CATEGORIES = [
   { id: "temple", icon: "🛕" },
@@ -100,3 +101,10 @@ export const statusQuery = () =>
       return data as unknown as SiteStatus | null;
     },
   });
+
+export const officialStatusQuery = () => queryOptions({
+  queryKey: ["official_ttd_report"],
+  queryFn: () => getOfficialTtdReport(),
+  staleTime: 5 * 60_000,
+  refetchInterval: 5 * 60_000,
+});
