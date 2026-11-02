@@ -4,7 +4,7 @@ import { Clock, MapPin, Users, ChevronRight, AlertCircle } from "lucide-react";
 import { useMemo, useState } from "react";
 import { catKey, CATEGORIES, hasVerifiedCoords, placesQuery, officialStatusQuery } from "@/lib/places";
 import { isCurrentTtdReport } from "@/lib/ttd-report";
-import { pickLocalized, useI18n, type DictKey } from "@/lib/i18n";
+import { pickLocalized, useI18n } from "@/lib/i18n";
 import { PlaceImage } from "./PlaceImage";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
