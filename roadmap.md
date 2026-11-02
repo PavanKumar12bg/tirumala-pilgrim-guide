@@ -15,3 +15,6 @@
 - [x] Connect actual admin-entered status to announcement ticker; 3 status tests passed and real homepage checked with unset values (no invented ticker data).
 - [x] Verify saved status history and photo read-back through authorized UI; preserve existing admin-entered values without claiming official verification.
 - [ ] Physical-device speech recognition and spoken responses in seven languages: requires microphone-capable phone and compatible recognition service/voices; browser API presence is not language verification.
+- [x] Wait-jump alert (>1 h vs previous TTD daily report), About/Privacy/Terms/Contact, cookie notice, official TTD page; 39 tests passed.
+- [ ] Email on each new TTD report: blocked until the owner sets up an email domain they own.
+- [ ] AdSense script + ads.txt: needs publishing on a custom domain and the AdSense publisher ID.
