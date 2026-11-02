@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminRouteImport } from './routes/admin'
+import { Route as DarshanRouteImport } from './routes/darshan'
 import { Route as JourneyRouteImport } from './routes/journey'
 import { Route as MapRouteImport } from './routes/map'
 
@@ -22,6 +23,11 @@ const IndexRoute = IndexRouteImport.update({
 const AdminRoute = AdminRouteImport.update({
   id: '/admin',
   path: '/admin',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DarshanRoute = DarshanRouteImport.update({
+  id: '/darshan',
+  path: '/darshan',
   getParentRoute: () => rootRouteImport,
 } as any)
 const JourneyRoute = JourneyRouteImport.update({
@@ -38,12 +44,14 @@ const MapRoute = MapRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
+  '/darshan': typeof DarshanRoute
   '/journey': typeof JourneyRoute
   '/map': typeof MapRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
+  '/darshan': typeof DarshanRoute
   '/journey': typeof JourneyRoute
   '/map': typeof MapRoute
 }
@@ -51,20 +59,22 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
+  '/darshan': typeof DarshanRoute
   '/journey': typeof JourneyRoute
   '/map': typeof MapRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/admin' | '/journey' | '/map'
+  fullPaths: '/' | '/admin' | '/darshan' | '/journey' | '/map'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/admin' | '/journey' | '/map'
-  id: '__root__' | '/' | '/admin' | '/journey' | '/map'
+  to: '/' | '/admin' | '/darshan' | '/journey' | '/map'
+  id: '__root__' | '/' | '/admin' | '/darshan' | '/journey' | '/map'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AdminRoute: typeof AdminRoute
+  DarshanRoute: typeof DarshanRoute
   JourneyRoute: typeof JourneyRoute
   MapRoute: typeof MapRoute
 }
@@ -83,6 +93,13 @@ declare module '@tanstack/react-router' {
       path: '/admin'
       fullPath: '/admin'
       preLoaderRoute: typeof AdminRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/darshan': {
+      id: '/darshan'
+      path: '/darshan'
+      fullPath: '/darshan'
+      preLoaderRoute: typeof DarshanRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/journey': {
@@ -105,6 +122,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRoute: AdminRoute,
+  DarshanRoute: DarshanRoute,
   JourneyRoute: JourneyRoute,
   MapRoute: MapRoute,
 }
