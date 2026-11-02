@@ -21,3 +21,16 @@ describe("official TTD reports", () => {
     expect(isCurrentTtdReport(report, new Date("2026-11-02T19:00:00Z"))).toBe(false);
   });
 });
+import { shouldAlertWaitJump, waitJumpHours } from "./ttd-report";
+describe("wait jump alert", () => {
+  const r = (d: string, max: number) => ({ source_url: url, report_date: d, wait_min_hours: max - 2, wait_max_hours: max, waiting_compartments: 1 });
+  it("alerts only when the wait rises by more than one hour", () => {
+    expect(shouldAlertWaitJump(r("2026-11-02", 8), r("2026-11-01", 6))).toBe(true);
+    expect(shouldAlertWaitJump(r("2026-11-02", 7), r("2026-11-01", 6))).toBe(false);
+    expect(shouldAlertWaitJump(r("2026-11-02", 6), r("2026-11-01", 8))).toBe(false);
+  });
+  it("never compares without a genuine earlier report", () => {
+    expect(waitJumpHours(r("2026-11-02", 8), null)).toBeNull();
+    expect(waitJumpHours(r("2026-11-02", 8), r("2026-11-02", 2))).toBeNull();
+  });
+});
