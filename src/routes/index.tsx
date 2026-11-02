@@ -4,7 +4,7 @@ import { MapPin, Mic, Hospital, Utensils, Building2, ChevronRight } from "lucide
 import { AppShell } from "@/components/AppShell";
 import { PlacesGrid, StatusCards } from "@/components/HomeSections";
 import { useI18n } from "@/lib/i18n";
-import heroAsset from "@/assets/venkateswara-idol.jpg.asset.json";
+import heroAsset from "@/assets/venkateswara-swamy-hero.jpg.asset.json";
 import { VoiceAssistant } from "@/components/VoiceAssistant";
 import { Button } from "@/components/ui/button";
 
@@ -29,7 +29,27 @@ function Index() {
   return (
     <AppShell>
       <div className="mx-auto max-w-5xl space-y-3 px-3 py-3 sm:px-4">
-        <h1 className="text-xl leading-tight text-primary">{t("heroTitle")}</h1>
+        <section
+          aria-label={t("heroTitle")}
+          className="relative overflow-hidden rounded-3xl shadow-lift ring-1 ring-border"
+        >
+          <img
+            src={heroAsset.url}
+            alt="Lord Sri Venkateswara Swamy"
+            className="absolute inset-0 h-full w-full object-cover object-[50%_15%]"
+          />
+          <div
+            className="absolute inset-0"
+            aria-hidden
+            style={{ backgroundImage: "linear-gradient(180deg, color-mix(in oklab, var(--aubergine-deep) 12%, transparent) 0%, color-mix(in oklab, var(--aubergine-deep) 22%, transparent) 50%, color-mix(in oklab, var(--aubergine-deep) 80%, transparent) 88%)" }}
+          />
+          <div className="relative flex min-h-64 flex-col justify-end gap-2 p-5 sm:min-h-[30rem] sm:p-7">
+            <h1 className="text-2xl leading-tight text-primary-foreground drop-shadow-sm sm:text-4xl">
+              {t("heroTitle")}
+            </h1>
+            <p className="max-w-md text-sm text-primary-foreground/90 sm:text-base">{t("heroSub")}</p>
+          </div>
+        </section>
         <StatusCards />
         <Link to="/darshan" className="flex min-h-8 items-center justify-between text-sm font-semibold text-primary">{t("details")} · {t("darshanWait")}<ChevronRight className="size-4" /></Link>
         <section aria-label={t("quickActions")} className="grid grid-cols-3 gap-2">
@@ -37,7 +57,6 @@ function Index() {
           <Button variant="secondary" className="h-auto min-h-16 flex-col gap-1 whitespace-normal px-2 text-xs" onClick={() => setVoice(true)}><Mic className="size-5" />{t("voiceAssistant")}</Button>
           {[{ category: "medical", icon: Hospital, label: "cat_medical" }, { category: "food", icon: Utensils, label: "cat_food" }, { category: "amenity", icon: Building2, label: "cat_amenity" }].map(action => <Button key={action.category} asChild variant="outline" className="h-auto min-h-14 flex-col gap-1 whitespace-normal px-2 text-xs"><Link to="/map" search={{ category: action.category }}><action.icon className="size-5" />{t(action.label as "cat_medical" | "cat_food" | "cat_amenity")}</Link></Button>)}
         </section>
-        <div className="flex items-center gap-3 border-y py-4"><img src={heroAsset.url} width={72} height={96} alt="Lord Sri Venkateswara Swamy" loading="lazy" className="h-24 w-18 shrink-0 rounded-md object-cover object-top" /><p className="text-sm text-muted-foreground">{t("heroSub")}</p></div>
         <PlacesGrid />
       </div>
       <VoiceAssistant open={voice} onOpenChange={setVoice} onAction={action => {
