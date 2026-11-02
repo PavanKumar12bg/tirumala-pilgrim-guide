@@ -1,4 +1,5 @@
 # Tirumala Guide work
+- [ ] Connect official darshan/crowd reports to the dashboard after verifying an accessible source and its freshness; never label daily reports as live.
 - [x] Use uploaded temple photo as compact logo and unify global header/ticker.
 - [x] Bring accurate darshan/crowd dashboard and quick actions into first mobile screen (all five fit at 360×640; shortest 527px viewport needs a small scroll).
 - [x] Add admin-only daily status history, entries and trends without invented history; current values saved unchanged and reloaded; public requests expose no rows.
