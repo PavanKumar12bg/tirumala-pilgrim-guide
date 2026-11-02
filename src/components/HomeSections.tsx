@@ -153,9 +153,9 @@ export function PlacesGrid() {
   return (
     <section aria-labelledby="places-h">
       <h2 id="places-h" className="text-2xl text-primary">{t("places")}</h2>
-      <div className="-mx-4 mt-3 flex gap-2 overflow-x-auto px-4 pb-2" role="tablist">
+      <div className="mt-3 flex gap-2 overflow-x-auto pb-2" role="tablist">
         {[{ id: "all" }, ...presentCats].map((c) => (
-          <button
+          <Button
             key={c.id}
             role="tab"
             aria-selected={cat === c.id}
@@ -166,7 +166,7 @@ export function PlacesGrid() {
             )}
           >
             {c.id === "all" ? t("all") : t(catKey(c.id))}
-          </button>
+          </Button>
         ))}
       </div>
       {isError ? <ErrorBox onRetry={() => refetch()} /> : null}

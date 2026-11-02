@@ -77,11 +77,11 @@ export default function MapExplorer({ initialSlug, initialCategory, initialComma
   const mapped = useMemo(() => places.filter(hasVerifiedCoords), [places]);
   const filtered = useMemo(() => mapped.filter((p) => cat === "all" || p.category === cat), [mapped, cat]);
   const catCounts = useMemo(() => CATEGORIES.map((c) => ({ ...c, n: mapped.filter((p) => p.category === c.id).length })).filter((c) => c.n > 0), [mapped]);
-  const topCats = PRIMARY_CATS.filter((id) => catCounts.some((c) => c.id === id));
+  const topCats = PRIMARY_CATS;
   const moreCats = catCounts.filter((c) => !topCats.includes(c.id));
   const sel = places.find((p) => p.slug === selected);
   const here = fix && isInsideTirumala(...fix.pos) ? fix.pos : null;
-  const nearby = useMemo(() => (here ? nearbySorted(mapped, here, nearbyM) : []), [here, mapped, nearbyM]);
+  const nearby = useMemo(() => (here ? nearbySorted(filtered, here, nearbyM) : []), [here, filtered, nearbyM]);
   const nearbyIds = useMemo(() => new Set(nearby.map((n) => n.item.id)), [nearby]);
 
   // init map once
@@ -172,7 +172,7 @@ export default function MapExplorer({ initialSlug, initialCategory, initialComma
   // fly to selection
   useEffect(() => {
     if (sel && hasVerifiedCoords(sel) && nav.state === "off") mapRef.current?.flyTo([sel.lat, sel.lng], 17, { duration: 0.6 });
-    navigate({ to: "/map", search: { place: selected }, replace: true });
+    navigate({ to: "/map", search: { place: selected, category: initialCategory }, replace: true });
   }, [selected]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // user marker + accuracy ring
@@ -415,6 +415,7 @@ export default function MapExplorer({ initialSlug, initialCategory, initialComma
           </div>
         ) : null}
         {voiceMessage ? <div role="status" className="pointer-events-auto flex items-center gap-2 rounded-lg bg-card p-2 text-xs shadow-soft"><span className="min-w-0 flex-1">{voiceMessage}</span><Button variant="ghost" size="icon" className="size-8" aria-label={t("close")} onClick={() => setVoiceMessage("")}><X className="size-4" /></Button></div> : null}
+        {!isLoading && cat !== "all" && !filtered.length ? <p role="status" className="pointer-events-auto rounded-lg bg-card p-2 text-xs shadow-soft">{t("noPlaces")}</p> : null}
         {isError || mapData.isError ? (
           <div className="pointer-events-auto mx-auto flex max-w-md items-center gap-2 rounded-full bg-card py-1 pl-3 pr-1 text-xs shadow-soft" role="alert">
             <AlertTriangle className="size-3.5 shrink-0 text-destructive" aria-hidden />
