@@ -13,7 +13,7 @@ export function parseTtdReport(text: string, sourceUrl: string): TtdReport | nul
   if (url.origin !== "https://news.tirumala.org") return null;
   const normalized = text.replace(/\s+/g, " ");
   const date = normalized.match(/Present Situation on\s+(\d{2})[-.](\d{2})[-.](\d{4})/i);
-  const wait = normalized.match(/Approx\.?\s*Darshan Time for Sarva\s*darshanam\s*\(without SSD Tokens\)[\s.…:–-]*(\d+(?:\.\d+)?)(?:\s*[-–]\s*(\d+(?:\.\d+)?))?\s*(?:H\b|hours?\b)/i);
+  const wait = normalized.match(/Approx\.?\s*Darshan Time for Sarva\s*darshanam\s*\(with\s*out SSD Tokens\)[\s.…:–-]*(\d+(?:\.\d+)?)(?:\s*[-–]\s*(\d+(?:\.\d+)?))?\s*(?:H\b|hours?\b)/i);
   if (!date || !wait) return null;
   const reportDate = `${date[3]}-${date[2]}-${date[1]}`;
   const parsed = new Date(`${reportDate}T00:00:00+05:30`);

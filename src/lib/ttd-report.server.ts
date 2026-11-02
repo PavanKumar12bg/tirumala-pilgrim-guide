@@ -1,32 +1,28 @@
 import { parseDocument } from "htmlparser2";
-import { getElementsByTagName, getText, getElementsByClassName } from "domutils";
+import { getText } from "domutils";
 import { parseTtdReport, TTD_NEWS_URL, type TtdReport } from "./ttd-report";
 
 type Result = { report: TtdReport | null; checked_at: string; unavailable: boolean };
 let cache: { expires: number; value: Result } | undefined;
 let pending: Promise<Result> | undefined;
 
-async function readHtml(url: string) {
-  const response = await fetch(url, { signal: AbortSignal.timeout(10_000), headers: { Accept: "text/html" }, redirect: "error" });
+async function readPosts() {
+  const response = await fetch(`${TTD_NEWS_URL}wp-json/wp/v2/posts?search=Total%20pilgrims&per_page=3&orderby=date&order=desc`, { signal: AbortSignal.timeout(10_000), headers: { Accept: "application/json" }, redirect: "error" });
   if (!response.ok) throw new Error("Official source unavailable");
   const html = await response.text();
   if (html.length > 2_000_000) throw new Error("Unexpected report size");
-  return parseDocument(html);
+  const data: unknown = JSON.parse(html);
+  if (!Array.isArray(data)) throw new Error("Unexpected report format");
+  return data;
 }
 
 async function refresh(): Promise<Result> {
   try {
-    const document = await readHtml(TTD_NEWS_URL);
-    const candidates = getElementsByTagName("a", document.children, true)
-      .filter(a => /Total pilgrims who had darshan on/i.test(getText(a)))
-      .map(a => a.attribs["href"])
-      .filter((href): href is string => Boolean(href) && href?.startsWith(TTD_NEWS_URL) === true);
+    const posts = await readPosts();
     const reports: TtdReport[] = [];
-    for (const url of [...new Set(candidates)].slice(0, 3)) {
-      const article = await readHtml(url);
-      const content = getElementsByClassName("entry-content", article.children, true)[0];
-      if (!content) continue;
-      const report = parseTtdReport(getText(content), url);
+    for (const post of posts.slice(0, 3)) {
+      if (!post || typeof post !== "object" || typeof post.link !== "string" || typeof post.content?.rendered !== "string") continue;
+      const report = parseTtdReport(getText(parseDocument(post.content.rendered)), post.link);
       if (report && report.report_date <= new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Kolkata" })) reports.push(report);
     }
     const report = reports.sort((a, b) => b.report_date.localeCompare(a.report_date))[0];
