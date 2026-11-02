@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import { useI18n } from "@/lib/i18n";
 import { LanguageSwitcher } from "./LanguageSwitcher";
 import { AnnouncementTicker } from "./AnnouncementTicker";
+import { CookieNotice } from "./CookieNotice";
 import logo from "@/assets/tirumala-logo.webp.asset.json";
 
 export function TopBar() {
@@ -56,12 +57,14 @@ export function AppShell({ children }: { children: ReactNode }) {
       <main>{children}</main>
       <footer className="mx-auto max-w-5xl px-4 py-10 text-center text-sm text-muted-foreground">
         <p>{t("officialNote")}</p>
-        <p className="mt-3">
-          <Link to="/admin" className="inline-flex min-h-11 items-center underline-offset-4 hover:underline">
-            {t("admin")}
-          </Link>
-        </p>
+        <p className="mt-2 text-xs">{t("notAffiliated")}</p>
+        <nav aria-label={t("about")} className="mt-3 flex flex-wrap justify-center gap-x-4">
+          {([["/about","about"],["/ttd","ttdPage"],["/privacy","privacy"],["/terms","terms"],["/contact","contact"],["/admin","admin"]] as const).map(([to,k]) => (
+            <Link key={to} to={to} className="inline-flex min-h-11 items-center underline-offset-4 hover:underline">{t(k)}</Link>
+          ))}
+        </nav>
       </footer>
+      <CookieNotice />
       <BottomNav />
     </div>
   );

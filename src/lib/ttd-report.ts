@@ -28,3 +28,13 @@ export function parseTtdReport(text: string, sourceUrl: string): TtdReport | nul
 export function isCurrentTtdReport(report: TtdReport, now = new Date()) {
   return report.report_date === now.toLocaleDateString("en-CA", { timeZone: "Asia/Kolkata" });
 }
+/** Rise in the upper official wait estimate between two consecutive daily reports, in hours; null when not comparable. */
+export function waitJumpHours(current: TtdReport | null | undefined, previous: TtdReport | null | undefined) {
+  if (!current || !previous || previous.report_date >= current.report_date) return null;
+  return current.wait_max_hours - previous.wait_max_hours;
+}
+export const WAIT_JUMP_ALERT_HOURS = 1;
+export function shouldAlertWaitJump(current: TtdReport | null | undefined, previous: TtdReport | null | undefined) {
+  const jump = waitJumpHours(current, previous);
+  return jump != null && jump > WAIT_JUMP_ALERT_HOURS;
+}

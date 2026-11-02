@@ -2,7 +2,7 @@ import { parseDocument } from "htmlparser2";
 import { textContent, getElementsByTagName } from "domutils";
 import { parseTtdReport, TTD_NEWS_URL, type TtdReport } from "./ttd-report";
 
-type Result = { report: TtdReport | null; checked_at: string; unavailable: boolean };
+type Result = { report: TtdReport | null; previous: TtdReport | null; checked_at: string; unavailable: boolean };
 let cache: { expires: number; value: Result } | undefined;
 let pending: Promise<Result> | undefined;
 
@@ -28,13 +28,14 @@ async function refresh(): Promise<Result> {
       const report = parseTtdReport(text, post.link);
       if (report && report.report_date <= new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Kolkata" })) reports.push(report);
     }
-    const report = reports.sort((a, b) => b.report_date.localeCompare(a.report_date))[0];
+    const sorted = reports.sort((a, b) => b.report_date.localeCompare(a.report_date));
+    const report = sorted[0];
     if (!report) throw new Error("No readable official report");
-    const value = { report, checked_at: new Date().toISOString(), unavailable: false };
+    const value = { report, previous: sorted.find(r => r.report_date < report.report_date) ?? null, checked_at: new Date().toISOString(), unavailable: false };
     cache = { value, expires: Date.now() + 10 * 60_000 };
     return value;
   } catch {
-    const value = { report: cache?.value.report ?? null, checked_at: new Date().toISOString(), unavailable: true };
+    const value = { report: cache?.value.report ?? null, previous: cache?.value.previous ?? null, checked_at: new Date().toISOString(), unavailable: true };
     cache = { value, expires: Date.now() + 60_000 };
     return value;
   }
