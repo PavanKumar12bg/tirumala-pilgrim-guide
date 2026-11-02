@@ -17,6 +17,7 @@ import { Badge } from "@/components/ui/badge";
 import { PlaceImage } from "@/components/PlaceImage";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { PhotoIdentifier, type PreparedPhoto } from "./PhotoIdentifier";
+import { StatusHistory } from "./StatusHistory";
 
 const selectCls = "h-11 w-full rounded-md border border-input bg-card px-3 text-base";
 
@@ -28,10 +29,10 @@ export function AdminPanel() {
     <Tabs value={tab} onValueChange={setTab}>
       <TabsList className="flex h-auto min-h-12 w-full flex-wrap">
         <TabsTrigger value="overview" className="min-h-10">{t("overview")}</TabsTrigger>
-        <TabsTrigger value="status" className="min-h-10">Status</TabsTrigger>
-        <TabsTrigger value="ticker" className="min-h-10">Ticker</TabsTrigger>
-        <TabsTrigger value="places" className="min-h-10">Places</TabsTrigger>
-        <TabsTrigger value="review" className="min-h-10">Review</TabsTrigger>
+        <TabsTrigger value="status" className="min-h-10">{t("statusTab")}</TabsTrigger>
+        <TabsTrigger value="ticker" className="min-h-10">{t("announcements")}</TabsTrigger>
+        <TabsTrigger value="places" className="min-h-10">{t("places")}</TabsTrigger>
+        <TabsTrigger value="review" className="min-h-10">{t("reviewTab")}</TabsTrigger>
       </TabsList>
       <TabsContent value="overview" className="mt-6">
         <h1 className="text-2xl">{t("admin")} · {t("appName")}</h1>
@@ -47,7 +48,7 @@ export function AdminPanel() {
           <div className="mt-5 flex flex-wrap gap-3"><Button className="min-h-12" onClick={() => setTab("places")}>{t("managePlaces")}</Button><Button variant="outline" className="min-h-12" onClick={() => setTab("review")}>{t("reviewPlaces")}</Button></div>
         </>}
       </TabsContent>
-      <TabsContent value="status" className="mt-4"><StatusEditor /></TabsContent>
+      <TabsContent value="status" className="mt-4"><StatusEditor /><div className="mt-6"><StatusHistory /></div></TabsContent>
       <TabsContent value="ticker" className="mt-4"><TickerEditor /></TabsContent>
       <TabsContent value="places" className="mt-4"><PlacesEditor mode="all" /></TabsContent>
       <TabsContent value="review" className="mt-4"><PlacesEditor mode="review" /></TabsContent>
@@ -76,6 +77,7 @@ function LocalizedFields({ value, onChange, label, multiline }: { value: Localiz
 }
 
 function StatusEditor() {
+  const { t } = useI18n();
   const qc = useQueryClient();
   const { data, isLoading } = useQuery(statusQuery());
   const [hours, setHours] = useState("");
@@ -91,47 +93,52 @@ function StatusEditor() {
 
   const save = async () => {
     setBusy(true);
-    const { error } = await supabase.from("site_status").update({
+    const { data: saved, error } = await supabase.from("site_status").update({
       darshan_wait_hours: hours === "" ? null : Number(hours),
       crowd_level: crowd || null,
       darshan_note: note,
-    }).eq("id", 1);
+    }).eq("id", 1).select("id");
     setBusy(false);
     if (error) { toast.error(error.message); return; }
-    toast.success("Status updated");
+    if (!saved?.length) { toast.error(t("errorLoad")); return; }
+    toast.success(t("statusSaved"));
     qc.invalidateQueries({ queryKey: ["site_status"] });
+    qc.invalidateQueries({ queryKey: ["status-history"] });
   };
 
   if (isLoading) return <Loader2 className="size-5 animate-spin" />;
   return (
-    <div className="space-y-4 rounded-2xl bg-card p-5 shadow-soft ring-1 ring-border">
-      <p className="text-sm text-muted-foreground">Enter the latest confirmed darshan and crowd information. Saved values appear in the home page status cards and announcement ticker with their update time, labeled as admin-entered—not a live feed. Leave empty if unknown.</p>
+    <form onSubmit={e => { e.preventDefault(); void save(); }} className="space-y-4 border-b pb-5">
+      <p className="text-sm text-muted-foreground">{t("statusHelp")}</p>
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-1.5">
-          <Label htmlFor="hours">Darshan waiting time (hours)</Label>
+          <Label htmlFor="hours">{t("darshanWait")} ({t("hours")})</Label>
           <Input id="hours" type="number" inputMode="decimal" min={0} max={72} step={0.5} value={hours} onChange={(e) => setHours(e.target.value)} className="h-11 text-base" />
         </div>
         <div className="space-y-1.5">
-          <Label htmlFor="crowd">Crowd status</Label>
+          <Label htmlFor="crowd">{t("crowdStatus")}</Label>
           <select id="crowd" className={selectCls} value={crowd} onChange={(e) => setCrowd(e.target.value)}>
-            <option value="">Not set</option>
-            <option value="low">Low</option>
-            <option value="moderate">Moderate</option>
-            <option value="high">Heavy</option>
-            <option value="very_high">Very heavy</option>
+            <option value="">{t("unavailable")}</option>
+            <option value="low">{t("crowd_low")}</option>
+            <option value="moderate">{t("crowd_moderate")}</option>
+            <option value="high">{t("crowd_high")}</option>
+            <option value="very_high">{t("crowd_very_high")}</option>
           </select>
         </div>
       </div>
-      <LocalizedFields label="Short note (optional, e.g. which darshan type)" value={note} onChange={setNote} />
-      <Button onClick={save} disabled={busy} className="min-h-12">{busy ? <Loader2 className="size-4 animate-spin" /> : "Save status"}</Button>
-    </div>
+      <LocalizedFields label={t("details")} value={note} onChange={setNote} />
+      <Button type="submit" disabled={busy} className="min-h-12">{busy ? <Loader2 className="size-4 animate-spin" /> : t("saveStatus")}</Button>
+    </form>
   );
 }
 
 function TickerEditor() {
+  const { t } = useI18n();
   const qc = useQueryClient();
   const { data, isLoading } = useQuery(announcementsQuery());
   const [draft, setDraft] = useState<Localized>({});
+  const [editing, setEditing] = useState<string | null>(null);
+  const [editText, setEditText] = useState<Localized>({});
   const refresh = () => qc.invalidateQueries({ queryKey: ["announcements"] });
 
   const add = async () => {
@@ -145,22 +152,24 @@ function TickerEditor() {
   return (
     <div className="space-y-4">
       <div className="space-y-3 rounded-2xl bg-card p-5 shadow-soft ring-1 ring-border">
-        <LocalizedFields label="New announcement" value={draft} onChange={setDraft} />
-        <Button onClick={add} className="min-h-12"><Plus className="size-4" /> Add to ticker</Button>
+        <LocalizedFields label={t("newAnnouncement")} value={draft} onChange={setDraft} />
+        <Button onClick={add} className="min-h-12"><Plus className="size-4" />{t("newAnnouncement")}</Button>
       </div>
       {isLoading ? <Loader2 className="size-5 animate-spin" /> : null}
       {!isLoading && !data?.length ? <p className="text-sm text-muted-foreground">No announcements yet. Saved darshan and crowd updates still appear in the ticker.</p> : null}
       <ul className="space-y-2">
         {data?.map((a) => (
-          <li key={a.id} className="flex items-center gap-3 rounded-xl bg-card p-3 ring-1 ring-border">
+          <li key={a.id} className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 rounded-lg bg-card p-3 ring-1 ring-border">
             <div className="min-w-0 flex-1 text-sm">
               <p lang="te">{a.text.te}</p>
               <p className="text-muted-foreground">{a.text.en}</p>
             </div>
-            <Switch checked={a.active} aria-label="Active" onCheckedChange={async (v) => { await supabase.from("announcements").update({ active: v }).eq("id", a.id); refresh(); }} />
-            <Button variant="ghost" size="icon" aria-label="Delete" onClick={async () => { await supabase.from("announcements").delete().eq("id", a.id); refresh(); }}>
+            <div className="flex items-center gap-1"><Switch checked={a.active} aria-label={t("publish")} onCheckedChange={async (v) => { const { error } = await supabase.from("announcements").update({ active: v }).eq("id", a.id); if (error) toast.error(error.message); else refresh(); }} />
+            <Button variant="ghost" size="sm" onClick={() => { setEditing(a.id); setEditText(a.text); }}>{t("edit")}</Button>
+            <Button variant="ghost" size="icon" aria-label={t("remove")} onClick={async () => { const { error } = await supabase.from("announcements").delete().eq("id", a.id); if (error) toast.error(error.message); else refresh(); }}>
               <Trash2 className="size-4 text-destructive" />
-            </Button>
+            </Button></div>
+            {editing === a.id ? <div className="col-span-2 space-y-2"><LocalizedFields label={t("announcements")} value={editText} onChange={setEditText} /><Button onClick={async () => { const { error } = await supabase.from("announcements").update({ text: editText }).eq("id", a.id); if (error) toast.error(error.message); else { setEditing(null); refresh(); } }}>{t("edit")}</Button><Button variant="ghost" onClick={() => setEditing(null)}>{t("close")}</Button></div> : null}
           </li>
         ))}
       </ul>
@@ -172,7 +181,7 @@ function issuesOf(p: Place) {
   const out: string[] = [];
   if (p.needs_review) out.push("Needs review");
   if (!p.coords_verified || p.lat == null) out.push("No verified location");
-  else if (!isInsideTirumala(p.lat, p.lng!)) out.push("Location outside Tirumala area");
+  else if (p.lng != null && !isInsideTirumala(p.lat, p.lng)) out.push("Location outside Tirumala area");
   if (!p.name.te?.trim()) out.push("No Telugu name");
   if (!p.name.en?.trim()) out.push("No English name");
   if (!p.image_path) out.push("No photo");

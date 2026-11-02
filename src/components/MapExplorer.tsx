@@ -1,7 +1,7 @@
 import L from "leaflet";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
-import { AlertTriangle, CheckCircle2, ChevronDown, ChevronUp, Footprints, Layers, Loader2, LocateFixed, Navigation, RefreshCw, Search, SlidersHorizontal, Square, X } from "lucide-react";
+import { AlertTriangle, CheckCircle2, ChevronDown, ChevronUp, Footprints, Layers, Loader2, LocateFixed, Navigation, RefreshCw, Search, SlidersHorizontal, Square, X, Mic } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { catIcon, catKey, CATEGORIES, hasVerifiedCoords, placesQuery, type Place } from "@/lib/places";
 import { formatDistance, haversineMeters, isInsideTirumala, locateOnRoute, NAV_CONFIG, nearbySorted, TEMPLE_CENTER, TIRUMALA_BOUNDS, walkingMinutes, type LatLng } from "@/lib/geo";
@@ -10,6 +10,9 @@ import { pickLocalized, useI18n, type DictKey } from "@/lib/i18n";
 import { PlaceImage } from "./PlaceImage";
 import { ErrorBox } from "./HomeSections";
 import { cn } from "@/lib/utils";
+import { VoiceAssistant } from "./VoiceAssistant";
+import { Button } from "@/components/ui/button";
+import { interpretCommand, type VoiceAction } from "@/lib/voice-commands";
 
 type Fix = { pos: LatLng; accuracy: number; at: number };
 type GpsState = "idle" | "locating" | "watching" | "denied" | "unavailable" | "timeout";
@@ -29,8 +32,8 @@ const CLUSTER_MAX_ZOOM = 18;
 const CLUSTER_PX = 44;
 const PRIMARY_CATS: string[] = ["temple", "food", "toilet", "medical", "transport"];
 
-export default function MapExplorer({ initialSlug }: { initialSlug?: string | undefined }) {
-  const { t, lang } = useI18n();
+export default function MapExplorer({ initialSlug, initialCategory, initialCommand, initialAction }: { initialSlug?: string; initialCategory?: string; initialCommand?: string; initialAction?: string }) {
+  const { t, lang, setLang } = useI18n();
   const navigate = useNavigate();
   const { data, isLoading, isError, refetch } = useQuery(placesQuery());
   const mapData = useQuery({
@@ -53,7 +56,7 @@ export default function MapExplorer({ initialSlug }: { initialSlug?: string | un
   const lastRouteAt = useRef(0);
   const abortRef = useRef<AbortController | null>(null);
 
-  const [cat, setCat] = useState("all");
+  const [cat, setCat] = useState(initialCategory ?? "all");
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState<string | undefined>(initialSlug);
   const [gps, setGps] = useState<GpsState>("idle");
@@ -66,6 +69,9 @@ export default function MapExplorer({ initialSlug }: { initialSlug?: string | un
   const [searchOpen, setSearchOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
   const [dismissed, setDismissed] = useState<string | null>(null);
+  const [voiceOpen, setVoiceOpen] = useState(false);
+  const [voiceMessage, setVoiceMessage] = useState("");
+  const initialHandled = useRef(false);
 
   const places = useMemo(() => (data ?? []).filter((p) => p.visible), [data]);
   const mapped = useMemo(() => places.filter(hasVerifiedCoords), [places]);
@@ -93,7 +99,10 @@ export default function MapExplorer({ initialSlug }: { initialSlug?: string | un
     map.on("zoomend", () => setZoom(map.getZoom()));
     map.on("click", () => { setPanel("none"); setSearchOpen(false); });
     mapRef.current = map;
+    const observer = new ResizeObserver(() => map.invalidateSize());
+    observer.observe(elRef.current);
     return () => {
+      observer.disconnect();
       map.remove();
       mapRef.current = null;
     };
@@ -132,7 +141,7 @@ export default function MapExplorer({ initialSlug }: { initialSlug?: string | un
         iconAnchor: big ? [19, 38] : [12, 12],
       });
       L.marker([p.lat, p.lng], { icon, title: pickLocalized(p.name, lang), keyboard: true, zIndexOffset: big ? 1000 : state ? 500 : 0 })
-        .on("click", () => setSelected(p.slug))
+        .on("click", () => { abortRef.current?.abort(); routeRef.current?.remove(); routeRef.current = null; setNav({ state: "off" }); setSelected(p.slug); })
         .addTo(layer);
     };
     const pts = filtered.filter(hasVerifiedCoords);
@@ -145,7 +154,8 @@ export default function MapExplorer({ initialSlug }: { initialSlug?: string | un
       cells.set(k, [...(cells.get(k) ?? []), p]);
     });
     cells.forEach((group) => {
-      if (group.length === 1) return single(group[0]!);
+      const first = group[0];
+      if (group.length === 1 && first) return single(first);
       const lat = group.reduce((s, p) => s + p.lat, 0) / group.length;
       const lng = group.reduce((s, p) => s + p.lng, 0) / group.length;
       const near = group.some((p) => nearbyIds.has(p.id));
@@ -224,7 +234,8 @@ export default function MapExplorer({ initialSlug }: { initialSlug?: string | un
     if (!map) return;
     routeRef.current?.remove();
     routeRef.current = L.polyline(route.coords, { color: css("--map-route"), weight: 6, opacity: 0.9, lineCap: "round" }).addTo(map);
-    if (fit) map.fitBounds(routeRef.current.getBounds().extend(route.coords[0]!), { padding: [60, 60], maxZoom: 18 });
+    const first = route.coords[0];
+    if (fit && first) map.fitBounds(routeRef.current.getBounds().extend(first), { padding: [60, 60], maxZoom: 18 });
   };
 
   const requestRoute = useCallback(async (from: LatLng, to: LatLng, reroute: boolean) => {
@@ -300,6 +311,39 @@ export default function MapExplorer({ initialSlug }: { initialSlug?: string | un
     setSelected(slug);
   };
 
+  const executeVoice = (action: VoiceAction) => {
+    setVoiceMessage("");
+    if (action.kind === "language") return setLang(action.language);
+    if (action.kind === "category") { setCat(action.category); setPanel("none"); return; }
+    if (action.kind === "location") return startWatch();
+    if (action.kind === "nearby") { if (!here) startWatch(); setPanel("nearby"); return; }
+    if (action.kind === "stop") return stopNav();
+    if (action.kind === "map") return;
+    if (action.kind === "navigate") {
+      if (sel) { setCollapsed(false); setVoiceMessage(`${t("confirmAction")}: ${pickLocalized(sel.name, lang)} · ${t("startNav")}`); }
+      else setVoiceMessage(t("selectDestination"));
+      return;
+    }
+    if (action.kind === "temple") {
+      const matches = places.filter(p => p.category === "temple" && Object.values(p.name).some(n => /venkateswara|వేంకటేశ్వర|వెంకటేశ్వర/iu.test(n ?? "")));
+      if (matches.length === 1 && matches[0]) { choose(matches[0].slug); setCollapsed(false); return; }
+      setCat("temple"); setVoiceMessage(t("selectDestination")); return;
+    }
+    if (action.kind === "search") {
+      setQuery(action.text); setSearchOpen(true);
+      if (!places.some(p => Object.values(p.name).some(n => n?.toLowerCase().includes(action.text.toLowerCase())))) setVoiceMessage(t("voiceUnknown"));
+    }
+  };
+  useEffect(() => {
+    if (!data || initialHandled.current) return;
+    initialHandled.current = true;
+    if (initialCommand) { const command = interpretCommand(initialCommand); if (command) executeVoice(command); }
+    else if (["location", "nearby", "stop", "map", "temple", "navigate"].includes(initialAction ?? "")) {
+      const command = initialAction as "location" | "nearby" | "stop" | "map" | "temple" | "navigate";
+      executeVoice({ kind: command });
+    }
+  }, [data]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const searchResults = query.trim()
     ? places.filter((p) => Object.values(p.name).some((n) => n?.toLowerCase().includes(query.trim().toLowerCase()))).slice(0, 6)
     : [];
@@ -370,6 +414,7 @@ export default function MapExplorer({ initialSlug }: { initialSlug?: string | un
             ))}
           </div>
         ) : null}
+        {voiceMessage ? <div role="status" className="pointer-events-auto flex items-center gap-2 rounded-lg bg-card p-2 text-xs shadow-soft"><span className="min-w-0 flex-1">{voiceMessage}</span><Button variant="ghost" size="icon" className="size-8" aria-label={t("close")} onClick={() => setVoiceMessage("")}><X className="size-4" /></Button></div> : null}
         {isError || mapData.isError ? (
           <div className="pointer-events-auto mx-auto flex max-w-md items-center gap-2 rounded-full bg-card py-1 pl-3 pr-1 text-xs shadow-soft" role="alert">
             <AlertTriangle className="size-3.5 shrink-0 text-destructive" aria-hidden />
@@ -429,18 +474,19 @@ export default function MapExplorer({ initialSlug }: { initialSlug?: string | un
               ))}
             </ul>
           ) : <p className="mt-3 text-sm text-muted-foreground">{t("noNearby")}</p>}
-          <p className="mt-2 text-[11px] text-muted-foreground">{t("straightLineLabel")} · {t("accuracy")} ±{Math.round(fix!.accuracy)} m</p>
+          <p className="mt-2 text-[11px] text-muted-foreground">{t("straightLineLabel")} · {t("accuracy")} ±{Math.round(fix?.accuracy ?? 0)} m</p>
         </div>
       ) : null}
 
       {/* bottom stack: floating controls sit above the place card, so they never overlap */}
       <div className="pointer-events-none absolute inset-x-0 bottom-0 z-[600] flex flex-col gap-2 px-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)]">
-        <div className="pointer-events-auto flex flex-col items-end gap-2 self-end">
+        <div className="pointer-events-auto flex items-center gap-2 self-end">
         {here ? (
           <button onClick={() => setPanel(panel === "nearby" ? "none" : "nearby")} aria-expanded={panel === "nearby"} className="flex h-8 items-center rounded-full bg-map-nearby px-3 text-xs font-semibold text-primary-foreground shadow-lift">
             {t("nearby")} · {nearby.length}
           </button>
         ) : null}
+        <Button variant="secondary" size="icon" className="size-11 rounded-full shadow-lift" aria-label={t("voiceAssistant")} title={t("voiceAssistant")} onClick={() => setVoiceOpen(true)}><Mic className="size-5" /></Button>
         <button onClick={() => setPanel(panel === "legend" ? "none" : "legend")} aria-label={t("legend")} aria-expanded={panel === "legend"} className={fab}><Layers className="size-4" /></button>
         <button onClick={() => (nav.state === "active" ? recenter() : startWatch())} aria-label={nav.state === "active" ? t("recenter") : t("myLocation")} className={fab}>
           {gps === "locating" ? <Loader2 className="size-5 animate-spin" aria-hidden /> : <LocateFixed className={cn("size-5", gps === "watching" ? "text-map-me" : "text-primary")} aria-hidden />}
@@ -454,6 +500,7 @@ export default function MapExplorer({ initialSlug }: { initialSlug?: string | un
           </div>
         ) : null}
       </div>
+      <VoiceAssistant open={voiceOpen} onOpenChange={setVoiceOpen} onAction={executeVoice} />
     </div>
   );
 }
@@ -465,7 +512,7 @@ function SelectedCard({ place, fix, nav, collapsed, onToggle, onClose, onStart, 
   const name = pickLocalized(place.name, lang);
   const desc = pickLocalized(place.description, lang);
   const verified = hasVerifiedCoords(place);
-  const straight = verified && fix ? haversineMeters(fix.pos, [place.lat!, place.lng!]) : null;
+  const straight = verified && fix ? haversineMeters(fix.pos, [place.lat, place.lng]) : null;
   const tags = place.osm_tags ?? {};
   const btn = "flex h-11 items-center justify-center gap-1.5 rounded-full px-4 text-sm font-semibold";
   const summary = nav.state === "active" ? `${formatDistance(nav.remaining)} · ~${walkingMinutes(nav.remaining)} ${t("min")}` : straight != null ? `${formatDistance(straight)} · ${t("straightLineLabel")}` : null;
@@ -526,7 +573,7 @@ function SelectedCard({ place, fix, nav, collapsed, onToggle, onClose, onStart, 
           </div>
           <details className="mt-1 text-[11px] text-muted-foreground">
             <summary className="min-h-8 cursor-pointer leading-8">{t("coordinates")} · {t("source")}</summary>
-            <p>{place.lat!.toFixed(6)}, {place.lng!.toFixed(6)}</p>
+            <p>{place.lat?.toFixed(6)}, {place.lng?.toFixed(6)}</p>
             <p>{t("source")}: {place.coords_source === "osm" ? `OpenStreetMap (${place.osm_id})` : place.coords_source ?? "—"}</p>
             {tags["opening_hours"] ? <p>{t("openingHours")}: {tags["opening_hours"]}</p> : null}
             {tags["website"] ? <p>{t("website")}: <a className="underline" href={tags["website"]} target="_blank" rel="noreferrer">{tags["website"]}</a></p> : null}

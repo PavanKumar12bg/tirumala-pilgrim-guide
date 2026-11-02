@@ -7,8 +7,11 @@ import { useI18n } from "@/lib/i18n";
 const MapExplorer = lazy(() => import("@/components/MapExplorer"));
 
 export const Route = createFileRoute("/map")({
-  validateSearch: (s: Record<string, unknown>): { place?: string | undefined } => ({
+  validateSearch: (s: Record<string, unknown>): { place?: string | undefined; category?: string; command?: string; action?: string } => ({
     place: typeof s["place"] === "string" ? s["place"] : undefined,
+    category: typeof s["category"] === "string" ? s["category"] : undefined,
+    command: typeof s["command"] === "string" ? s["command"] : undefined,
+    action: typeof s["action"] === "string" ? s["action"] : undefined,
   }),
   head: () => ({
     meta: [
@@ -29,14 +32,14 @@ function MapFallback() {
 }
 
 function MapPage() {
-  const { place } = Route.useSearch();
+  const { place, category, command, action } = Route.useSearch();
   return (
     <div className="flex h-[100svh] flex-col">
       <TopBar />
       <div className="relative min-h-0 flex-1 pb-14 md:pb-0">
         <ClientOnly fallback={<MapFallback />}>
           <Suspense fallback={<MapFallback />}>
-            <MapExplorer initialSlug={place} />
+            <MapExplorer initialSlug={place} initialCategory={category} initialCommand={command} initialAction={action} />
           </Suspense>
         </ClientOnly>
       </div>

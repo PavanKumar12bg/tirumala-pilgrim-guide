@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { AdminPanel } from "@/components/admin/AdminPanel";
 import { toast } from "sonner";
+import { TopBar } from "@/components/AppShell";
 
 export const Route = createFileRoute("/admin")({
   ssr: false,
@@ -51,19 +52,9 @@ function AdminPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="bg-aubergine-grad text-primary-foreground">
-        <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
-          <Link to="/" className="flex min-h-11 items-center gap-2 font-display text-lg">
-            <ShieldCheck className="size-5 text-accent" aria-hidden /> Tirumala Guide · Admin
-          </Link>
-          {session ? (
-            <Button variant="ghost" size="sm" className="text-primary-foreground hover:bg-primary-foreground/10 hover:text-primary-foreground" onClick={() => supabase.auth.signOut()}>
-              <LogOut className="size-4" /> Sign out
-            </Button>
-          ) : null}
-        </div>
-      </header>
+      <TopBar />
       <main className="mx-auto max-w-5xl px-4 py-6">
+        {session ? <div className="mb-4 flex justify-end"><Button variant="outline" size="sm" onClick={() => supabase.auth.signOut()}><LogOut className="size-4" />Sign out</Button></div> : null}
         {session === undefined ? (
           <Centered><Loader2 className="size-6 animate-spin" /></Centered>
         ) : !session ? (

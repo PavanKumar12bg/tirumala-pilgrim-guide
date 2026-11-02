@@ -20,3 +20,6 @@
 - Map markers declutter with a built-in screen-grid clustering in `MapExplorer` (no plugin); floating map controls live in the same bottom stack as the place card so they cannot overlap it.
 - The public journey planner stores validated personal itineraries on the current device and references canonical place IDs; arrival plans are manually entered rather than invented travel estimates.
 - Home status cards and ticker consume the same site-status record; only stored, admin-entered values appear, with their update timestamp, so announcements cannot masquerade as an automated live feed.
+- TopBar owns the persistent announcement ticker on public and admin pages; map height is flex-allocated and observed for Leaflet resizing to avoid content overlap.
+- Every site-status save appends a database-triggered, admin-readable history snapshot; trends use latest actual saves per India-calendar day without filling missing days.
+- Browser voice is a one-utterance progressive enhancement with editable transcript and controlled commands; device recognition/voices are not guaranteed and text remains usable. Proposed navigation selects a place but still requires Start Navigation.

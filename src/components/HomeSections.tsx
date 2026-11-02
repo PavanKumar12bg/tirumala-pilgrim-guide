@@ -64,10 +64,11 @@ export function StatusCards() {
 
   if (isError) return <ErrorBox onRetry={() => refetch()} />;
   const note = pickLocalized(data?.darshan_note, lang);
+  const crowd = data?.crowd_level ? crowdStyle[data.crowd_level] : null;
 
   return (
     <div className="grid grid-cols-2 gap-3">
-      <div className="rounded-2xl bg-card p-4 shadow-soft ring-1 ring-border">
+      <div className="min-w-0 rounded-lg bg-card p-3 shadow-soft ring-1 ring-border">
         <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground">
           <Clock className="size-4 text-gold" aria-hidden />
           {t("darshanWait")}
@@ -77,11 +78,11 @@ export function StatusCards() {
             {Number(data.darshan_wait_hours)} <span className="text-base font-sans text-muted-foreground">{t("hours")}</span>
           </p>
         ) : (
-          <p className="mt-3 text-sm font-medium text-muted-foreground">{t("notUpdated")}</p>
+          <p className="mt-3 text-sm font-medium text-muted-foreground">{t("unavailable")}</p>
         )}
         {note ? <p className="mt-1 text-xs text-muted-foreground">{note}</p> : null}
       </div>
-      <div className="rounded-2xl bg-card p-4 shadow-soft ring-1 ring-border">
+      <div className="min-w-0 rounded-lg bg-card p-3 shadow-soft ring-1 ring-border">
         <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground">
           <Users className="size-4 text-gold" aria-hidden />
           {t("crowdStatus")}
@@ -91,12 +92,12 @@ export function StatusCards() {
             <p className="mt-2 font-display text-2xl text-primary">{t(`crowd_${data.crowd_level}` as DictKey)}</p>
             <div className="mt-2 flex gap-1" aria-hidden>
               {[1, 2, 3, 4].map((i) => (
-                <span key={i} className={cn("h-1.5 flex-1 rounded-full", i <= crowdStyle[data.crowd_level!].fill ? crowdStyle[data.crowd_level!].bar : "bg-muted")} />
+                <span key={i} className={cn("h-1.5 flex-1 rounded-full", crowd && i <= crowd.fill ? crowd.bar : "bg-muted")} />
               ))}
             </div>
           </>
         ) : (
-          <p className="mt-3 text-sm font-medium text-muted-foreground">{t("notUpdated")}</p>
+          <p className="mt-3 text-sm font-medium text-muted-foreground">{t("unavailable")}</p>
         )}
       </div>
       <p className="col-span-2 flex items-start gap-1.5 px-1 text-xs text-muted-foreground">
