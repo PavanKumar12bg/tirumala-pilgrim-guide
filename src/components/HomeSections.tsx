@@ -3,7 +3,8 @@ import { useQuery } from "@tanstack/react-query";
 import { Clock, MapPin, Users, ChevronRight, AlertCircle } from "lucide-react";
 import { useMemo, useState } from "react";
 import { catKey, CATEGORIES, hasVerifiedCoords, placesQuery, officialStatusQuery } from "@/lib/places";
-import { isCurrentTtdReport } from "@/lib/ttd-report";
+import { isCurrentTtdReport, shouldAlertWaitJump, waitJumpHours } from "@/lib/ttd-report";
+import { TrendingUp } from "lucide-react";
 import { pickLocalized, useI18n } from "@/lib/i18n";
 import { PlaceImage } from "./PlaceImage";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -20,6 +21,12 @@ export function StatusCards() {
 
   return (
     <div className="grid grid-cols-2 gap-3">
+      {shouldAlertWaitJump(report, data?.previous) ? (
+        <div role="alert" className="col-span-2 flex items-start gap-2 rounded-lg bg-warning/15 p-3 text-sm font-semibold text-foreground ring-1 ring-warning/50">
+          <TrendingUp className="mt-0.5 size-4 shrink-0 text-warning" aria-hidden />
+          <span>{t("waitJumpAlert").replace("{h}", String(waitJumpHours(report, data?.previous)))} <span className="font-normal text-muted-foreground">({t("previousReport")}: {data?.previous?.wait_min_hours}–{data?.previous?.wait_max_hours} {t("hours")})</span></span>
+        </div>
+      ) : null}
       <div className="min-w-0 rounded-lg bg-card p-3 shadow-soft ring-1 ring-border">
         <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground">
           <Clock className="size-4 text-gold" aria-hidden />
