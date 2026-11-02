@@ -18,3 +18,5 @@
 - [x] Wait-jump alert (>1 h vs previous TTD daily report), About/Privacy/Terms/Contact, cookie notice, official TTD page; 39 tests passed.
 - [ ] Email on each new TTD report: blocked until the owner sets up an email domain they own.
 - [ ] AdSense script + ads.txt: needs publishing on a custom domain and the AdSense publisher ID.
+
+- [x] Trip & Transport page with admin-managed categories, templates, items, providers and offers (private provider data admin-only; RLS checked).
