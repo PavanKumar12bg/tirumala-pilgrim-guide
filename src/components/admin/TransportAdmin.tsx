@@ -130,15 +130,15 @@ function CategoryForm({ initial, nextOrder, onDone }: { initial: Cat | null; nex
   const [c, setC] = useState<Omit<Cat, "id">>(initial ?? { slug: "", template: "package", title: {}, description: {}, icon: "🚌", image_path: null, status: "draft", sort_order: nextOrder, sections: {}, sources: [], last_verified_on: null });
   const [busy, setBusy] = useState(false);
   const set = <K extends keyof typeof c>(k: K, v: (typeof c)[K]) => setC({ ...c, [k]: v });
-  const save = async (e: React.FormEvent) => {
+  const save = async (e: React.FormEvent): Promise<void> => {
     e.preventDefault();
-    if (!/^[a-z0-9-]+$/.test(c.slug)) return toast.error("Web address: lowercase letters, numbers and dashes only");
-    if (!c.title.en && !c.title.te) return toast.error("Add a title in English or Telugu");
+    if (!/^[a-z0-9-]+$/.test(c.slug)) return void toast.error("Web address: lowercase letters, numbers and dashes only");
+    if (!c.title.en && !c.title.te) return void toast.error("Add a title in English or Telugu");
     setBusy(true);
     const row = { slug: c.slug, template: c.template, title: j(c.title), description: j(c.description), icon: c.icon || "🚌", image_path: c.image_path, status: c.status, sort_order: c.sort_order, sections: j(c.sections), sources: j(c.sources.filter((s) => s.url.startsWith("https://"))), last_verified_on: c.last_verified_on || null };
     const { error } = initial ? await supabase.from("transport_categories").update(row).eq("id", initial.id) : await supabase.from("transport_categories").insert(row);
     setBusy(false);
-    if (error) return fail(error);
+    if (error) return void fail(error);
     toast.success("Saved"); onDone();
   };
   return (
@@ -221,14 +221,14 @@ function ItemForm({ cat, initial, nextOrder, onDone }: { cat: Cat; initial: Item
   const [busy, setBusy] = useState(false);
   const set = <K extends keyof typeof it>(k: K, v: (typeof it)[K]) => setIt({ ...it, [k]: v });
   const setD = (d: Partial<ItemDetails>) => setIt({ ...it, details: { ...it.details, ...d } });
-  const save = async (e: React.FormEvent) => {
+  const save = async (e: React.FormEvent): Promise<void> => {
     e.preventDefault();
-    if (it.source_url && !it.source_url.startsWith("https://")) return toast.error("Source link must start with https://");
+    if (it.source_url && !it.source_url.startsWith("https://")) return void toast.error("Source link must start with https://");
     setBusy(true);
     const row = { category_id: cat.id, kind: it.kind, title: j(it.title), body: j(it.body), photo_paths: it.photo_paths, place_id: it.place_id, duration_text: it.duration_text ? nn(it.duration_text) : null, notes: j(it.notes), fare_text: it.fare_text ? nn(it.fare_text) : null, details: j(it.details), source_url: it.source_url ? nn(it.source_url) : null, last_verified_on: it.last_verified_on || null, sort_order: it.sort_order, published: it.published };
     const { error } = initial ? await supabase.from("transport_items").update(row).eq("id", initial.id) : await supabase.from("transport_items").insert(row);
     setBusy(false);
-    if (error) return fail(error);
+    if (error) return void fail(error);
     toast.success("Saved"); onDone();
   };
   return (
@@ -303,12 +303,12 @@ function OfferForm({ cat, providers, initial, onDone }: { cat: Cat; providers: P
     const F = multi ? Textarea : Input;
     return <Field label={label}><F value={o[k] ?? ""} onChange={(e: React.ChangeEvent<HTMLInputElement & HTMLTextAreaElement>) => setO({ ...o, [k]: e.target.value })} /></Field>;
   };
-  const save = async (e: React.FormEvent) => {
+  const save = async (e: React.FormEvent): Promise<void> => {
     e.preventDefault(); setBusy(true);
     const row = { provider_id: o.provider_id, category_id: cat.id, price_text: nn(o.price_text ?? ""), included_places: nn(o.included_places ?? ""), duration_text: nn(o.duration_text ?? ""), inclusions: nn(o.inclusions ?? ""), exclusions: nn(o.exclusions ?? ""), extra_charges: nn(o.extra_charges ?? ""), published: o.published, sort_order: o.sort_order };
     const { error } = initial ? await supabase.from("transport_offers").update(row).eq("id", initial.id) : await supabase.from("transport_offers").insert(row);
     setBusy(false);
-    if (error) return fail(error);
+    if (error) return void fail(error);
     toast.success("Saved"); onDone();
   };
   return (
@@ -359,9 +359,9 @@ function ProviderForm({ initial, onDone }: { initial: Provider | null; onDone: (
   const [pv, setPv] = useState<Partial<Priv> | null>(null);
   const privVals = pv ?? priv.data ?? {};
   const [busy, setBusy] = useState(false);
-  const save = async (e: React.FormEvent) => {
+  const save = async (e: React.FormEvent): Promise<void> => {
     e.preventDefault();
-    if (!p.display_name.trim()) return toast.error("Add a public name");
+    if (!p.display_name.trim()) return void toast.error("Add a public name");
     setBusy(true);
     try {
       const row = { display_name: p.display_name.trim(), vehicle_type: nn(p.vehicle_type ?? ""), capacity: p.capacity, public_phone: nn(p.public_phone ?? ""), service_area: nn(p.service_area ?? ""), status: p.status, active: p.active };
