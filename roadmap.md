@@ -1,4 +1,9 @@
 # Tirumala Guide work
+- [ ] Use uploaded temple photo as compact logo and unify global header/ticker.
+- [ ] Bring accurate darshan/crowd dashboard and quick actions into first mobile screen.
+- [ ] Add admin-only daily status history, entries and trends without invented history.
+- [ ] Add controlled multilingual voice commands with text fallback and confirmation.
+- [ ] Verify translations, persistence, narrow-screen map and existing regression tests; report speech/device limitations.
 - [x] Build translated daily journey planner with start time, planned/actual arrivals, visited places and device persistence.
 - [x] Add useful overview to existing authorized admin panel.
 - [x] Verify real routing response and narrow-screen navigation with simulated browser GPS (830 m walking route returned and drawn).
