@@ -1,5 +1,5 @@
 import { parseDocument } from "htmlparser2";
-import { getText } from "domutils";
+import { textContent } from "domutils";
 import { parseTtdReport, TTD_NEWS_URL, type TtdReport } from "./ttd-report";
 
 type Result = { report: TtdReport | null; checked_at: string; unavailable: boolean };
@@ -22,7 +22,7 @@ async function refresh(): Promise<Result> {
     const reports: TtdReport[] = [];
     for (const post of posts.slice(0, 3)) {
       if (!post || typeof post !== "object" || typeof post.link !== "string" || typeof post.content?.rendered !== "string") continue;
-      const report = parseTtdReport(getText(parseDocument(post.content.rendered)), post.link);
+      const report = parseTtdReport(textContent(parseDocument(post.content.rendered)), post.link);
       if (report && report.report_date <= new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Kolkata" })) reports.push(report);
     }
     const report = reports.sort((a, b) => b.report_date.localeCompare(a.report_date))[0];
