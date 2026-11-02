@@ -32,7 +32,7 @@ const CLUSTER_MAX_ZOOM = 18;
 const CLUSTER_PX = 44;
 const PRIMARY_CATS: string[] = ["temple", "food", "toilet", "medical", "transport"];
 
-export default function MapExplorer({ initialSlug, initialCategory, initialCommand, initialAction }: { initialSlug?: string; initialCategory?: string; initialCommand?: string; initialAction?: string }) {
+export default function MapExplorer({ initialSlug, initialCategory, initialCommand, initialAction }: { initialSlug?: string | undefined; initialCategory?: string | undefined; initialCommand?: string | undefined; initialAction?: string | undefined }) {
   const { t, lang, setLang } = useI18n();
   const navigate = useNavigate();
   const { data, isLoading, isError, refetch } = useQuery(placesQuery());
