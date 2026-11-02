@@ -3,23 +3,24 @@ import { Home, Map as MapIcon, CalendarDays } from "lucide-react";
 import type { ReactNode } from "react";
 import { useI18n } from "@/lib/i18n";
 import { LanguageSwitcher } from "./LanguageSwitcher";
+import { AnnouncementTicker } from "./AnnouncementTicker";
+import logo from "@/assets/tirumala-logo.webp.asset.json";
 
 export function TopBar() {
   const { t } = useI18n();
   return (
-    <header className="sticky top-0 z-[1100] bg-aubergine-grad text-primary-foreground shadow-soft">
-      <div className="mx-auto flex max-w-5xl items-center justify-between gap-3 px-4 py-2.5">
-        <Link to="/" className="flex min-h-11 items-center gap-2.5">
-          <span aria-hidden className="grid size-9 place-items-center rounded-full bg-gold-grad font-display text-lg text-accent-foreground">
-            ॐ
-          </span>
-          <span className="font-display text-lg leading-tight">{t("appName")}</span>
+    <header className="sticky top-0 z-[1100] shrink-0 bg-aubergine-grad text-primary-foreground shadow-soft">
+      <div className="mx-auto grid max-w-5xl grid-cols-[minmax(0,1fr)_auto] items-center gap-2 px-3 py-1 sm:flex sm:justify-between">
+        <Link to="/" className="flex min-h-11 min-w-0 items-center gap-2">
+          <img src={logo.url} alt="" width={36} height={36} className="size-9 shrink-0 rounded-md object-cover object-center ring-1 ring-accent/50" />
+          <span className="min-w-0 truncate font-display text-lg leading-tight">{t("appName")}</span>
         </Link>
         <div className="flex items-center gap-3">
           <Link to="/journey" className="hidden min-h-11 items-center gap-2 text-sm md:flex"><CalendarDays className="size-4" />{t("journey")}</Link>
           <LanguageSwitcher />
         </div>
       </div>
+      <AnnouncementTicker />
     </header>
   );
 }
