@@ -240,3 +240,13 @@ html:lang(or) {
   border: 3px solid var(--card);
   box-shadow: 0 0 0 6px color-mix(in oklab, var(--map-me) 30%, transparent);
 }
+
+.ticker-trigger:hover .animate-ticker,
+.ticker-trigger:focus-visible .animate-ticker,
+.ticker-trigger:active .animate-ticker { animation-play-state: paused; }
+[lang="te"] { font-family: "Noto Sans Telugu", sans-serif; }
+[lang="ta"] { font-family: "Noto Sans Tamil", sans-serif; }
+[lang="kn"] { font-family: "Noto Sans Kannada", sans-serif; }
+[lang="ml"] { font-family: "Noto Sans Malayalam", sans-serif; }
+[lang="hi"] { font-family: "Noto Sans Devanagari", sans-serif; }
+[lang="or"] { font-family: "Noto Sans Oriya", sans-serif; }

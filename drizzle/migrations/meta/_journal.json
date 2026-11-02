@@ -36,6 +36,13 @@
       "when": 1793519280688,
       "tag": "0004_migration",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1793582186263,
+      "tag": "0005_daily_darshan_history",
+      "breakpoints": true
     }
   ]
 }

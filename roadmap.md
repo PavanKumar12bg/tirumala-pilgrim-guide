@@ -1,10 +1,16 @@
 # Tirumala Guide work
+- [x] Use uploaded temple photo as compact logo and unify global header/ticker.
+- [x] Bring accurate darshan/crowd dashboard and quick actions into first mobile screen (all five fit at 360×640; shortest 527px viewport needs a small scroll).
+- [x] Add admin-only daily status history, entries and trends without invented history; current values saved unchanged and reloaded; public requests expose no rows.
+- [x] Add controlled multilingual voice commands with text fallback and confirmation; ten Telugu parser examples and real route Stop checked.
+- [x] Verify translations, persistence, narrow-screen map and existing regression tests; 32 tests passed and speech/device limitations reported.
 - [x] Build translated daily journey planner with start time, planned/actual arrivals, visited places and device persistence.
 - [x] Add useful overview to existing authorized admin panel.
 - [x] Verify real routing response and narrow-screen navigation with simulated browser GPS (830 m walking route returned and drawn).
 - [x] Run targeted tests and browser checks (12 tests passed; journey read-back after refresh; no browser errors).
 - [ ] Physical-phone walk: requires user in Tirumala with location permission.
-- [ ] Authorized admin overview check: requires first account signup and admin claim; no auth users exist.
-- [ ] Walk signup, first-admin claim, and persistent place-photo edit: waiting for the chosen owner to create/confirm their account and sign in; signup form checked, private photo bucket confirmed.
+- [x] Authorized admin overview checked using the owner's existing managed session.
+- [x] Persistent place-photo replacement verified using the existing CRO image, then reloaded successfully; signup/first-admin claim already completed outside this test and not replayed.
 - [x] Connect actual admin-entered status to announcement ticker; 3 status tests passed and real homepage checked with unset values (no invented ticker data).
-- [ ] Verify saved status and photo read-back through authorized UI after account setup; no live TTD feed or real reported values supplied.
+- [x] Verify saved status history and photo read-back through authorized UI; preserve existing admin-entered values without claiming official verification.
+- [ ] Physical-device speech recognition and spoken responses in seven languages: requires microphone-capable phone and compatible recognition service/voices; browser API presence is not language verification.

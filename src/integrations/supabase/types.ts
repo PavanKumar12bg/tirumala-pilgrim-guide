@@ -137,6 +137,36 @@ export type Database = {
         }
         Relationships: []
       }
+      status_history: {
+        Row: {
+          crowd_level: string | null
+          darshan_note: Json
+          darshan_wait_hours: number | null
+          entry_date: string
+          id: string
+          recorded_at: string
+          recorded_by: string | null
+        }
+        Insert: {
+          crowd_level?: string | null
+          darshan_note?: Json
+          darshan_wait_hours?: number | null
+          entry_date: string
+          id?: string
+          recorded_at?: string
+          recorded_by?: string | null
+        }
+        Update: {
+          crowd_level?: string | null
+          darshan_note?: Json
+          darshan_wait_hours?: number | null
+          entry_date?: string
+          id?: string
+          recorded_at?: string
+          recorded_by?: string | null
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           id: string
