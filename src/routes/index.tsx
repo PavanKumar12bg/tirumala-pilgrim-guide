@@ -36,12 +36,12 @@ function Index() {
           <img
             src={heroAsset.url}
             alt="Lord Sri Venkateswara Swamy"
-            className="absolute inset-0 h-full w-full object-cover object-[50%_8%]"
+            className="absolute inset-0 h-full w-full object-cover object-[50%_15%]"
           />
           <div
             className="absolute inset-0"
             aria-hidden
-            style={{ backgroundImage: "linear-gradient(180deg, color-mix(in oklab, var(--aubergine-deep) 18%, transparent) 0%, color-mix(in oklab, var(--aubergine-deep) 30%, transparent) 45%, color-mix(in oklab, var(--aubergine-deep) 88%, transparent) 82%)" }}
+            style={{ backgroundImage: "linear-gradient(180deg, color-mix(in oklab, var(--aubergine-deep) 12%, transparent) 0%, color-mix(in oklab, var(--aubergine-deep) 22%, transparent) 50%, color-mix(in oklab, var(--aubergine-deep) 80%, transparent) 88%)" }}
           />
           <div className="relative flex min-h-64 flex-col justify-end gap-2 p-5 sm:min-h-[30rem] sm:p-7">
             <h1 className="text-2xl leading-tight text-primary-foreground drop-shadow-sm sm:text-4xl">
