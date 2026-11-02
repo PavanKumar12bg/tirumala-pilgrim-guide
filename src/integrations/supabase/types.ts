@@ -167,6 +167,269 @@ export type Database = {
         }
         Relationships: []
       }
+      transport_categories: {
+        Row: {
+          created_at: string
+          description: Json
+          icon: string
+          id: string
+          image_path: string | null
+          last_verified_on: string | null
+          sections: Json
+          slug: string
+          sort_order: number
+          sources: Json
+          status: string
+          template: string
+          title: Json
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: Json
+          icon?: string
+          id?: string
+          image_path?: string | null
+          last_verified_on?: string | null
+          sections?: Json
+          slug: string
+          sort_order?: number
+          sources?: Json
+          status?: string
+          template: string
+          title?: Json
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: Json
+          icon?: string
+          id?: string
+          image_path?: string | null
+          last_verified_on?: string | null
+          sections?: Json
+          slug?: string
+          sort_order?: number
+          sources?: Json
+          status?: string
+          template?: string
+          title?: Json
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      transport_items: {
+        Row: {
+          body: Json
+          category_id: string
+          created_at: string
+          details: Json
+          duration_text: string | null
+          fare_text: string | null
+          id: string
+          kind: string
+          last_verified_on: string | null
+          notes: Json
+          photo_paths: string[]
+          place_id: string | null
+          published: boolean
+          sort_order: number
+          source_url: string | null
+          title: Json
+          updated_at: string
+        }
+        Insert: {
+          body?: Json
+          category_id: string
+          created_at?: string
+          details?: Json
+          duration_text?: string | null
+          fare_text?: string | null
+          id?: string
+          kind: string
+          last_verified_on?: string | null
+          notes?: Json
+          photo_paths?: string[]
+          place_id?: string | null
+          published?: boolean
+          sort_order?: number
+          source_url?: string | null
+          title?: Json
+          updated_at?: string
+        }
+        Update: {
+          body?: Json
+          category_id?: string
+          created_at?: string
+          details?: Json
+          duration_text?: string | null
+          fare_text?: string | null
+          id?: string
+          kind?: string
+          last_verified_on?: string | null
+          notes?: Json
+          photo_paths?: string[]
+          place_id?: string | null
+          published?: boolean
+          sort_order?: number
+          source_url?: string | null
+          title?: Json
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "transport_items_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "transport_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transport_items_place_id_fkey"
+            columns: ["place_id"]
+            isOneToOne: false
+            referencedRelation: "places"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      transport_offers: {
+        Row: {
+          category_id: string
+          created_at: string
+          duration_text: string | null
+          exclusions: string | null
+          extra_charges: string | null
+          id: string
+          included_places: string | null
+          inclusions: string | null
+          price_text: string | null
+          provider_id: string
+          published: boolean
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          category_id: string
+          created_at?: string
+          duration_text?: string | null
+          exclusions?: string | null
+          extra_charges?: string | null
+          id?: string
+          included_places?: string | null
+          inclusions?: string | null
+          price_text?: string | null
+          provider_id: string
+          published?: boolean
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          category_id?: string
+          created_at?: string
+          duration_text?: string | null
+          exclusions?: string | null
+          extra_charges?: string | null
+          id?: string
+          included_places?: string | null
+          inclusions?: string | null
+          price_text?: string | null
+          provider_id?: string
+          published?: boolean
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "transport_offers_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "transport_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transport_offers_provider_id_fkey"
+            columns: ["provider_id"]
+            isOneToOne: false
+            referencedRelation: "transport_providers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      transport_provider_private: {
+        Row: {
+          agreement_notes: string | null
+          commission: string | null
+          internal_notes: string | null
+          private_phone: string | null
+          provider_id: string
+          updated_at: string
+        }
+        Insert: {
+          agreement_notes?: string | null
+          commission?: string | null
+          internal_notes?: string | null
+          private_phone?: string | null
+          provider_id: string
+          updated_at?: string
+        }
+        Update: {
+          agreement_notes?: string | null
+          commission?: string | null
+          internal_notes?: string | null
+          private_phone?: string | null
+          provider_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "transport_provider_private_provider_id_fkey"
+            columns: ["provider_id"]
+            isOneToOne: true
+            referencedRelation: "transport_providers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      transport_providers: {
+        Row: {
+          active: boolean
+          capacity: number | null
+          created_at: string
+          display_name: string
+          id: string
+          public_phone: string | null
+          service_area: string | null
+          status: string
+          updated_at: string
+          vehicle_type: string | null
+        }
+        Insert: {
+          active?: boolean
+          capacity?: number | null
+          created_at?: string
+          display_name: string
+          id?: string
+          public_phone?: string | null
+          service_area?: string | null
+          status?: string
+          updated_at?: string
+          vehicle_type?: string | null
+        }
+        Update: {
+          active?: boolean
+          capacity?: number | null
+          created_at?: string
+          display_name?: string
+          id?: string
+          public_phone?: string | null
+          service_area?: string | null
+          status?: string
+          updated_at?: string
+          vehicle_type?: string | null
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           id: string
@@ -197,6 +460,15 @@ export type Database = {
           _role: Database["public"]["Enums"]["app_role"]
           _user_id: string
         }
+        Returns: boolean
+      }
+      transport_category_is_published: {
+        Args: { _category_id: string }
+        Returns: boolean
+      }
+      transport_offer_is_live: { Args: { _offer_id: string }; Returns: boolean }
+      transport_provider_is_public: {
+        Args: { _provider_id: string }
         Returns: boolean
       }
     }
