@@ -248,6 +248,7 @@ export default function MapExplorer({ initialSlug, initialCategory, initialComma
       const route = await fetchWalkingRoute(from, to, ctrl.signal);
       drawRoute(route, !reroute);
       setNav({ state: "active", route, remaining: locateOnRoute(from, route.coords).remaining, offCount: 0 });
+      setCollapsed(true);
     } catch (e) {
       if ((e as Error).name === "AbortError") return;
       routeRef.current?.remove();

@@ -57,6 +57,7 @@ export function AdminPanel() {
 }
 
 function LocalizedFields({ value, onChange, label, multiline }: { value: Localized; onChange: (v: Localized) => void; label: string; multiline?: boolean }) {
+  const { t } = useI18n();
   const [showAll, setShowAll] = useState(false);
   const langs = showAll ? LANGS : LANGS.filter((l) => l.primary);
   const F = multiline ? Textarea : Input;
@@ -69,9 +70,9 @@ function LocalizedFields({ value, onChange, label, multiline }: { value: Localiz
           <F id={`${label}-${l.code}`} lang={l.code} value={value[l.code] ?? ""} onChange={(e: React.ChangeEvent<HTMLInputElement & HTMLTextAreaElement>) => onChange({ ...value, [l.code]: e.target.value })} className="text-base" />
         </div>
       ))}
-      <button type="button" className="min-h-10 text-xs text-primary underline-offset-4 hover:underline" onClick={() => setShowAll(!showAll)}>
-        {showAll ? "Show Telugu & English only" : "Add other languages (Tamil, Kannada, Malayalam, Hindi, Odia)"}
-      </button>
+      <Button type="button" variant="link" className="min-h-10 whitespace-normal px-0 text-xs" onClick={() => setShowAll(!showAll)}>
+        {showAll ? t("collapse") : t("moreLanguages")}
+      </Button>
     </fieldset>
   );
 }
