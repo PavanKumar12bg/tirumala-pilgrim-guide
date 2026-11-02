@@ -3,6 +3,7 @@ import { JOURNEY_COPY } from "./journey-copy";
 import { UPGRADE_COPY } from "./upgrade-copy";
 import { TTD_REPORT_COPY } from "./ttd-report-copy";
 import { SITE_COPY } from "./site-copy";
+import { TRANSPORT_COPY } from "./transport-copy";
 
 export const LANGS = [
   { code: "te", label: "తెలుగు", primary: true },
@@ -113,7 +114,7 @@ const en = {
   selectAnother: "Choose another destination",
   website: "Website",
 };
-export type DictKey = keyof typeof en | keyof typeof JOURNEY_COPY.en | keyof typeof UPGRADE_COPY.en | keyof typeof TTD_REPORT_COPY.en | keyof typeof SITE_COPY.en;
+export type DictKey = keyof typeof en | keyof typeof JOURNEY_COPY.en | keyof typeof UPGRADE_COPY.en | keyof typeof TTD_REPORT_COPY.en | keyof typeof SITE_COPY.en | keyof typeof TRANSPORT_COPY.en;
 type Dict = Record<keyof typeof en, string>;
 
 const te: Dict = {
@@ -693,10 +694,10 @@ const or: Dict = {
 };
 
 export const DICTS = {
-  en: { ...en, ...JOURNEY_COPY.en, ...UPGRADE_COPY.en, ...TTD_REPORT_COPY.en, ...SITE_COPY.en }, te: { ...te, ...JOURNEY_COPY.te, ...UPGRADE_COPY.te, ...TTD_REPORT_COPY.te, ...SITE_COPY.te },
-  ta: { ...ta, ...JOURNEY_COPY.ta, ...UPGRADE_COPY.ta, ...TTD_REPORT_COPY.ta, ...SITE_COPY.ta }, kn: { ...kn, ...JOURNEY_COPY.kn, ...UPGRADE_COPY.kn, ...TTD_REPORT_COPY.kn, ...SITE_COPY.kn },
-  ml: { ...ml, ...JOURNEY_COPY.ml, ...UPGRADE_COPY.ml, ...TTD_REPORT_COPY.ml, ...SITE_COPY.ml }, hi: { ...hi, ...JOURNEY_COPY.hi, ...UPGRADE_COPY.hi, ...TTD_REPORT_COPY.hi, ...SITE_COPY.hi },
-  or: { ...or, ...JOURNEY_COPY.or, ...UPGRADE_COPY.or, ...TTD_REPORT_COPY.or, ...SITE_COPY.or },
+  en: { ...en, ...JOURNEY_COPY.en, ...UPGRADE_COPY.en, ...TTD_REPORT_COPY.en, ...SITE_COPY.en, ...TRANSPORT_COPY.en }, te: { ...te, ...JOURNEY_COPY.te, ...UPGRADE_COPY.te, ...TTD_REPORT_COPY.te, ...SITE_COPY.te, ...TRANSPORT_COPY.te },
+  ta: { ...ta, ...JOURNEY_COPY.ta, ...UPGRADE_COPY.ta, ...TTD_REPORT_COPY.ta, ...SITE_COPY.ta, ...TRANSPORT_COPY.ta }, kn: { ...kn, ...JOURNEY_COPY.kn, ...UPGRADE_COPY.kn, ...TTD_REPORT_COPY.kn, ...SITE_COPY.kn, ...TRANSPORT_COPY.kn },
+  ml: { ...ml, ...JOURNEY_COPY.ml, ...UPGRADE_COPY.ml, ...TTD_REPORT_COPY.ml, ...SITE_COPY.ml, ...TRANSPORT_COPY.ml }, hi: { ...hi, ...JOURNEY_COPY.hi, ...UPGRADE_COPY.hi, ...TTD_REPORT_COPY.hi, ...SITE_COPY.hi, ...TRANSPORT_COPY.hi },
+  or: { ...or, ...JOURNEY_COPY.or, ...UPGRADE_COPY.or, ...TTD_REPORT_COPY.or, ...SITE_COPY.or, ...TRANSPORT_COPY.or },
 };
 
 /** Pick a localized string from a {lang: text} object with sensible fallbacks. */

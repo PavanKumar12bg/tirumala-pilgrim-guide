@@ -19,6 +19,9 @@ import { Route as MapRouteImport } from './routes/map'
 import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as TermsRouteImport } from './routes/terms'
 import { Route as TtdRouteImport } from './routes/ttd'
+import { Route as TransportIndexRouteImport } from './routes/transport.index'
+import { Route as TransportSlugRouteImport } from './routes/transport.$slug'
+import { Route as TransportSlugStopStopIdRouteImport } from './routes/transport.$slug_.stop.$stopId'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -70,6 +73,21 @@ const TtdRoute = TtdRouteImport.update({
   path: '/ttd',
   getParentRoute: () => rootRouteImport,
 } as any)
+const TransportIndexRoute = TransportIndexRouteImport.update({
+  id: '/transport/',
+  path: '/transport/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TransportSlugRoute = TransportSlugRouteImport.update({
+  id: '/transport/$slug',
+  path: '/transport/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TransportSlugStopStopIdRoute = TransportSlugStopStopIdRouteImport.update({
+  id: '/transport/$slug_/stop/$stopId',
+  path: '/transport/$slug/stop/$stopId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -82,6 +100,9 @@ export interface FileRoutesByFullPath {
   '/privacy': typeof PrivacyRoute
   '/terms': typeof TermsRoute
   '/ttd': typeof TtdRoute
+  '/transport/$slug': typeof TransportSlugRoute
+  '/transport/': typeof TransportIndexRoute
+  '/transport/$slug/stop/$stopId': typeof TransportSlugStopStopIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -94,6 +115,9 @@ export interface FileRoutesByTo {
   '/privacy': typeof PrivacyRoute
   '/terms': typeof TermsRoute
   '/ttd': typeof TtdRoute
+  '/transport/$slug': typeof TransportSlugRoute
+  '/transport': typeof TransportIndexRoute
+  '/transport/$slug/stop/$stopId': typeof TransportSlugStopStopIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -107,6 +131,9 @@ export interface FileRoutesById {
   '/privacy': typeof PrivacyRoute
   '/terms': typeof TermsRoute
   '/ttd': typeof TtdRoute
+  '/transport/$slug': typeof TransportSlugRoute
+  '/transport/': typeof TransportIndexRoute
+  '/transport/$slug_/stop/$stopId': typeof TransportSlugStopStopIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -121,6 +148,9 @@ export interface FileRouteTypes {
     | '/privacy'
     | '/terms'
     | '/ttd'
+    | '/transport/$slug'
+    | '/transport/'
+    | '/transport/$slug/stop/$stopId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -133,6 +163,9 @@ export interface FileRouteTypes {
     | '/privacy'
     | '/terms'
     | '/ttd'
+    | '/transport/$slug'
+    | '/transport'
+    | '/transport/$slug/stop/$stopId'
   id:
     | '__root__'
     | '/'
@@ -145,6 +178,9 @@ export interface FileRouteTypes {
     | '/privacy'
     | '/terms'
     | '/ttd'
+    | '/transport/$slug'
+    | '/transport/'
+    | '/transport/$slug_/stop/$stopId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -158,6 +194,9 @@ export interface RootRouteChildren {
   PrivacyRoute: typeof PrivacyRoute
   TermsRoute: typeof TermsRoute
   TtdRoute: typeof TtdRoute
+  TransportSlugRoute: typeof TransportSlugRoute
+  TransportIndexRoute: typeof TransportIndexRoute
+  TransportSlugStopStopIdRoute: typeof TransportSlugStopStopIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -232,6 +271,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TtdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/transport/': {
+      id: '/transport/'
+      path: '/transport'
+      fullPath: '/transport/'
+      preLoaderRoute: typeof TransportIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/transport/$slug': {
+      id: '/transport/$slug'
+      path: '/transport/$slug'
+      fullPath: '/transport/$slug'
+      preLoaderRoute: typeof TransportSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/transport/$slug_/stop/$stopId': {
+      id: '/transport/$slug_/stop/$stopId'
+      path: '/transport/$slug/stop/$stopId'
+      fullPath: '/transport/$slug/stop/$stopId'
+      preLoaderRoute: typeof TransportSlugStopStopIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -246,6 +306,9 @@ const rootRouteChildren: RootRouteChildren = {
   PrivacyRoute: PrivacyRoute,
   TermsRoute: TermsRoute,
   TtdRoute: TtdRoute,
+  TransportSlugRoute: TransportSlugRoute,
+  TransportIndexRoute: TransportIndexRoute,
+  TransportSlugStopStopIdRoute: TransportSlugStopStopIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
