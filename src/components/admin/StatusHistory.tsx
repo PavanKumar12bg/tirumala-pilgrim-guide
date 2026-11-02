@@ -27,8 +27,8 @@ export function StatusHistory() {
  return <section className="space-y-4 border-t pt-5">
   <h2 className="text-xl text-primary">{t("dailyHistory")}</h2>
   <div className="grid grid-cols-2 gap-3">
-   <div className="min-w-0"><Label htmlFor="history-from">{t("date")} · {t("morningStart")}</Label><Input id="history-from" type="date" value={from} onChange={e => setFrom(e.target.value)} className="w-full min-w-0" /></div>
-   <div className="min-w-0"><Label htmlFor="history-to">{t("date")} · {t("allEntries")}</Label><Input id="history-to" type="date" value={to} onChange={e => setTo(e.target.value)} className="w-full min-w-0" /></div>
+   <div className="min-w-0"><Label htmlFor="history-from">{t("fromDate")}</Label><Input id="history-from" type="date" value={from} onChange={e => setFrom(e.target.value)} className="w-full min-w-0" /></div>
+   <div className="min-w-0"><Label htmlFor="history-to">{t("toDate")}</Label><Input id="history-to" type="date" value={to} onChange={e => setTo(e.target.value)} className="w-full min-w-0" /></div>
   </div>
   {query.isLoading ? <p>{t("loading")}</p> : query.isError ? <div role="alert"><p>{t("errorLoad")}</p><Button variant="outline" onClick={() => query.refetch()}>{t("retry")}</Button></div> : !daily.length ? <p className="text-sm text-muted-foreground">{t("noHistory")}</p> : <>
    <dl className="grid grid-cols-2 gap-4"><div><dt className="text-xs text-muted-foreground">{t("entries")}</dt><dd className="text-2xl">{query.data?.length}</dd></div><div><dt className="text-xs text-muted-foreground">{t("waitChange")}</dt><dd className="text-2xl">{change == null ? "—" : `${change > 0 ? "+" : ""}${change}`} <span className="text-sm">{change != null ? t("hours") : ""}</span></dd></div></dl>
