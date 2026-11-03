@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { Plus, Trash2, Upload, ImageOff, Loader2, Crosshair, Eye, EyeOff } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { announcementsQuery, CATEGORIES, IMAGE_BUCKET, placesQuery, statusQuery, type Localized, type Place } from "@/lib/places";
+import { announcementsQuery, CATEGORIES, IMAGE_BUCKET, officialStatusQuery, placesQuery, statusQuery, type Localized, type Place } from "@/lib/places";
 import { DICTS, LANGS, useI18n } from "@/lib/i18n";
 import { isInsideTirumala } from "@/lib/geo";
 import { compressToWebp } from "@/lib/image-compress";
@@ -50,7 +50,7 @@ export function AdminPanel() {
           <div className="mt-5 flex flex-wrap gap-3"><Button className="min-h-12" onClick={() => setTab("places")}>{t("managePlaces")}</Button><Button variant="outline" className="min-h-12" onClick={() => setTab("review")}>{t("reviewPlaces")}</Button></div>
         </>}
       </TabsContent>
-      <TabsContent value="status" className="mt-4"><StatusEditor /><div className="mt-6"><StatusHistory /></div></TabsContent>
+      <TabsContent value="status" className="mt-4"><ManualDarshanEditor /><StatusEditor /><div className="mt-6"><StatusHistory /></div></TabsContent>
       <TabsContent value="ticker" className="mt-4"><TickerEditor /></TabsContent>
       <TabsContent value="places" className="mt-4"><PlacesEditor mode="all" /></TabsContent>
       <TabsContent value="review" className="mt-4"><PlacesEditor mode="review" /></TabsContent>
@@ -77,6 +77,70 @@ function LocalizedFields({ value, onChange, label, multiline }: { value: Localiz
         {showAll ? t("collapse") : t("moreLanguages")}
       </Button>
     </fieldset>
+  );
+}
+
+function ManualDarshanEditor() {
+  const qc = useQueryClient();
+  const { data, isLoading } = useQuery(statusQuery());
+  const official = useQuery(officialStatusQuery());
+  const [manual, setManual] = useState(false);
+  const [min, setMin] = useState("");
+  const [max, setMax] = useState("");
+  const [comp, setComp] = useState("");
+  const [busy, setBusy] = useState(false);
+  useEffect(() => {
+    if (!data) return;
+    setManual(data.manual_mode === "manual");
+    setMin(data.manual_wait_min_hours != null ? String(data.manual_wait_min_hours) : "");
+    setMax(data.manual_wait_max_hours != null ? String(data.manual_wait_max_hours) : "");
+    setComp(data.manual_compartments != null ? String(data.manual_compartments) : "");
+  }, [data]);
+
+  const save = async () => {
+    const lo = min === "" ? null : Number(min);
+    const hi = max === "" ? lo : Number(max);
+    const c = comp === "" ? null : Math.round(Number(comp));
+    if (manual && lo == null && c == null) { toast.error("Enter a waiting time or compartments before switching to manual."); return; }
+    if (lo != null && hi != null && hi < lo) { toast.error("Maximum hours must be equal to or more than minimum hours."); return; }
+    setBusy(true);
+    const { data: saved, error } = await supabase.from("site_status").update({
+      manual_mode: manual ? "manual" : "auto",
+      manual_wait_min_hours: lo,
+      manual_wait_max_hours: hi,
+      manual_compartments: c,
+      manual_updated_at: new Date().toISOString(),
+    }).eq("id", 1).select("id");
+    setBusy(false);
+    if (error) { toast.error(error.message); return; }
+    if (!saved?.length) { toast.error("Could not save"); return; }
+    toast.success(manual ? "Saved — pilgrims now see your figures" : "Saved — pilgrims see the TTD report");
+    qc.invalidateQueries({ queryKey: ["site_status"] });
+  };
+
+  if (isLoading) return <Loader2 className="size-5 animate-spin" />;
+  const r = official.data?.report;
+  return (
+    <form onSubmit={(e) => { e.preventDefault(); void save(); }} className="mb-6 space-y-4 rounded-xl bg-card p-4 ring-1 ring-border">
+      <div>
+        <h2 className="text-xl text-primary">Darshan time &amp; compartments (home page)</h2>
+        <p className="mt-1 text-sm text-muted-foreground">
+          TTD report now: {r ? `${r.wait_min_hours}–${r.wait_max_hours} hours · ${r.waiting_compartments ?? "?"} compartments · ${r.report_date}` : "could not be read"}.
+          {" "}Turn on manual to show your own figures instead. If the TTD report cannot be read, your saved figures are shown automatically.
+        </p>
+      </div>
+      <label className="flex min-h-12 items-center justify-between gap-3 rounded-lg bg-secondary px-3">
+        <span className="font-semibold">Show my figures instead of the TTD report</span>
+        <Switch checked={manual} onCheckedChange={setManual} aria-label="Use manual darshan figures" />
+      </label>
+      <div className="grid grid-cols-3 gap-3">
+        <div className="space-y-1.5"><Label htmlFor="mmin">Wait from (h)</Label><Input id="mmin" type="number" inputMode="decimal" min={0} max={72} step={0.5} value={min} onChange={(e) => setMin(e.target.value)} className="h-11 text-base" /></div>
+        <div className="space-y-1.5"><Label htmlFor="mmax">Wait to (h)</Label><Input id="mmax" type="number" inputMode="decimal" min={0} max={72} step={0.5} value={max} onChange={(e) => setMax(e.target.value)} className="h-11 text-base" /></div>
+        <div className="space-y-1.5"><Label htmlFor="mcomp">Compartments</Label><Input id="mcomp" type="number" inputMode="numeric" min={0} max={100} step={1} value={comp} onChange={(e) => setComp(e.target.value)} className="h-11 text-base" /></div>
+      </div>
+      {data?.manual_updated_at ? <p className="text-xs text-muted-foreground">Last saved: {new Date(data.manual_updated_at).toLocaleString("en-IN", { timeZone: "Asia/Kolkata" })}. Pilgrims see "Entered by the guide admin" with this time.</p> : null}
+      <Button type="submit" disabled={busy} className="min-h-12">{busy ? <Loader2 className="size-4 animate-spin" /> : "Save darshan figures"}</Button>
+    </form>
   );
 }
 

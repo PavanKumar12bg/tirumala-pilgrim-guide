@@ -22,10 +22,12 @@ describe("public transport data", () => {
   it("builds call links from the public number only", () => {
     expect(telHref("+91 90000-00000")).toBe("tel:+919000000000");
     expect(telHref(null)).toBeNull();
+    expect(telHref("149")).toBe("tel:149");
+    expect(telHref("12")).toBeNull();
   });
-  it("free bus layout shows the no-live-data notice and no providers", () => {
+  it("free bus layout shows the no-live-data notice and its operators", () => {
     expect(TEMPLATE_DEFS.bus_routes.noLiveNotice).toBe(true);
-    expect(TEMPLATE_DEFS.bus_routes.providers).toBe(false);
+    expect(TEMPLATE_DEFS.bus_routes.providers).toBe(true);
   });
   it("has transport wording in all seven languages", () => {
     for (const { code } of LANGS) for (const k of Object.keys(TRANSPORT_COPY.en) as (keyof typeof TRANSPORT_COPY.en)[]) expect(DICTS[code][k].trim().length).toBeGreaterThan(0);
