@@ -91,6 +91,11 @@ export type SiteStatus = {
   darshan_note: Localized;
   crowd_level: CrowdLevel | null;
   updated_at: string;
+  manual_mode?: "auto" | "manual";
+  manual_wait_min_hours?: number | null;
+  manual_wait_max_hours?: number | null;
+  manual_compartments?: number | null;
+  manual_updated_at?: string | null;
 };
 export const statusQuery = () =>
   queryOptions({
