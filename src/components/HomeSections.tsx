@@ -2,7 +2,8 @@ import { Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { Clock, MapPin, Users, ChevronRight, AlertCircle } from "lucide-react";
 import { useMemo, useState } from "react";
-import { catKey, CATEGORIES, hasVerifiedCoords, placesQuery, officialStatusQuery } from "@/lib/places";
+import { catKey, CATEGORIES, hasVerifiedCoords, placesQuery, officialStatusQuery, statusQuery } from "@/lib/places";
+import { formatWait, resolveDarshan } from "@/lib/darshan-display";
 import { isCurrentTtdReport, shouldAlertWaitJump, waitJumpHours } from "@/lib/ttd-report";
 import { TrendingUp } from "lucide-react";
 import { pickLocalized, useI18n } from "@/lib/i18n";
@@ -14,14 +15,18 @@ import hillsImg from "@/assets/tirumala-hills.jpg";
 
 export function StatusCards() {
   const { t, lang } = useI18n();
-  const { data, isLoading, isError, refetch } = useQuery(officialStatusQuery());
+  const { data, isLoading: officialLoading, isError, refetch } = useQuery(officialStatusQuery());
+  const manual = useQuery({ ...statusQuery(), refetchInterval: 60_000 });
   const report = data?.report;
+  const shown = resolveDarshan(report, manual.data);
+  const isAdmin = shown?.source === "admin";
+  const isLoading = officialLoading || manual.isLoading;
 
-  if (isError) return <ErrorBox onRetry={() => refetch()} />;
+  if (isError && !shown) return <ErrorBox onRetry={() => refetch()} />;
 
   return (
     <div className="grid grid-cols-2 gap-3">
-      {shouldAlertWaitJump(report, data?.previous) ? (
+      {!isAdmin && shouldAlertWaitJump(report, data?.previous) ? (
         <div role="alert" className="col-span-2 flex items-start gap-2 rounded-lg bg-warning/15 p-3 text-sm font-semibold text-foreground ring-1 ring-warning/50">
           <TrendingUp className="mt-0.5 size-4 shrink-0 text-warning" aria-hidden />
           <span>{t("waitJumpAlert").replace("{h}", String(waitJumpHours(report, data?.previous)))} <span className="font-normal text-muted-foreground">({t("previousReport")}: {data?.previous?.wait_min_hours}–{data?.previous?.wait_max_hours} {t("hours")})</span></span>
@@ -32,9 +37,9 @@ export function StatusCards() {
           <Clock className="size-4 text-gold" aria-hidden />
           {t("darshanWait")}
         </div>
-        {isLoading ? <Skeleton className="mt-3 h-9 w-20" /> : report ? (
+        {isLoading ? <Skeleton className="mt-3 h-9 w-20" /> : shown && formatWait(shown) ? (
           <p className="mt-2 font-display text-3xl text-primary">
-            {report.wait_min_hours === report.wait_max_hours ? report.wait_min_hours : `${report.wait_min_hours}–${report.wait_max_hours}`} <span className="text-base font-sans text-muted-foreground">{t("hours")}</span>
+            {formatWait(shown)} <span className="text-base font-sans text-muted-foreground">{t("hours")}</span>
           </p>
         ) : (
           <p className="mt-3 text-sm font-medium text-muted-foreground">{t("unavailable")}</p>
@@ -45,8 +50,8 @@ export function StatusCards() {
           <Users className="size-4 text-gold" aria-hidden />
           {t("queueCompartments")}
         </div>
-        {isLoading ? <Skeleton className="mt-3 h-9 w-24" /> : report?.waiting_compartments != null ? (
-            <p className="mt-2 font-display text-3xl text-primary">{report.waiting_compartments}</p>
+        {isLoading ? <Skeleton className="mt-3 h-9 w-24" /> : shown?.waiting_compartments != null ? (
+            <p className="mt-2 font-display text-3xl text-primary">{shown.waiting_compartments}</p>
         ) : (
           <p className="mt-3 text-sm font-medium text-muted-foreground">{t("unavailable")}</p>
         )}
@@ -54,11 +59,16 @@ export function StatusCards() {
       <p className="col-span-2 flex items-start gap-1.5 px-1 text-xs text-muted-foreground">
         <AlertCircle className="mt-0.5 size-3.5 shrink-0" aria-hidden />
         <span className="space-y-1">
+          {isAdmin ? <>
+            <span className="block font-semibold text-foreground">{t("adminEntered")}{shown.as_of ? ` · ${t("updatedAt")}: ${new Date(shown.as_of).toLocaleString(lang, { timeZone: "Asia/Kolkata", dateStyle: "medium", timeStyle: "short" })}` : ""}</span>
+            <span className="block">{t("reportNotLive")}</span>
+          </> : <>
           <span className="block">{report ? <a href={report.source_url} target="_blank" rel="noopener noreferrer" className="underline underline-offset-2">{t("officialReport")}</a> : t("reportUnavailable")}{report ? ` · ${t("reportDate")}: ${new Date(`${report.report_date}T00:00:00+05:30`).toLocaleDateString(lang, { timeZone: "Asia/Kolkata" })}` : ""}</span>
           <span className="block">{t("reportNotLive")}</span>
           {report && !isCurrentTtdReport(report) ? <span className="block text-warning">{t("reportStale")}</span> : null}
           {data?.unavailable && report ? <span className="block text-warning">{t("reportUnavailable")}</span> : null}
           {data?.checked_at ? <span className="block">{t("checkedAt")}: {new Date(data.checked_at).toLocaleString(lang, { timeZone: "Asia/Kolkata" })}</span> : null}
+          </>}
         </span>
       </p>
     </div>
