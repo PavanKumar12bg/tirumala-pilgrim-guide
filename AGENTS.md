@@ -21,7 +21,7 @@
 - AI photo identification runs only in the admin-checked server function `src/lib/photo-identify.functions.ts` (model call in `photo-identify.server.ts`); the AI only suggests a place id from existing records and the admin confirms before any save.
 - Map markers declutter with a built-in screen-grid clustering in `MapExplorer` (no plugin); floating map controls live in the same bottom stack as the place card so they cannot overlap it.
 - The public journey planner stores validated personal itineraries on the current device and references canonical place IDs; arrival plans are manually entered rather than invented travel estimates.
-- Home status cards and ticker consume the same official-report query; admin-entered site status remains separate in admin history, and announcements never masquerade as live telemetry.
+- Home status cards and ticker resolve darshan figures via `resolveDarshan` (`src/lib/darshan-display.ts`): admin manual figures (site_status manual_* columns) show only when admin enables manual mode or no TTD report is readable, always labeled as admin-entered with save time; TTD parsing stays untouched.
 - TopBar owns the persistent announcement ticker on public and admin pages; map height is flex-allocated and observed for Leaflet resizing to avoid content overlap.
 - Every site-status save appends a database-triggered, admin-readable history snapshot; trends use latest actual saves per India-calendar day without filling missing days.
 - Browser voice is a one-utterance progressive enhancement with editable transcript and controlled commands; device recognition/voices are not guaranteed and text remains usable. Proposed navigation selects a place but still requires Start Navigation.

@@ -20,3 +20,5 @@
 - [ ] AdSense script + ads.txt: needs publishing on a custom domain and the AdSense publisher ID.
 
 - [x] Trip & Transport page with admin-managed categories, templates, items, providers and offers (private provider data admin-only; RLS checked).
+- [x] Admin manual darshan wait/compartments override with labeled display on home cards and ticker.
+- [x] Official operators (APSRTC 149, TTD 155257) with TTD-published fares on Tirupati to Tirumala and Free Bus Routes; private taxi operators need admin-entered verified details.

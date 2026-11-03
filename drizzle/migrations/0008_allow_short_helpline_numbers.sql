@@ -1,0 +1,2 @@
+ALTER TABLE public.transport_providers DROP CONSTRAINT transport_providers_public_phone_check;
+ALTER TABLE public.transport_providers ADD CONSTRAINT transport_providers_public_phone_check CHECK (public_phone IS NULL OR public_phone ~ '^\+?[0-9][0-9 -]{2,19}$');

@@ -14,7 +14,7 @@ export type ItemKind = (typeof ITEM_KINDS)[number];
 export const TEMPLATE_DEFS: Record<TemplateId, { label: string; itemKind: ItemKind; heading: DictKey; providers: boolean; noLiveNotice?: boolean }> = {
   package: { label: "Package (destinations + providers)", itemKind: "destination", heading: "destinations", providers: true },
   route_guide: { label: "Route guide (road / bus / footpath)", itemKind: "route_option", heading: "routeOptions", providers: true },
-  bus_routes: { label: "Bus routes (stops, no live data)", itemKind: "bus_route", heading: "routeOptions", providers: false, noLiveNotice: true },
+  bus_routes: { label: "Bus routes (stops, no live data)", itemKind: "bus_route", heading: "routeOptions", providers: true, noLiveNotice: true },
   pickup: { label: "Pickup providers", itemKind: "pickup_point", heading: "pickupPoints", providers: true },
   help_info: { label: "Help & information", itemKind: "help_note", heading: "helpNotes", providers: false },
 };
@@ -51,7 +51,7 @@ export function toPublicOffers(offers: Record<string, unknown>[], providers: Rec
 /** tel: link built only from the public number (digits and leading +). */
 export const telHref = (phone: string | null) => {
   const clean = (phone ?? "").replace(/[^\d+]/g, "");
-  return clean.length >= 6 ? `tel:${clean}` : null;
+  return clean.replace("+", "").length >= 3 ? `tel:${clean}` : null;
 };
 
 async function sign(paths: string[]) {

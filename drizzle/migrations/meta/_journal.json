@@ -50,6 +50,20 @@
       "when": 1793603753221,
       "tag": "0006_trip_transport",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1793675636961,
+      "tag": "0007_manual_darshan_figures",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1793675763570,
+      "tag": "0008_allow_short_helpline_numbers",
+      "breakpoints": true
     }
   ]
 }

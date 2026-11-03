@@ -119,6 +119,11 @@ export type Database = {
           darshan_note: Json
           darshan_wait_hours: number | null
           id: number
+          manual_compartments: number | null
+          manual_mode: string
+          manual_updated_at: string | null
+          manual_wait_max_hours: number | null
+          manual_wait_min_hours: number | null
           updated_at: string
         }
         Insert: {
@@ -126,6 +131,11 @@ export type Database = {
           darshan_note?: Json
           darshan_wait_hours?: number | null
           id?: number
+          manual_compartments?: number | null
+          manual_mode?: string
+          manual_updated_at?: string | null
+          manual_wait_max_hours?: number | null
+          manual_wait_min_hours?: number | null
           updated_at?: string
         }
         Update: {
@@ -133,6 +143,11 @@ export type Database = {
           darshan_note?: Json
           darshan_wait_hours?: number | null
           id?: number
+          manual_compartments?: number | null
+          manual_mode?: string
+          manual_updated_at?: string | null
+          manual_wait_max_hours?: number | null
+          manual_wait_min_hours?: number | null
           updated_at?: string
         }
         Relationships: []

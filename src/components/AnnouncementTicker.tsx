@@ -1,7 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { Megaphone } from "lucide-react";
-import { announcementsQuery, officialStatusQuery } from "@/lib/places";
+import { announcementsQuery, officialStatusQuery, statusQuery } from "@/lib/places";
+import { formatWait, resolveDarshan } from "@/lib/darshan-display";
 import { isCurrentTtdReport } from "@/lib/ttd-report";
 import { pickLocalized, useI18n } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
@@ -10,6 +11,7 @@ export function AnnouncementTicker() {
  const { t, lang } = useI18n();
  const announcements = useQuery({ ...announcementsQuery(), refetchInterval: 60_000 });
  const status = useQuery(officialStatusQuery());
+ const manual = useQuery({ ...statusQuery(), refetchInterval: 60_000 });
  const [open, setOpen] = useState(false);
  const [read, setRead] = useState("");
  const active = (announcements.data ?? []).filter(a => a.active);
@@ -17,10 +19,17 @@ export function AnnouncementTicker() {
  useEffect(() => { try { setRead(localStorage.getItem("tg-announcements-read") ?? ""); } catch { /* unavailable storage does not block announcements */ } }, []);
  const report = status.data?.report;
  const items: string[] = [];
- if (report) {
+ const shown = resolveDarshan(report, manual.data);
+ if (shown?.source === "admin") {
+  const wait = formatWait(shown);
+  if (wait) items.push(`${t("adminEntered")} · ${t("darshanWait")}: ${wait} ${t("hours")}`);
+  if (shown.waiting_compartments != null) items.push(`${t("queueCompartments")}: ${shown.waiting_compartments}`);
+  if (shown.as_of) items.push(`${t("updatedAt")}: ${new Date(shown.as_of).toLocaleString(lang, { timeZone: "Asia/Kolkata", dateStyle: "medium", timeStyle: "short" })}`);
+  items.push(t("reportNotLive"));
+ } else if (report) {
   items.push(`${t("officialReport")} · ${t("darshanWait")}: ${report.wait_min_hours === report.wait_max_hours ? report.wait_min_hours : `${report.wait_min_hours}–${report.wait_max_hours}`} ${t("hours")}`);
   if (report.waiting_compartments != null) items.push(`${t("queueCompartments")}: ${report.waiting_compartments}`);
-  items.push(`${t("reportDate")}: ${report.report_date}`, t("reportNotLive"));
+  items.push(`${t("reportDate")}: ${new Date(`${report.report_date}T00:00:00+05:30`).toLocaleDateString(lang, { timeZone: "Asia/Kolkata" })}`, t("reportNotLive"));
   if (!isCurrentTtdReport(report)) items.push(t("reportStale"));
   if (status.data?.unavailable) items.push(t("reportUnavailable"));
  }
