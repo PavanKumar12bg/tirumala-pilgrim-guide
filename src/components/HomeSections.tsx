@@ -60,7 +60,7 @@ export function StatusCards() {
         <AlertCircle className="mt-0.5 size-3.5 shrink-0" aria-hidden />
         <span className="space-y-1">
           {isAdmin ? <>
-            <span className="block font-semibold text-foreground">{t("adminEntered")}{shown.as_of ? ` · ${t("updatedAt")}: ${new Date(shown.as_of).toLocaleString(lang, { timeZone: "Asia/Kolkata", dateStyle: "medium", timeStyle: "short" })}` : ""}</span>
+            <span className="block font-semibold text-foreground">{t("adminEntered")}{shown?.as_of ? ` · ${t("updatedAt")}: ${new Date(shown.as_of).toLocaleString(lang, { timeZone: "Asia/Kolkata", dateStyle: "medium", timeStyle: "short" })}` : ""}</span>
             <span className="block">{t("reportNotLive")}</span>
           </> : <>
           <span className="block">{report ? <a href={report.source_url} target="_blank" rel="noopener noreferrer" className="underline underline-offset-2">{t("officialReport")}</a> : t("reportUnavailable")}{report ? ` · ${t("reportDate")}: ${new Date(`${report.report_date}T00:00:00+05:30`).toLocaleDateString(lang, { timeZone: "Asia/Kolkata" })}` : ""}</span>
