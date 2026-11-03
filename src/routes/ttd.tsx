@@ -6,6 +6,7 @@ import { StatusCards } from "@/components/HomeSections";
 import { useI18n } from "@/lib/i18n";
 import { officialStatusQuery } from "@/lib/places";
 import { TTD_NEWS_URL } from "@/lib/ttd-report";
+import { TirumalaInfoLink } from "@/components/TirumalaInfoLink";
 export const Route = createFileRoute("/ttd")({ head: () => pageMeta("Official TTD reports", "Links to TTD's official news site and today's full daily darshan report."), component: Page });
 function Page() {
   const { t } = useI18n();
@@ -16,6 +17,7 @@ function Page() {
     {data?.report ? <a className={btn} href={data.report.source_url} target="_blank" rel="noopener noreferrer">{t("readFullReport")}<ExternalLink className="size-4" aria-hidden /></a> : null}
     <a className={btn} href={TTD_NEWS_URL} target="_blank" rel="noopener noreferrer">{t("openTtdSite")}<ExternalLink className="size-4" aria-hidden /></a>
     <StatusCards />
+    <TirumalaInfoLink />
     <p className="text-sm text-muted-foreground">{t("notAffiliated")}</p>
   </InfoPage>;
 }
