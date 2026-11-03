@@ -16,7 +16,7 @@ const COPY: Record<string, { title: string; body: string }> = {
 
 export function TirumalaInfoLink() {
   const { lang } = useI18n();
-  const c = COPY[lang] ?? COPY.en;
+  const c = COPY[lang] ?? COPY["en"]!;
   return <a href={TIRUMALAINFO_LIVE_URL} target="_blank" rel="noopener noreferrer" className="flex min-h-12 items-start justify-between gap-3 rounded-lg bg-card px-4 py-3 shadow-soft ring-1 ring-border">
     <span><span className="block font-semibold text-primary">{c.title}</span><span className="block text-xs text-muted-foreground">{c.body}</span></span>
     <ExternalLink className="mt-1 size-4 shrink-0 text-primary" aria-hidden />
