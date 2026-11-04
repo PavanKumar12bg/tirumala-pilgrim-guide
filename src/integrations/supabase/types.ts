@@ -463,6 +463,113 @@ export type Database = {
         }
         Relationships: []
       }
+      voice_announcement_langs: {
+        Row: {
+          announcement_id: string
+          audio_hash: string | null
+          audio_path: string | null
+          audio_status: string
+          error: string | null
+          id: string
+          lang: string
+          text: string | null
+          text_hash: string | null
+          text_status: string
+          updated_at: string
+        }
+        Insert: {
+          announcement_id: string
+          audio_hash?: string | null
+          audio_path?: string | null
+          audio_status?: string
+          error?: string | null
+          id?: string
+          lang: string
+          text?: string | null
+          text_hash?: string | null
+          text_status?: string
+          updated_at?: string
+        }
+        Update: {
+          announcement_id?: string
+          audio_hash?: string | null
+          audio_path?: string | null
+          audio_status?: string
+          error?: string | null
+          id?: string
+          lang?: string
+          text?: string | null
+          text_hash?: string | null
+          text_status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "voice_announcement_langs_announcement_id_fkey"
+            columns: ["announcement_id"]
+            isOneToOne: false
+            referencedRelation: "voice_announcements"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      voice_announcements: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          published_at: string | null
+          source_lang: string
+          source_text: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          published_at?: string | null
+          source_lang?: string
+          source_text: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          published_at?: string | null
+          source_lang?: string
+          source_text?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      voice_settings: {
+        Row: {
+          autoplay_enabled: boolean
+          id: number
+          repeat_enabled: boolean
+          repeat_minutes: number
+          updated_at: string
+        }
+        Insert: {
+          autoplay_enabled?: boolean
+          id?: number
+          repeat_enabled?: boolean
+          repeat_minutes?: number
+          updated_at?: string
+        }
+        Update: {
+          autoplay_enabled?: boolean
+          id?: number
+          repeat_enabled?: boolean
+          repeat_minutes?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -477,6 +584,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      publish_voice_announcement: { Args: { _id: string }; Returns: boolean }
       transport_category_is_published: {
         Args: { _category_id: string }
         Returns: boolean
@@ -484,6 +592,10 @@ export type Database = {
       transport_offer_is_live: { Args: { _offer_id: string }; Returns: boolean }
       transport_provider_is_public: {
         Args: { _provider_id: string }
+        Returns: boolean
+      }
+      voice_announcement_is_published: {
+        Args: { _id: string }
         Returns: boolean
       }
     }
