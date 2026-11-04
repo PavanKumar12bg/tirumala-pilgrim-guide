@@ -22,7 +22,7 @@ async function assertAdmin(ctx: { supabase: any; userId: string }) {
 /** Create (or re-create) the single draft and translate it into all 7 languages. */
 export const createAndTranslate = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: { text: string; sourceLang?: string; draftId?: string }) => ({
+  .inputValidator((d: { text: string; sourceLang?: string | undefined; draftId?: string | undefined }) => ({
     text: validateSource(d?.text),
     sourceLang: (VOICE_LANGS as readonly string[]).includes(d?.sourceLang ?? "") ? (d.sourceLang as VoiceLang) : "te",
     draftId: typeof d?.draftId === "string" ? d.draftId : undefined,

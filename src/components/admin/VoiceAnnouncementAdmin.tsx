@@ -66,7 +66,7 @@ export function VoiceAnnouncementAdmin() {
     if (data?.signedUrl) void new Audio(data.signedUrl).play();
   };
 
-  const saveSettings = async (patch: Record<string, unknown>) => {
+  const saveSettings = async (patch: { autoplay_enabled?: boolean; repeat_enabled?: boolean; repeat_minutes?: number }) => {
     const { error } = await supabase.from("voice_settings").update(patch).eq("id", 1);
     if (error) toast.error("Could not save settings"); else { toast.success("Saved"); void qc.invalidateQueries({ queryKey: ["voice_settings"] }); }
   };
