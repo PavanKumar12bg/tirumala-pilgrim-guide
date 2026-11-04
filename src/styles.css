@@ -62,12 +62,12 @@
 }
 
 :root {
-  --radius: 1rem;
-  --silver: oklch(0.912 0.01 240);
-  --aubergine: oklch(0.27 0.09 335);
-  --aubergine-deep: oklch(0.19 0.07 335);
-  --marigold: oklch(0.77 0.16 80);
-  --gold: oklch(0.68 0.11 78);
+  --radius: 0.5rem;
+  --silver: oklch(0.95 0.013 85);
+  --aubergine: oklch(0.34 0.104 17);
+  --aubergine-deep: oklch(0.25 0.073 17);
+  --marigold: oklch(0.71 0.11 82);
+  --gold: oklch(0.50 0.084 80);
   --success: oklch(0.58 0.12 155);
   --warning: oklch(0.55 0.15 45);
   --map-me: oklch(0.55 0.2 255);
@@ -78,25 +78,25 @@
   --map-road: oklch(0.72 0.1 75);
   --map-foot: oklch(0.42 0.09 335);
 
-  --background: oklch(0.955 0.007 240);
-  --foreground: oklch(0.22 0.06 335);
-  --card: oklch(0.99 0.003 240);
-  --card-foreground: oklch(0.22 0.06 335);
-  --popover: oklch(0.99 0.003 240);
-  --popover-foreground: oklch(0.22 0.06 335);
+  --background: oklch(0.98 0.008 90);
+  --foreground: oklch(0.27 0.012 60);
+  --card: oklch(0.995 0.003 90);
+  --card-foreground: var(--foreground);
+  --popover: var(--card);
+  --popover-foreground: var(--foreground);
   --primary: var(--aubergine);
-  --primary-foreground: oklch(0.97 0.006 240);
+  --primary-foreground: oklch(0.98 0.008 90);
   --secondary: var(--silver);
   --secondary-foreground: var(--aubergine);
-  --muted: oklch(0.925 0.009 240);
-  --muted-foreground: oklch(0.45 0.04 330);
+  --muted: oklch(0.94 0.013 85);
+  --muted-foreground: oklch(0.46 0.019 60);
   --accent: var(--marigold);
   --accent-foreground: var(--aubergine-deep);
   --destructive: oklch(0.55 0.2 27);
   --destructive-foreground: oklch(0.98 0 0);
-  --border: oklch(0.88 0.012 260);
-  --input: oklch(0.86 0.015 260);
-  --ring: var(--marigold);
+  --border: oklch(0.86 0.021 80);
+  --input: oklch(0.78 0.024 80);
+  --ring: var(--primary);
   --chart-1: var(--aubergine);
   --chart-2: var(--marigold);
   --chart-3: var(--gold);
@@ -112,10 +112,10 @@
   --sidebar-ring: var(--ring);
 
   --gradient-hero: linear-gradient(180deg, color-mix(in oklab, var(--aubergine-deep) 10%, transparent) 0%, color-mix(in oklab, var(--aubergine-deep) 92%, transparent) 78%);
-  --gradient-aubergine: linear-gradient(140deg, var(--aubergine) 0%, var(--aubergine-deep) 100%);
-  --gradient-gold: linear-gradient(120deg, var(--marigold), var(--gold));
-  --shadow-soft-v: 0 1px 2px color-mix(in oklab, var(--aubergine) 8%, transparent), 0 8px 24px -12px color-mix(in oklab, var(--aubergine) 25%, transparent);
-  --shadow-lift-v: 0 18px 40px -18px color-mix(in oklab, var(--aubergine) 45%, transparent);
+  --gradient-aubergine: linear-gradient(var(--primary), var(--primary));
+  --gradient-gold: linear-gradient(var(--accent), var(--accent));
+  --shadow-soft-v: 0 1px 3px color-mix(in oklab, var(--foreground) 7%, transparent);
+  --shadow-lift-v: 0 4px 12px color-mix(in oklab, var(--foreground) 12%, transparent);
 
   --font-display-stack: "Fraunces", "Noto Serif", Georgia, serif;
   --font-body-stack: "Figtree", system-ui, sans-serif;
@@ -159,6 +159,14 @@ html:lang(or) {
   h1, h2, h3 {
     font-family: var(--font-display-stack);
   }
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 3px;
+  }
+  header :focus-visible {
+    outline-color: var(--primary-foreground);
+  }
+  body { line-height: 1.6; }
 }
 
 @utility bg-hero-fade {
