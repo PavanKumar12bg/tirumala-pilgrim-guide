@@ -46,8 +46,9 @@ export function createAnnouncementAudio(deps: {
     }).catch((error: unknown) => {
       if (token !== generation) return;
       pending = false;
-      if (error instanceof Error && error.name === "NotAllowedError") emit({ blocked: true });
-      else if (!(error instanceof Error && error.name === "AbortError")) {
+      const name = typeof error === "object" && error !== null && "name" in error ? error.name : null;
+      if (name === "NotAllowedError") emit({ blocked: true });
+      else if (name !== "AbortError") {
         emit({ failed: true });
         recover?.();
       }
@@ -87,7 +88,7 @@ export function createAnnouncementAudio(deps: {
       };
     },
     setClip(next: Clip | null) {
-      if (next?.key === clip?.key && next?.url === clip?.url) return;
+      if (next?.key === clip?.key && next?.url === clip?.url && !state.failed) return;
       if (next && clip?.key === next.key && !state.failed) {
         // Signing the same object again is not a new announcement. Do not interrupt it.
         clip = next;
