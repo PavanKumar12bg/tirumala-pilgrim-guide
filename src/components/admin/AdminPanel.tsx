@@ -19,6 +19,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sh
 import { PhotoIdentifier, type PreparedPhoto } from "./PhotoIdentifier";
 import { StatusHistory } from "./StatusHistory";
 import { TransportAdmin } from "./TransportAdmin";
+import { VoiceAnnouncementAdmin } from "./VoiceAnnouncementAdmin";
 
 const selectCls = "h-11 w-full rounded-md border border-input bg-card px-3 text-base";
 
@@ -32,6 +33,7 @@ export function AdminPanel() {
         <TabsTrigger value="overview" className="min-h-10">{t("overview")}</TabsTrigger>
         <TabsTrigger value="status" className="min-h-10">{t("statusTab")}</TabsTrigger>
         <TabsTrigger value="ticker" className="min-h-10">{t("announcements")}</TabsTrigger>
+        <TabsTrigger value="voice" className="min-h-10">Voice announcement</TabsTrigger>
         <TabsTrigger value="places" className="min-h-10">{t("places")}</TabsTrigger>
         <TabsTrigger value="review" className="min-h-10">{t("reviewTab")}</TabsTrigger>
         <TabsTrigger value="transport" className="min-h-10">{t("transportTitle")}</TabsTrigger>
@@ -52,6 +54,7 @@ export function AdminPanel() {
       </TabsContent>
       <TabsContent value="status" className="mt-4"><ManualDarshanEditor /><StatusEditor /><div className="mt-6"><StatusHistory /></div></TabsContent>
       <TabsContent value="ticker" className="mt-4"><TickerEditor /></TabsContent>
+      <TabsContent value="voice" className="mt-4"><VoiceAnnouncementAdmin /></TabsContent>
       <TabsContent value="places" className="mt-4"><PlacesEditor mode="all" /></TabsContent>
       <TabsContent value="review" className="mt-4"><PlacesEditor mode="review" /></TabsContent>
       <TabsContent value="transport" className="mt-4"><TransportAdmin /></TabsContent>
