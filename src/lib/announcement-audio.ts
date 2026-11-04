@@ -1,0 +1,131 @@
+import { repeatDelayMs, VOICE_PREF_KEY } from "./voice-announcement";
+
+export type AudioSettings = { autoplay_enabled: boolean; repeat_enabled: boolean; repeat_minutes: number };
+type Clip = { key: string; url: string };
+type SoundState = { preference: "on" | "off" | null; blocked: boolean; failed: boolean };
+const initialState: SoundState = { preference: null, blocked: false, failed: false };
+
+/** One owner per tab. No browser APIs are accessed until Home mounts. */
+export function createAnnouncementAudio(deps: {
+  audio: () => HTMLAudioElement;
+  storage: () => Pick<Storage, "getItem" | "setItem">;
+}) {
+  let state = initialState;
+  const subscribers = new Set<() => void>();
+  let audio: HTMLAudioElement | undefined;
+  let clip: Clip | null = null;
+  let settings: AudioSettings | null = null;
+  let active = false;
+  let visible = true;
+  let suspended = false;
+  let generation = 0;
+  let pending = false;
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  let recover: (() => void) | undefined;
+  const emit = (patch: Partial<SoundState>) => {
+    state = { ...state, ...patch };
+    subscribers.forEach(fn => fn());
+  };
+  const cancelTimer = () => { clearTimeout(timer); timer = undefined; };
+  const allowed = () => active && visible && !suspended && settings?.autoplay_enabled === true && state.preference !== "off";
+  const stop = () => {
+    generation++;
+    pending = false;
+    cancelTimer();
+    audio?.pause();
+  };
+  const play = () => {
+    if (!allowed() || !clip || !audio || pending || !audio.paused) return;
+    const token = generation;
+    pending = true;
+    // Call play synchronously here so the menu's explicit tap retains user activation.
+    void audio.play().then(() => {
+      if (token !== generation) return;
+      pending = false;
+      emit({ blocked: false, failed: false });
+    }).catch((error: unknown) => {
+      if (token !== generation) return;
+      pending = false;
+      if (error instanceof Error && error.name === "NotAllowedError") emit({ blocked: true });
+      else if (!(error instanceof Error && error.name === "AbortError")) {
+        emit({ failed: true });
+        recover?.();
+      }
+    });
+  };
+  const onEnded = () => {
+    cancelTimer();
+    const delay = repeatDelayMs(settings);
+    if (!allowed() || delay == null) return;
+    timer = setTimeout(() => { timer = undefined; play(); }, delay);
+  };
+  const onError = () => { cancelTimer(); emit({ failed: true }); recover?.(); };
+  return {
+    subscribe(fn: () => void) { subscribers.add(fn); return () => { subscribers.delete(fn); }; },
+    snapshot: () => state,
+    serverSnapshot: () => initialState,
+    mount(onRecover: () => void) {
+      active = true;
+      recover = onRecover;
+      audio = deps.audio();
+      audio.preload = "auto";
+      try {
+        const value = deps.storage().getItem(VOICE_PREF_KEY);
+        emit({ preference: value === "on" || value === "off" ? value : null });
+      } catch { /* storage is optional */ }
+      audio.addEventListener("ended", onEnded);
+      audio.addEventListener("error", onError);
+      return () => {
+        active = false;
+        stop();
+        audio?.removeEventListener("ended", onEnded);
+        audio?.removeEventListener("error", onError);
+        audio?.removeAttribute("src");
+        clip = null;
+        settings = null;
+        recover = undefined;
+      };
+    },
+    setClip(next: Clip | null) {
+      if (next?.key === clip?.key && next?.url === clip?.url) return;
+      if (next && clip?.key === next.key && !state.failed) {
+        // Signing the same object again is not a new announcement. Do not interrupt it.
+        clip = next;
+        return;
+      }
+      stop();
+      clip = next;
+      emit({ blocked: false, failed: false });
+      if (!audio) return;
+      if (!next) { audio.removeAttribute("src"); return; }
+      audio.src = next.url;
+      play();
+    },
+    setSettings(next: AudioSettings | null) {
+      const before = settings;
+      settings = next;
+      if (!allowed()) { stop(); return; }
+      if (timer && (before?.repeat_minutes !== next?.repeat_minutes || before?.repeat_enabled !== next?.repeat_enabled)) onEnded();
+      if (!before?.autoplay_enabled && next?.autoplay_enabled) play();
+    },
+    setEnvironment(nextVisible: boolean, nextSuspended: boolean) {
+      const wasAllowed = allowed();
+      visible = nextVisible;
+      suspended = nextSuspended;
+      if (!allowed()) stop();
+      else if (!wasAllowed && !state.blocked) play();
+    },
+    setPreference(value: "on" | "off") {
+      try { deps.storage().setItem(VOICE_PREF_KEY, value); } catch { /* optional */ }
+      emit({ preference: value, blocked: false });
+      if (value === "off") stop();
+      else { cancelTimer(); play(); }
+    },
+  };
+}
+
+const globals = globalThis as { __tgBackgroundAudio?: ReturnType<typeof createAnnouncementAudio> };
+export const announcementAudio = globals.__tgBackgroundAudio ??= createAnnouncementAudio({
+  audio: () => new Audio(),
+  storage: () => localStorage,
+});

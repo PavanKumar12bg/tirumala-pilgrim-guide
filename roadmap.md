@@ -24,3 +24,5 @@
 - [x] Official operators (APSRTC 149, TTD 155257) with TTD-published fares on Tirupati to Tirumala and Free Bus Routes; private taxi operators need admin-entered verified details.
 - [x] 7-language Darshan voice announcement: admin text → auto translations + voices → publish; Home card plays visitor's language with repeat and enable button. Published, replaced, language-switched and deleted in browser test.
 - [ ] Voice announcements on a real Android phone: needs owner's phone check.
+- [ ] Remove all Home announcement presentation; preserve background audio, selected-language switching and admin management.
+- [ ] Verify background sound preferences, repeats, replacement/deletion, mobile Home and existing regressions.

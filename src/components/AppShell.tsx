@@ -1,4 +1,4 @@
-import { Link } from "@tanstack/react-router";
+import { Link, useRouterState } from "@tanstack/react-router";
 import { Home, Map as MapIcon, CalendarDays, Bus } from "lucide-react";
 import type { ReactNode } from "react";
 import { useI18n } from "@/lib/i18n";
@@ -9,6 +9,7 @@ import logo from "@/assets/tirumala-logo.webp.asset.json";
 
 export function TopBar() {
   const { t } = useI18n();
+  const isHome = useRouterState({ select: state => state.location.pathname === "/" });
   return (
     <header className="sticky top-0 z-[1100] shrink-0 bg-aubergine-grad text-primary-foreground shadow-soft">
       <div className="mx-auto grid max-w-5xl grid-cols-[minmax(0,1fr)_auto] items-center gap-2 px-3 py-1 sm:flex sm:justify-between">
@@ -22,7 +23,7 @@ export function TopBar() {
           <LanguageSwitcher />
         </div>
       </div>
-      <AnnouncementTicker />
+      {!isHome && <AnnouncementTicker />}
     </header>
   );
 }
