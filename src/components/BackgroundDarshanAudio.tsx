@@ -41,6 +41,7 @@ export function BackgroundDarshanAudio({ suspended = false }: { suspended?: bool
   });
 
   useEffect(() => {
+    announcementAudio.setEnvironment(document.visibilityState === "visible", suspended);
     const unmount = announcementAudio.mount(() => {
       const now = Date.now();
       if (retries.current >= 3 || now - lastRecovery.current < 30_000) return;

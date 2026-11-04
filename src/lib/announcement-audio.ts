@@ -36,6 +36,8 @@ export function createAnnouncementAudio(deps: {
   };
   const play = () => {
     if (!allowed() || !clip || !audio || pending || !audio.paused) return;
+    // Use the latest signed URL on the next play without interrupting a playing clip.
+    if (audio.getAttribute("src") !== clip.url) audio.src = clip.url;
     const token = generation;
     pending = true;
     // Call play synchronously here so the menu's explicit tap retains user activation.

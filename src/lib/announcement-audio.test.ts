@@ -8,6 +8,7 @@ class FakeAudio extends EventTarget {
   play = vi.fn(async () => { this.paused = false; });
   pause = vi.fn(() => { this.paused = true; });
   removeAttribute() { this.src = ""; }
+  getAttribute() { return this.src; }
   end() { this.paused = true; this.dispatchEvent(new Event("ended")); }
 }
 const settings = { autoplay_enabled: true, repeat_enabled: true, repeat_minutes: 1 };
