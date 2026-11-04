@@ -5,7 +5,7 @@ import { AppShell } from "@/components/AppShell";
 import { PlacesGrid, StatusCards } from "@/components/HomeSections";
 import { useI18n } from "@/lib/i18n";
 import heroAsset from "@/assets/venkateswara-swamy-hero.jpg.asset.json";
-import { DarshanVoiceCard } from "@/components/DarshanVoiceCard";
+import { BackgroundDarshanAudio } from "@/components/BackgroundDarshanAudio";
 import { VoiceAssistant } from "@/components/VoiceAssistant";
 import { Button } from "@/components/ui/button";
 
@@ -29,6 +29,7 @@ function Index() {
   const navigate = useNavigate();
   return (
     <AppShell>
+      <BackgroundDarshanAudio suspended={voice} />
       <div className="mx-auto max-w-5xl space-y-3 px-3 py-3 sm:px-4">
         <section
           aria-label={t("heroTitle")}
@@ -52,7 +53,6 @@ function Index() {
           </div>
         </section>
         <StatusCards />
-        <DarshanVoiceCard />
         <Link to="/darshan" className="flex min-h-8 items-center justify-between text-sm font-semibold text-primary">{t("details")} · {t("darshanWait")}<ChevronRight className="size-4" /></Link>
         <section aria-label={t("quickActions")} className="grid grid-cols-3 gap-2">
           <Button asChild className="h-auto min-h-16 flex-col gap-1 whitespace-normal px-2 text-xs"><Link to="/map"><MapPin className="size-5" />{t("map")}</Link></Button>
