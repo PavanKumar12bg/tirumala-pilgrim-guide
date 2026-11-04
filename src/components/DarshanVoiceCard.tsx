@@ -10,7 +10,7 @@ type Published = { id: string; published_at: string | null; text: string | null;
 type Settings = { autoplay_enabled: boolean; repeat_enabled: boolean; repeat_minutes: number };
 
 // One audio element for the whole tab, so re-renders or route changes can never stack voices.
-const g = globalThis as { __tgAnnAudio?: HTMLAudioElement; __tgAnnKey?: string };
+const g = globalThis as { __tgAnnAudio?: HTMLAudioElement; __tgAnnKey?: string | undefined };
 function sharedAudio() { return (g.__tgAnnAudio ??= new Audio()); }
 
 export function DarshanVoiceCard() {
