@@ -13,8 +13,8 @@ export function LanguageSwitcher({ tone = "dark" }: { tone?: "dark" | "light" })
   return (
     <div
       className={cn(
-        "flex items-center gap-1 rounded-full p-1 text-sm",
-        tone === "dark" ? "bg-primary-foreground/10 ring-1 ring-primary-foreground/20" : "bg-card ring-1 ring-border",
+        "flex items-center gap-1 text-sm",
+        tone === "dark" ? "text-primary-foreground" : "text-foreground",
       )}
       role="group"
       aria-label={t("language")}
@@ -23,7 +23,7 @@ export function LanguageSwitcher({ tone = "dark" }: { tone?: "dark" | "light" })
         <DropdownMenuTrigger
           aria-label={t("language")}
           className={cn(
-            "flex min-h-10 items-center gap-1.5 rounded-full px-2 font-semibold transition-colors",
+            "flex min-h-11 items-center gap-1.5 rounded-md px-2 font-semibold transition-colors",
             tone === "dark" ? "text-primary-foreground" : "text-foreground",
           )}
         >

@@ -11,7 +11,7 @@ export function TopBar() {
   const { t } = useI18n();
   const isHome = useRouterState({ select: state => state.location.pathname === "/" });
   return (
-    <header className="sticky top-0 z-[1100] shrink-0 bg-aubergine-grad text-primary-foreground shadow-soft">
+    <header className="sticky top-0 z-[1100] shrink-0 border-b border-gold/50 bg-primary text-primary-foreground">
       <div className="mx-auto grid max-w-5xl grid-cols-[minmax(0,1fr)_auto] items-center gap-2 px-3 py-1 sm:flex sm:justify-between">
         <Link to="/" className="flex min-h-11 min-w-0 items-center gap-2">
           <img src={logo.url} alt="" width={36} height={36} className="size-9 shrink-0 rounded-md object-cover object-center ring-1 ring-accent/50" />
@@ -30,23 +30,23 @@ export function TopBar() {
 
 export function BottomNav() {
   const { t } = useI18n();
-  const item = "flex min-h-14 flex-1 flex-col items-center justify-center gap-0.5 text-xs font-semibold text-muted-foreground transition-colors";
+  const item = "flex min-h-14 min-w-0 flex-1 flex-col items-center justify-center gap-1 border-t-2 border-transparent px-1 text-center text-xs font-semibold text-muted-foreground transition-colors";
   return (
-    <nav aria-label="Main" className="fixed inset-x-0 bottom-0 z-[1100] border-t bg-card/95 backdrop-blur md:hidden">
+    <nav aria-label={t("appName")} className="fixed inset-x-0 bottom-0 z-[1100] border-t bg-card pb-[env(safe-area-inset-bottom)] md:hidden">
       <div className="mx-auto flex max-w-md">
-        <Link to="/" className={item} activeOptions={{ exact: true }} activeProps={{ className: "text-primary" }}>
+        <Link to="/" className={item} activeOptions={{ exact: true }} activeProps={{ className: "border-primary text-primary" }}>
           <Home className="size-5" aria-hidden />
           {t("home")}
         </Link>
-        <Link to="/map" className={item} activeProps={{ className: "text-primary" }}>
+        <Link to="/map" className={item} activeProps={{ className: "border-primary text-primary" }}>
           <MapIcon className="size-5" aria-hidden />
           {t("map")}
         </Link>
-        <Link to="/transport" className={item} activeProps={{ className: "text-primary" }}>
+        <Link to="/transport" className={item} activeProps={{ className: "border-primary text-primary" }}>
           <Bus className="size-5" aria-hidden />
           {t("transportNav")}
         </Link>
-        <Link to="/journey" className={item} activeProps={{ className: "text-primary" }}>
+        <Link to="/journey" className={item} activeProps={{ className: "border-primary text-primary" }}>
           <CalendarDays className="size-5" aria-hidden />
           {t("journey")}
         </Link>
@@ -58,13 +58,13 @@ export function BottomNav() {
 export function AppShell({ children }: { children: ReactNode }) {
   const { t } = useI18n();
   return (
-    <div className="min-h-screen pb-16 md:pb-0">
+    <div className="min-h-screen pb-[calc(4rem+env(safe-area-inset-bottom))] md:pb-0">
       <TopBar />
       <main>{children}</main>
-      <footer className="mx-auto max-w-5xl px-4 py-10 text-center text-sm text-muted-foreground">
+      <footer className="mx-auto mt-6 max-w-5xl border-t px-4 py-6 text-sm text-muted-foreground">
         <p>{t("officialNote")}</p>
         <p className="mt-2 text-xs">{t("notAffiliated")}</p>
-        <nav aria-label={t("about")} className="mt-3 flex flex-wrap justify-center gap-x-4">
+        <nav aria-label={t("about")} className="mt-3 flex flex-wrap gap-x-4">
           {([["/about","about"],["/ttd","ttdPage"],["/privacy","privacy"],["/terms","terms"],["/contact","contact"],["/admin","admin"]] as const).map(([to,k]) => (
             <Link key={to} to={to} className="inline-flex min-h-11 items-center underline-offset-4 hover:underline">{t(k)}</Link>
           ))}

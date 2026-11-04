@@ -14,6 +14,7 @@
 - Android home-screen support is manifest-only with standalone display and local photo-derived icons; do not register app-shell service workers because offline support was not requested.
 - One canonical `places` table feeds both homepage cards and map markers; markers render only when `coords_verified` is true, so unverified places never get fabricated pins.
 - UI strings live in `src/lib/i18n.tsx` dictionaries (one per language); per-script fonts are switched via `html:lang()` CSS vars in `src/styles.css`.
+- Cookie choices use guarded device storage and an in-flow notice so consent cannot cover navigation or primary content.
 - Place photos live in the private `place-images` bucket (workspace blocks public buckets) and are shown via signed URLs; DB stores only path/metadata.
 - Admin rights come from `user_roles` + `has_role()`; RLS enforces writes. `claim_first_admin()` only works while no admin exists.
 - In-app walking routes come from the keyless FOSSGIS OSRM foot profile (`src/lib/routing.ts`); never draw straight-line routes or open external navigation, and keep re-route requests rate-limited via `NAV_CONFIG`.
