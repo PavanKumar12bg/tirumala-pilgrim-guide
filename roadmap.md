@@ -22,7 +22,7 @@
 - [x] Trip & Transport page with admin-managed categories, templates, items, providers and offers (private provider data admin-only; RLS checked).
 - [x] Admin manual darshan wait/compartments override with labeled display on home cards and ticker.
 - [x] Official operators (APSRTC 149, TTD 155257) with TTD-published fares on Tirupati to Tirumala and Free Bus Routes; private taxi operators need admin-entered verified details.
-- [x] 7-language Darshan voice announcement: admin text → auto translations + voices → publish; Home card plays visitor's language with repeat and enable button. Published, replaced, language-switched and deleted in browser test.
+- [x] 7-language Darshan voice announcement: admin text → auto translations + voices → atomic publish; Home now uses background-only audio with sound preferences in the language menu.
 - [ ] Voice announcements on a real Android phone: needs owner's phone check.
-- [ ] Remove all Home announcement presentation; preserve background audio, selected-language switching and admin management.
-- [ ] Verify background sound preferences, repeats, replacement/deletion, mobile Home and existing regressions.
+- [x] Remove all Home announcement presentation; preserve background audio, selected-language switching and admin management.
+- [x] Verify background sound preferences, interval/replacement/deletion lifecycle tests, mobile/desktop Home and regressions: 78 tests passed; actual stored audio played in all seven languages with one audio element; sound-off stopped playback; authenticated admin screen checked. No real announcement was replaced/deleted for this change; those new lifecycle checks use isolated tests.
