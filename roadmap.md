@@ -1,5 +1,5 @@
 # Tirumala Guide work
-- [ ] Approved premium redesign phase 1: traditional semantic tokens, shared navigation and non-obscuring consent; verify mobile, language menu and authenticated Admin without data writes.
+- [x] Approved premium redesign phase 1: traditional semantic tokens, shared navigation and in-flow consent; 37 targeted tests passed, 320–1280px rendering, all seven language-menu choices and authenticated Admin checked without data writes. Physical phone/assistive technology review remains unavailable.
 - [ ] Premium redesign phase 2: purpose-built public pages/copy; blocked on separate phase approval.
 - [ ] Document checklist CMS/public progress phase 3: blocked on separate phase approval and source/native-language review.
 - [x] Connect dashboard and ticker to official TTD daily reports with source/date/freshness, explicit wait ranges and queue compartments; real 4–6 hours and six compartments checked, 11 tests passed. No live crowd API verified.
