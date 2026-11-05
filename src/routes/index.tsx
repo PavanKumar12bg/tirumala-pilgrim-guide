@@ -32,7 +32,7 @@ function Index() {
       <BackgroundDarshanAudio suspended={voice} />
       <div className="mx-auto max-w-5xl space-y-3 px-3 py-3 sm:px-4">
         <section
-          aria-label={t("heroTitle")}
+          aria-label={t("appName")}
           className="relative overflow-hidden rounded-3xl shadow-lift ring-1 ring-border"
         >
           <img
@@ -46,14 +46,13 @@ function Index() {
             style={{ backgroundImage: "linear-gradient(180deg, color-mix(in oklab, var(--aubergine-deep) 12%, transparent) 0%, color-mix(in oklab, var(--aubergine-deep) 22%, transparent) 50%, color-mix(in oklab, var(--aubergine-deep) 80%, transparent) 88%)" }}
           />
           <div className="relative flex min-h-64 flex-col justify-end gap-2 p-5 sm:min-h-[30rem] sm:p-7">
-            <h1 className="text-2xl leading-tight text-primary-foreground drop-shadow-sm sm:text-4xl">
-              {t("heroTitle")}
+            <h1 className="text-xl font-semibold leading-snug text-primary-foreground sm:text-2xl">
+              {t("appName")}
             </h1>
-            <p className="max-w-md text-sm text-primary-foreground/90 sm:text-base">{t("heroSub")}</p>
           </div>
         </section>
         <StatusCards />
-        <Link to="/darshan" className="flex min-h-8 items-center justify-between text-sm font-semibold text-primary">{t("details")} · {t("darshanWait")}<ChevronRight className="size-4" /></Link>
+        <Link to="/darshan" className="flex min-h-11 items-center justify-between text-sm font-semibold text-primary">{t("darshanTitle")}<ChevronRight className="size-4" /></Link>
         <section aria-label={t("quickActions")} className="grid grid-cols-3 gap-2">
           <Button asChild className="h-auto min-h-16 flex-col gap-1 whitespace-normal px-2 text-xs"><Link to="/map"><MapPin className="size-5" />{t("map")}</Link></Button>
           <Button variant="secondary" className="h-auto min-h-16 flex-col gap-1 whitespace-normal px-2 text-xs" onClick={() => setVoice(true)}><Mic className="size-5" />{t("voiceAssistant")}</Button>

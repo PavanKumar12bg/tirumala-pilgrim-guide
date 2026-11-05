@@ -22,7 +22,6 @@ function Page() {
   const { data } = useSuspenseQuery(transportListQuery());
   return (
     <InfoPage title={t("transportTitle")} className="transport-page max-w-5xl sm:px-6 sm:py-10">
-      <p className="text-muted-foreground">{t("transportIntro")}</p>
       {data.length ? (
         <ul className="grid border-t border-gold/50 md:grid-cols-2">
           {data.map((c, index) => (

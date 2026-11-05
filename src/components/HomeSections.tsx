@@ -119,7 +119,7 @@ export function PlacesGrid() {
 
   return (
     <section aria-labelledby="places-h">
-      <h2 id="places-h" className="text-2xl text-primary">{t("places")}</h2>
+      <h2 id="places-h" className="text-lg font-semibold text-primary">{t("places")}</h2>
       <div className="mt-3 flex gap-2 overflow-x-auto pb-2" role="tablist">
         {[{ id: "all" }, ...presentCats].map((c) => (
           <Button
@@ -155,9 +155,9 @@ export function PlacesGrid() {
                     <PlaceImage src={p.imageSrc} category={p.category} alt={name} className="transition-transform duration-500 group-hover:scale-105" />
                   </div>
                   <div className="flex flex-1 flex-col p-3">
-                    <p className="text-[11px] font-semibold uppercase tracking-wide text-gold">{t(catKey(p.category))}</p>
+                    <p className="text-xs text-muted-foreground">{t(catKey(p.category))}</p>
                     <h3 className="mt-0.5 text-base leading-snug text-foreground">{name}</h3>
-                    {!onMap ? <p className="mt-auto pt-2 text-[11px] text-muted-foreground">⏳ {t("coordsPending")}</p> : null}
+                    {!onMap ? <p className="mt-auto pt-2 text-xs text-muted-foreground">{t("coordsPending")}</p> : null}
                   </div>
                 </Link>
               );
