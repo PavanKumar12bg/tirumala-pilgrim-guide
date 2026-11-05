@@ -291,15 +291,15 @@ function PlacesEditor({ mode }: { mode: "all" | "review" }) {
       <p className="text-xs text-muted-foreground">{data.length} place(s)</p>
       {isLoading ? <Loader2 className="size-5 animate-spin" /> : null}
       {isError ? <p className="text-sm text-destructive">Could not load places.</p> : null}
-      <ul className="grid gap-2 sm:grid-cols-2">
+      <ul className="grid min-w-0 grid-cols-1 gap-2 sm:grid-cols-2">
         {data?.map((p) => (
-          <li key={p.id}>
-            <button onClick={() => setEditing(p)} className="flex w-full items-center gap-3 rounded-xl bg-card p-2 text-left ring-1 ring-border hover:ring-primary">
+          <li key={p.id} className="min-w-0">
+            <button onClick={() => setEditing(p)} className="grid w-full min-w-0 grid-cols-[auto_minmax(0,1fr)] items-center gap-3 rounded-xl bg-card p-2 text-left ring-1 ring-border hover:ring-primary">
               <div className="size-16 shrink-0 overflow-hidden rounded-lg"><PlaceImage src={p.imageSrc} category={p.category} alt={p.name.en ?? ""} /></div>
               <div className="min-w-0 flex-1">
                 <p className="truncate font-semibold" lang="te">{p.name.te || p.name.en}</p>
                 <p className="truncate text-sm text-muted-foreground">{p.name.en}</p>
-                <div className="mt-1 flex flex-wrap gap-1">
+                <div className="mt-1 flex min-w-0 flex-wrap gap-1 [&>div]:max-w-full [&>div]:break-words">
                   <Badge variant="secondary">{DICTS.en[`cat_${p.category}` as keyof typeof DICTS.en] ?? p.category}</Badge>
                   {p.coords_verified && p.lat != null ? <Badge variant="outline">On map</Badge> : <Badge variant="destructive">Needs location</Badge>}
                   {p.osm_id ? <Badge variant="outline">OSM</Badge> : null}
