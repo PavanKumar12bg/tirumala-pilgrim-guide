@@ -21,47 +21,38 @@ Both buckets are private, but all `place-images` objects allow anonymous/authent
 ### Accessibility findings carried forward
 Unassociated Transport field/language/source labels; unnamed place-deletion icon; ambiguous repeated row actions; busy buttons lose names; hidden photo inputs lack a visible focus cue; expandable controls lack state announcements. Existing Radix tabs/sheets provide keyboard primitives, but focus return from programmatically opened editors needs verification. History charts need an equivalent readable data summary. No real screen-reader audit has been performed.
 
-## 2. Recommended authentication architecture — proposed
-Keep Cloud Auth for identity. Add **server-verified WebAuthn privileged sessions**, not a replacement identity provider.
+## 2. Recommended password + passkey architecture (proposed)
+Keep Cloud Auth; do not replace accounts/provider. Native passkeys are documented as **experimental passwordless sign-in**, not password-plus-passkey MFA. Custom WebAuthn must not be assumed to produce `aal2`.
 
-Official documentation describes native passkeys as experimental **passwordless sign-in**, not a documented password-plus-passkey MFA factor. Do not assume custom WebAuthn produces `aal2`. Native TOTP/phone MFA is documented, but does not replace your requested passkey flow.
+1. Server verifies email/password through a separate publishable Auth client, never the service client. Confirm verified email and eligible membership. Identity alone grants no Admin access.
+2. Persist a random, expiring challenge bound to user, identity session, purpose, origin and RP ID. Atomically consume once; rate-limit with shared persistent counters.
+3. Require WebAuthn user verification; server verifies challenge/type/origin/RP-ID hash, credential ownership/signature, flags and revocation. Handle synced credentials/zero counters correctly; no biometric/private-key collection. Devices may use fingerprint, face, PIN or security keys; support is not universal.
+4. Issue an opaque privileged session in a Secure/HttpOnly/SameSite cookie. Store its hash, identity binding, credential, assurance time, expiry/revocation. Proposed: 15-minute inactivity, 8-hour absolute expiry, fresh passkey within 5 minutes for sensitive actions; values need approval.
+5. Every privileged read/write rechecks identity, cookie, membership, current module/action/resource permissions. Password recovery, invites, OAuth and refreshed identity tokens cannot bypass assurance. Preserve CSRF checks, validate origin, use no-store responses.
 
-1. Verify email/password through a dedicated server-side publishable auth client, never the privileged service client. This grants identity only, no Admin access. Require confirmed email and eligible membership.
-2. Create a cryptographically random, short-lived challenge bound to identity session, user, ceremony purpose, expected origin and RP ID; persist it with atomic single-use consumption and expiry.
-3. Browser invokes WebAuthn. Enforce user verification; verify challenge, type, origin, RP-ID hash, credential ownership, signature, user-verification flags and credential revocation server-side. Handle synced-passkey zero counters/backup flags correctly; counter anomalies are signals, not simplistic universal rejection.
-4. Establish a random opaque privileged session in a Secure, HttpOnly, SameSite cookie. Store only its hash with user/session binding, assurance time, credential, expiry and revocation in the database. Proposed defaults: 15-minute inactivity, 8-hour absolute expiry; fresh passkey within 5 minutes for sensitive actions. These are proposed policy values, not current settings.
-5. Every protected read/write verifies identity, privileged cookie, active membership, current permissions and assurance. Password resets, invitation sessions, OAuth and refreshed identity tokens must not bypass this gate.
-6. Enforce origin/CSRF checks and shared persistent rate limits for password, challenge, verify, invite and recovery endpoints. No in-memory-only counters or challenges.
+**Critical data boundary:** replace direct privileged browser reads/writes/uploads with guarded server functions, and deny direct authenticated Data API/Storage privileged access. Preserve public SELECT. User-scoped server queries and narrowly scoped RPCs are preferred; any necessary service-role operation runs only after common authorization and has no RLS safety net. Trusted RPC execution must not be available to browser roles. Prove this model before cutover. Adding restrictive policies beside old permissive Admin policies is insufficient. Never use client-writable assurance, a user-wide unlock, invented JWT signing or fabricated `aal` claims.
 
-**Mandatory enforcement decision:** move privileged browser queries/writes/uploads behind authorized server functions and deny their direct authenticated Data API/Storage paths. Retain public read policies. Ordinary server content work uses user-scoped clients plus narrowly scoped database RPCs whose grants exclude browser roles; trusted server-only execution supplies authorization after checks. If service-role access is necessary, it is loaded only after authorization and cannot rely on RLS for protection. A common tested server authorization layer is required. Never use a user-writable “passkey verified” flag or a user-wide unlock that enables another stolen session.
+Use maintained SimpleWebAuthn tooling only after approved workerd verification. A stable HTTPS production domain/RP ID is required. Preview credentials/origins remain isolated; no wildcards. Provider session/refresh-token revocation API availability needs proof.
 
-A database-visible, session-bound assurance design is an alternative only after a feasibility review proves its trusted issuance and enforcement. Do not invent signed JWTs or custom Auth `aal` claims. All old global-admin policies/RPC/storage paths must be replaced or tightened in the cutover; adding new restrictive policies alongside permissive old ones is insufficient.
+## 3. Invitation and permission workflow (proposed)
+Super Admin invites a bound email with assigned role/scope; store only a random token hash, expiry (proposed 48 hours), issuer and consumed/revoked state. Resend invalidates old token. Email verification and password setup yield enrollment-only access; activate after server-verified passkey registration. Consume invite/assign membership/audit transactionally. Generic errors and persistent rate limits resist enumeration.
 
-Use maintained WebAuthn verification tooling such as SimpleWebAuthn, subject to an approved workerd compatibility proof. Production RP ID requires a stable HTTPS domain. Preview and production credentials must be isolated; no wildcards or broad origin acceptance. Devices may use fingerprint, face, PIN or a supported security key; never collect biometric images or promise universal compatibility.
+Disable public signup and retire first-admin claim only during approved cutover. Explicitly authorize the existing owner as initial Super Admin after enrollment/recovery readiness; never infer it from editable metadata. Preserve identity/content. No self-promotion.
 
-## 3. Invitations, roles and account control — proposed
-Super Admin creates an invite with assigned role/module/action scope. Store only a hash of a cryptographically random single-use token, expiry (proposed 48 hours), inviter and bound email. Resend revokes the prior token. Email verification and password setup yield an enrollment-only session; activate membership only after verified passkey registration. Token consumption, membership assignment and audit insertion are transactional. Use generic responses and durable rate limits against email enumeration.
+Presets: Super Admin, Content Admin, Transport Admin, Emergency Admin, Custom Admin. Store default-deny module actions: view/create/edit/publish/delete/approve/manage. Separate private-provider permission. Validate publication transitions and field/resource scope, not generic UPDATE alone. Delegation cannot exceed a granted ceiling or create Super Admin. Ordinary Admins cannot manage others' credentials. Protect the last recovery-capable Super Admin; suspension/permission/key changes immediately revoke affected privileged sessions. Removing Admin access preserves identity and audit attribution.
 
-Public signup is disabled only during the approved cutover; no self-registration/promotion as Super Admin. Bootstrap promotion is an explicit one-time operation for the existing owner, after enrollment and recovery readiness; never infer ownership from editable metadata. Preserve the account/content.
+## 4. Required additive schema, RLS and audit
+Existing content tables cannot safely store authorization/credentials. Proposed public tables:
+- `admin_memberships`, `admin_roles`, `admin_role_permissions`, `admin_permission_overrides`: lifecycle and scoped grants.
+- `admin_invitations`: hashed tokens/email/expiry/consumption.
+- `admin_webauthn_credentials`: public keys, owner/counter/transports/backup metadata, registration/last-use/revocation.
+- `admin_auth_challenges`, `admin_privileged_sessions`: one-use challenges/hashed sessions.
+- `admin_recovery_credentials`: hashed one-use recovery credentials/state.
+- `admin_audit_events`, `admin_security_settings`, `admin_rate_limits`.
 
-Role presets: Super Admin, Content Admin, Transport Admin, Emergency Admin, Custom Admin. Effective permissions are stored server-side, default deny, with actions `view/create/edit/publish/delete/approve/manage` per module. Private provider information is a separate permission, not implied by transport viewing. Delegated invitation/assignment cannot grant beyond an explicit delegation ceiling or promote to Super Admin. Ordinary Admins manage only their own credentials and permitted content.
+Same-migration GRANT/RLS/function EXECUTE restrictions; no anonymous security reads or browser role/challenge/session/audit writes. Plain identity UUIDs under Cloud conventions; no managed Auth schema edits. Preserve `user_roles` during transition, retire broad capability at cutover. Review every content/private-provider/history table, both buckets and bootstrap/publication/helper RPCs. Preserve public photos and atomic voice publication.
 
-Enforce publication transitions and field/resource scope separately from generic UPDATE permission. Approval does not silently grant editing/deletion. Super Admin cannot remove/suspend the last recovery-capable Super Admin without a safe handover. Suspension, permission changes and credential removal revoke affected privileged sessions immediately. Removing access does not delete historical attribution or the person's identity account.
-
-## 4. Database and audit scope — technical details
-New additive public tables are necessary; place/transport/history tables cannot safely represent credentials and authorization:
-- `admin_memberships`: user UUID, lifecycle status, role assignment, invitation provenance and security version.
-- `admin_roles`, `admin_role_permissions`, `admin_permission_overrides`: scoped role presets/grants; no privileges in editable user metadata.
-- `admin_invitations`: hashed token, email binding, expiry, consumed/revoked state.
-- `admin_webauthn_credentials`: credential ID/public key, owner, counter, transports/backup metadata, creation/last-use/revocation; no private keys/biometrics.
-- `admin_auth_challenges`, `admin_privileged_sessions`: expiring single-use challenges and hashed session identifiers.
-- `admin_recovery_credentials`: hashed single-use recovery secrets and controlled recovery state.
-- `admin_audit_events`: append-only actor/action/resource/time/result with minimal request metadata.
-- `admin_security_settings`, `admin_rate_limits`: validated policy and persistent counters.
-
-GRANT, RLS and explicit function EXECUTE restrictions belong in the same migrations. No anonymous security reads; no browser role/session/challenge/audit writes. No managed Auth table edits. Use plain identity UUIDs where required by Cloud conventions. Keep existing `user_roles` during transition, but retire its broad Admin capability from privileged paths at cutover.
-
-RLS/grant review covers all existing content tables, private provider data, history, both buckets and `claim_first_admin`, publication/helper RPCs. Preserve approved public reads and voice publication atomicity. Audit successful database changes transactionally; failures/login/security events use trusted append paths without secrets/passwords/tokens/full payloads. Record actor/action/result and limited redacted diffs. Hash chaining with protected external checkpoints can make tampering detectable; it is not immunity against a compromised privileged server or database owner. Retention/export policy needs approval. Avoid full IP/device fingerprint collection by default.
+Successful content changes and audit insertion must be transactional; failures/login/security events use trusted append paths. Record actor/action/resource/time/result, minimized metadata and redacted diffs; never passwords/tokens/biometrics/full sensitive payloads. Ordinary Admins cannot alter/delete logs. Hash chains plus protected external checkpoints detect tampering, not protect against every compromised server/database owner. Retention/export needs approval; avoid full IP/device fingerprinting by default.
 
 ## 5. Control Center and exact files
 Retain `/admin` and one shared Admin shell: desktop navigation, accessible mobile drawer, compact lists/tables, traditional colors. Permission-filter all modules. Emergency, Verification and Reports are not existing management features; their content/workflows need separately approved scopes. Never invent dashboard alerts/counts.
@@ -78,10 +69,10 @@ Retain `/admin` and one shared Admin shell: desktop navigation, accessible mobil
 
 Read but never edit generated auth/client/types/schema files manually. Finalize new Admin route filenames with navigation approval; preserve public routes and avoid duplicate applications.
 
-## 6. Recovery, revocation and limits
-Enroll two independent authenticators for Super Admin, ideally one hardware backup stored separately. Proposed recovery: password plus a hashed one-use offline recovery credential, audited delay/notification and enrollment-only access to replace a lost key. No content/role access until new WebAuthn verification. A second authorized Super Admin may approve an identity-verified recovery; cannot simply disable passkeys. Single-owner emergency recovery requires a documented offline custody/identity procedure, not email-only approval.
+## 6. Recovery and revocation
+Enroll two independent Super Admin authenticators, ideally a separately stored hardware backup. Proposed recovery: password plus offline single-use hashed recovery credential, audited delay/notification and enrollment-only access; no privileged operations until a new passkey is verified. Alternatively a second Super Admin approves verified-identity recovery. A sole-owner emergency procedure needs documented offline custody, not email-only approval.
 
-Password reset changes the password only; it never grants passkey assurance. Credential compromise revokes the key and its privileged sessions. App-session revocation gives immediate privileged denial; provider access JWTs can remain valid until expiry and public reads remain available. Provider-wide refresh-token revocation and device inventory require a verified supported API; do not promise remote authenticator deletion or exact physical-device identification from a credential. Existing signed media URLs can remain usable until expiry.
+Password reset changes password only, never assurance. Revoke compromised credentials and bound privileged sessions. App revocation denies privileged access immediately; issued provider JWTs and signed media URLs can remain valid until expiry. Do not promise instant provider-token revocation, remote authenticator deletion or exact physical-device inventory. Provider session-management APIs require verification.
 
 ## 7. Security and accessibility tests
 Run in an approved isolated environment, not by editing production:
@@ -96,17 +87,16 @@ Run in an approved isolated environment, not by editing production:
 - Test Tab/Shift+Tab, arrows/Home/End, Enter/Space, Escape, editor focus return, visible focus, labels and status announcements; Android TalkBack, NVDA/VoiceOver.
 - Real Android Chrome, Windows Hello, macOS/iOS and external security keys; HTTPS/workerd/origin tests. Emulator/frontend success is not biometric or security verification.
 
-## 8. Approval-gated roadmap
-1. **Feasibility and policy gate:** stable domain/RP IDs, WebAuthn runtime proof, trusted server-to-database execution model, invitation email capability, recovery custody, owner identity and session/retention policy. No production cutover until proven.
-2. **Security foundation:** additive roles/membership/audit/session schema, server action guards and deny-direct-access design; preserve existing owner access through an explicit staged transition.
-3. **Passkeys and onboarding:** password verification, enrollment-only invitations, two backup authenticators, recovery rehearsal and rate limiting.
-4. **Atomic enforcement cutover:** close old bootstrap/signup and global-admin bypasses, route all editors/storage through approved boundaries, enable mandatory WebAuthn only after end-to-end and rollback tests.
-5. **Control Center and accessibility:** Admin Management, permissions, Security Center, audit review and existing module navigation; finish the earlier keyboard/label improvements here or as a separately approved frontend-only task.
-6. **Optional module completion:** detailed Emergency/Verification/Reports scopes require separate approval and verified content. Checklist/offline remain outside this plan.
-7. **Independent security/device validation, then separately approved publication.** Rollback must never reopen password-only privileged access once mandatory assurance is active; use maintenance denial while recovering.
+## 8. Approval-gated roadmap and decisions
+1. **Feasibility:** production domain/RP IDs, workerd WebAuthn proof, trusted database execution, email delivery, owner identity and recovery custody. Approve session/step-up/retention policies.
+2. **Foundation:** additive permission/audit/session schema and guarded server paths; staged owner access, no production lockout.
+3. **Enrollment:** invitations, password/passkey ceremony, two backup authenticators, rate limiting and recovery rehearsal.
+4. **Enforcement cutover:** close signup/bootstrap/global-admin bypasses, secure every editor/storage path, enable mandatory assurance only after end-to-end/rollback tests.
+5. **Control Center/accessibility:** management/permissions/security/audit and existing module navigation. Earlier keyboard work may be separately approved as frontend-only.
+6. **Separate features:** Emergency/Verification/Reports workflows require detailed approval and verified content; checklist/offline excluded.
+7. **Independent security/device validation, then separately approved publication.** Rollback after enforcement must use maintenance denial, never reopen password-only privilege.
 
-### Decisions needed before implementation
-Stable production domain; confirm existing owner as initial Super Admin; backup authenticator/recovery custody; invitation sender readiness; approve exact privileged session/step-up/retention policy and which phases to authorize. No passwords or biometric data should be shared in chat.
+No phase is authorized yet. Confirm initial Super Admin, stable domain, invitation sender, recovery custody and exact phase scope before implementation. No passwords/biometrics in chat.
 
 ### Official research references
 - [Native passkeys — experimental passwordless](https://supabase.com/docs/guides/auth/passkeys)
