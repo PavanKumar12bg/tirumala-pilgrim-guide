@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
 export function InfoPage({ title, children, className }: { title: string; children: ReactNode; className?: string }) {
   return (
     <AppShell>
-      <article className={cn("mx-auto max-w-3xl space-y-4 px-4 py-6 text-foreground", className)}>
+      <article className={cn("mx-auto min-w-0 max-w-3xl space-y-3 break-words px-4 py-5 text-sm leading-relaxed text-foreground sm:space-y-4 sm:py-6 sm:text-base", className)}>
         <h1 className="text-xl font-semibold leading-snug text-primary">{title}</h1>
         {children}
       </article>

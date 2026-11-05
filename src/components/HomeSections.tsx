@@ -34,11 +34,11 @@ export function StatusCards({ compact = false }: { compact?: boolean }) {
       ) : null}
       <div className="min-w-0 rounded-lg bg-card p-3 shadow-soft ring-1 ring-border">
         <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground">
-          <Clock className="size-4 text-gold" aria-hidden />
+          <Clock className="size-4 shrink-0 text-gold" aria-hidden />
           {t("darshanWait")}
         </div>
         {isLoading ? <Skeleton className="mt-3 h-9 w-20" /> : shown && formatWait(shown) ? (
-          <p className="mt-2 font-display text-3xl text-primary">
+          <p className="mt-2 font-display text-2xl leading-snug text-primary sm:text-3xl">
             {formatWait(shown)} <span className="text-base font-sans text-muted-foreground">{t("hours")}</span>
           </p>
         ) : (
@@ -47,7 +47,7 @@ export function StatusCards({ compact = false }: { compact?: boolean }) {
       </div>
       <div className="min-w-0 rounded-lg bg-card p-3 shadow-soft ring-1 ring-border">
         <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground">
-          <Users className="size-4 text-gold" aria-hidden />
+          <Users className="size-4 shrink-0 text-gold" aria-hidden />
           {t("queueCompartments")}
         </div>
         {isLoading ? <Skeleton className="mt-3 h-9 w-24" /> : shown?.waiting_compartments != null ? (
@@ -100,8 +100,8 @@ export function RouteMapCard() {
 export function ErrorBox({ onRetry }: { onRetry: () => void }) {
   const { t } = useI18n();
   return (
-    <div className="flex items-center justify-between gap-3 rounded-2xl bg-card p-4 ring-1 ring-destructive/30">
-      <p className="text-sm text-destructive">{t("errorLoad")}</p>
+    <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-lg bg-card p-4 ring-1 ring-destructive/30">
+      <p className="min-w-0 text-sm text-destructive">{t("errorLoad")}</p>
       <Button variant="outline" size="sm" onClick={onRetry}>{t("retry")}</Button>
     </div>
   );
@@ -148,15 +148,15 @@ export function PlacesGrid() {
                   key={p.id}
                   to="/map"
                   search={{ place: p.slug }}
-                  className="animate-rise group flex flex-col overflow-hidden rounded-2xl bg-card shadow-soft ring-1 ring-border"
+                  className="animate-rise group flex min-w-0 flex-col overflow-hidden rounded-2xl bg-card shadow-soft ring-1 ring-border"
                   style={{ animationDelay: `${i * 40}ms` }}
                 >
                   <div className="aspect-[4/3] overflow-hidden">
                     <PlaceImage src={p.imageSrc} category={p.category} alt={name} className="transition-transform duration-500 group-hover:scale-105" />
                   </div>
-                  <div className="flex flex-1 flex-col p-3">
+                  <div className="flex min-w-0 flex-1 flex-col p-2.5 sm:p-3">
                     <p className="text-xs text-muted-foreground">{t(catKey(p.category))}</p>
-                    <h3 className="mt-0.5 text-base leading-snug text-foreground">{name}</h3>
+                    <h3 className="mt-0.5 break-words text-sm leading-relaxed text-foreground sm:text-base">{name}</h3>
                     {!onMap ? <p className="mt-auto pt-2 text-xs text-muted-foreground">{t("coordsPending")}</p> : null}
                   </div>
                 </Link>

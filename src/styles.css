@@ -62,6 +62,7 @@
 }
 
 :root {
+  --bottom-nav-height: calc(3.5rem + env(safe-area-inset-bottom, 0px));
   --radius: 0.5rem;
   --silver: oklch(0.95 0.013 85);
   --aubergine: oklch(0.34 0.104 17);
@@ -168,6 +169,9 @@ html:lang(or) {
     outline-color: var(--primary-foreground);
   }
   body { line-height: 1.6; }
+  html { scroll-padding-bottom: calc(var(--bottom-nav-height) + 1rem); }
+  main, article, section { min-width: 0; }
+  h1, h2, h3, footer { overflow-wrap: break-word; }
 }
 
 @utility bg-hero-fade {

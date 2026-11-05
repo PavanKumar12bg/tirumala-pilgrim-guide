@@ -36,7 +36,7 @@ function MapPage() {
   return (
     <div className="flex h-[100svh] flex-col">
       <TopBar />
-      <div className="relative min-h-0 flex-1 pb-14 md:pb-0">
+      <div className="relative min-h-0 flex-1 pb-[var(--bottom-nav-height)] md:pb-0">
         <ClientOnly fallback={<MapFallback />}>
           <Suspense fallback={<MapFallback />}>
             <MapExplorer initialSlug={place} initialCategory={category} initialCommand={command} initialAction={action} />
