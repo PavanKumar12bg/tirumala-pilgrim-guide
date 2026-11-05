@@ -16,7 +16,7 @@ jobs:
         with: { distribution: temurin, java-version: '21' }
       - uses: subosito/flutter-action@v2
         with: { channel: stable }
-      - run: flutter create --platforms=android --org in.pavanaitech --project-name tirumala_guide .
+      - run: flutter create --platforms=android --org com.pavanaitech --project-name tirumala_guide .
       - name: Permissions and app name
         run: |
           sed -i 's#<application#<uses-permission android:name="android.permission.INTERNET"/>\n    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>\n    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>\n    <queries><intent><action android:name="android.intent.action.VIEW"/><data android:scheme="https"/></intent><intent><action android:name="android.intent.action.DIAL"/></intent></queries>\n    <application#' android/app/src/main/AndroidManifest.xml
