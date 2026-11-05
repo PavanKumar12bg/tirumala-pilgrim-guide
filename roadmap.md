@@ -1,6 +1,7 @@
 # Tirumala Guide work
+- [ ] Exact Android source/workflow delivery: blocked by truncated `main.dart` ending at `itemCount: list.length` and stray `Pa`; awaiting complete byte-for-byte source. Web files remain untouched.
 - [ ] Admin accessibility improvements: inspected; implementation paused by the subsequent read-only security planning request.
-- [ ] Advanced Admin Control Center and password + passkey security: read-only audit and phased proposal; implementation awaits explicit approval, stable-domain choice and recovery policy.
+- [ ] Advanced Admin Control Center and password + passkey security: plan approved; feasibility blocked on stable-domain choice, owner/recovery custody and invitation sender readiness before security cutover.
 - [x] Clean public text: smaller headings, simple Home title, removed redundant introductions and decorative category text; 34 regression tests passed and seven public pages checked at phone/desktop sizes with no overflow or page errors. Preserved safety/source notes and existing functions.
 - [x] Approved premium redesign phase 1: traditional semantic tokens, shared navigation and in-flow consent; 37 targeted tests passed, 320–1280px rendering, all seven language-menu choices and authenticated Admin checked without data writes. Physical phone/assistive technology review remains unavailable.
 - [x] Approved page redesign: Darshan status/provenance, Transport route layouts and Map controls; added a read-only Emergency facility directory with honest empty/unverified states. 47 regression tests passed, build OK, seven-language rendering and 320–1280px layouts checked; simulated-GPS real route Start/Stop verified. No database/admin changes; checklist separate.
