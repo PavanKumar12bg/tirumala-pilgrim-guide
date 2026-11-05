@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { ExternalLink, Phone, MapPin, Info } from "lucide-react";
+import { ExternalLink, Phone, MapPin } from "lucide-react";
 import { pickLocalized, useI18n } from "@/lib/i18n";
 import { TEMPLATE_DEFS, telHref, type PublicCategory, type PublicItem, type PublicOffer } from "@/lib/transport";
 
@@ -8,7 +8,7 @@ export function SourcesBlock({ category }: { category: PublicCategory }) {
   if (category.sections?.hide_sources) return null;
   if (!category.sources?.length && !category.last_verified_on) return null;
   return (
-    <section className="rounded-xl bg-card p-4 text-sm ring-1 ring-border">
+    <section className="border-t border-gold/50 pt-5 text-sm">
       <h2 className="font-semibold text-primary">{t("sources")}</h2>
       <ul className="mt-2 space-y-1">
         {category.sources?.map((s) => (
@@ -36,13 +36,13 @@ export function ProvidersBlock({ category, offers }: { category: PublicCategory;
       {offers.map((o) => {
         const tel = telHref(o.provider.public_phone);
         return (
-          <article key={o.id} className="rounded-xl bg-card p-4 shadow-soft ring-1 ring-border">
-            <div className="flex items-start justify-between gap-3">
+          <article key={o.id} className="border-l-2 border-gold bg-card p-4">
+            <div className="flex flex-wrap items-start justify-between gap-3">
               <div className="min-w-0">
                 <h3 className="font-semibold">{o.provider.display_name}</h3>
                 <p className="text-sm text-muted-foreground">{[o.provider.vehicle_type, o.provider.capacity ? `${o.provider.capacity} ${t("capacity")}` : null].filter(Boolean).join(" · ")}</p>
               </div>
-              {tel ? <a href={tel} className="inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-full bg-primary px-4 text-sm font-semibold text-primary-foreground"><Phone className="size-4" aria-hidden />{t("callProvider")}</a> : null}
+              {tel ? <a href={tel} className="inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-md bg-primary px-4 text-sm font-semibold text-primary-foreground"><Phone className="size-4" aria-hidden />{t("callProvider")}</a> : null}
             </div>
             <dl className="mt-3 grid gap-2 text-sm sm:grid-cols-2">
               <Row label={t("price")} value={o.price_text} />
@@ -66,14 +66,14 @@ function ItemCard({ item, category }: { item: PublicItem; category: PublicCatego
   const list = (label: string, xs?: string[]) => xs?.length ? <div className="mt-2"><p className="text-xs font-semibold text-muted-foreground">{label}</p><ol className="mt-1 list-decimal space-y-0.5 pl-5 text-sm">{xs.map((x, i) => <li key={i}>{x}</li>)}</ol></div> : null;
   const title = pickLocalized(item.title, lang);
   return (
-    <article className="overflow-hidden rounded-xl bg-card shadow-soft ring-1 ring-border">
-      {item.photoSrcs?.[0] ? <img src={item.photoSrcs[0]} alt={title} loading="lazy" className="aspect-[16/9] w-full object-cover" /> : null}
-      <div className="space-y-1 p-4">
-        <h3 className="font-semibold">{title}</h3>
+    <article className="overflow-hidden border-t py-5">
+      {item.photoSrcs?.[0] ? <img src={item.photoSrcs[0]} alt={title} loading="lazy" className="mb-4 aspect-[16/9] w-full rounded-md object-cover" /> : null}
+      <div className="space-y-2">
+        <h3 className="text-xl text-primary">{title}</h3>
         <p className="whitespace-pre-line text-sm">{pickLocalized(item.body, lang)}</p>
         {list(t("boardingPoints"), d.boarding_points)}
         {list(t("stops"), d.stops)}
-        <dl className="mt-2 grid gap-2 text-sm sm:grid-cols-2">
+        <dl className="mt-3 grid gap-3 border-y bg-secondary/40 px-3 py-3 text-sm sm:grid-cols-2">
           <Row label={t("duration")} value={item.duration_text} />
           <Row label={t("fare")} value={item.fare_text} />
           <Row label={t("notes")} value={pickLocalized(item.notes, lang)} />
@@ -97,10 +97,10 @@ export function CategoryDetail({ category, items, offers }: { category: PublicCa
   return (
     <div className="space-y-5">
       <p className="whitespace-pre-line">{pickLocalized(category.description, lang)}</p>
-      {def.noLiveNotice ? <p role="note" className="flex gap-2 rounded-lg bg-secondary p-3 text-sm"><Info className="mt-0.5 size-4 shrink-0" aria-hidden />{t("noLiveBus")}</p> : null}
+      {def.noLiveNotice ? <p role="note" className="border-l-2 border-gold pl-3 text-sm text-muted-foreground">{t("noLiveBus")}</p> : null}
       <section className="space-y-3">
         <h2 className="text-xl text-primary">{heading}</h2>
-        {items.length ? <div className={category.template === "package" ? "grid gap-3 sm:grid-cols-2" : "space-y-3"}>{items.map((i) => <ItemCard key={i.id} item={i} category={category} />)}</div> : <p className="text-muted-foreground">{t("nothingPublished")}</p>}
+        {items.length ? <div className={category.template === "package" ? "grid gap-x-6 sm:grid-cols-2" : "space-y-1"}>{items.map((i) => <ItemCard key={i.id} item={i} category={category} />)}</div> : <p className="border-y py-6 text-muted-foreground">{t("nothingPublished")}</p>}
       </section>
       <ProvidersBlock category={category} offers={offers} />
       <SourcesBlock category={category} />

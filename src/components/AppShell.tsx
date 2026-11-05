@@ -65,7 +65,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         <p>{t("officialNote")}</p>
         <p className="mt-2 text-xs">{t("notAffiliated")}</p>
         <nav aria-label={t("about")} className="mt-3 flex flex-wrap gap-x-4">
-          {([["/about","about"],["/ttd","ttdPage"],["/privacy","privacy"],["/terms","terms"],["/contact","contact"],["/admin","admin"]] as const).map(([to,k]) => (
+          {([["/emergency","emergencyTitle"],["/about","about"],["/ttd","ttdPage"],["/privacy","privacy"],["/terms","terms"],["/contact","contact"],["/admin","admin"]] as const).map(([to,k]) => (
             <Link key={to} to={to} className="inline-flex min-h-11 items-center underline-offset-4 hover:underline">{t(k)}</Link>
           ))}
         </nav>
