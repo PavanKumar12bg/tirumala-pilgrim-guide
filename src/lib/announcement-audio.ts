@@ -124,6 +124,12 @@ export function createAnnouncementAudio(deps: {
       if (value === "off") stop();
       else { cancelTimer(); play(); }
     },
+    retry() {
+      if (!allowed()) return;
+      stop();
+      emit({ blocked: false, failed: false });
+      play();
+    },
   };
 }
 
