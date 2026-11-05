@@ -1,4 +1,9 @@
-export const VOICE_COPY = {
+const speechStatus = {
+  en: "Playing…", te: "వినిపిస్తోంది…", ta: "ஒலிக்கிறது…", kn: "ಧ್ವನಿ ಕೇಳಿಸುತ್ತಿದೆ…",
+  ml: "ശബ്ദം പ്ലേ ചെയ്യുന്നു…", hi: "आवाज़ चल रही है…", or: "ଶବ୍ଦ ଚାଲୁଛି…",
+};
+
+const copy = {
   en: { websiteSound: "Website sound", soundOn: "On", soundOff: "Off", soundUnavailable: "Sound is temporarily unavailable.", voiceAnnTitle: "Darshan voice announcement", voiceListen: "Listen", voicePause: "Pause", voiceReplay: "Replay", voiceEnable: "Enable Darshan voice announcements", voiceUpdated: "Updated", voiceUnavailable: "Voice is not available right now. You can still read the announcement.", voiceBlocked: "Your browser needs one tap to allow sound.", voiceAdminNote: "Announced by the guide admin" },
   te: { websiteSound: "వెబ్‌సైట్ శబ్దం", soundOn: "ఆన్", soundOff: "ఆఫ్", soundUnavailable: "శబ్దం తాత్కాలికంగా అందుబాటులో లేదు.", voiceAnnTitle: "దర్శన వాయిస్ ప్రకటన", voiceListen: "వినండి", voicePause: "ఆపండి", voiceReplay: "మళ్ళీ వినండి", voiceEnable: "దర్శన వాయిస్ ప్రకటనలు ఆన్ చేయండి", voiceUpdated: "నవీకరించబడింది", voiceUnavailable: "ప్రస్తుతం వాయిస్ అందుబాటులో లేదు. ప్రకటనను చదవవచ్చు.", voiceBlocked: "శబ్దం అనుమతించడానికి ఒకసారి నొక్కండి.", voiceAdminNote: "గైడ్ నిర్వాహకుల ప్రకటన" },
   ta: { websiteSound: "இணையதள ஒலி", soundOn: "இயக்கு", soundOff: "நிறுத்து", soundUnavailable: "ஒலி தற்காலிகமாகக் கிடைக்கவில்லை.", voiceAnnTitle: "தரிசன குரல் அறிவிப்பு", voiceListen: "கேளுங்கள்", voicePause: "நிறுத்து", voiceReplay: "மீண்டும் கேள்", voiceEnable: "தரிசன குரல் அறிவிப்புகளை இயக்கு", voiceUpdated: "புதுப்பிக்கப்பட்டது", voiceUnavailable: "இப்போது குரல் கிடைக்கவில்லை. அறிவிப்பைப் படிக்கலாம்.", voiceBlocked: "ஒலியை அனுமதிக்க ஒருமுறை தட்டவும்.", voiceAdminNote: "வழிகாட்டி நிர்வாகியின் அறிவிப்பு" },
@@ -6,4 +11,10 @@ export const VOICE_COPY = {
   ml: { websiteSound: "വെബ്സൈറ്റ് ശബ്ദം", soundOn: "ഓൺ", soundOff: "ഓഫ്", soundUnavailable: "ശബ്ദം താൽക്കാലികമായി ലഭ്യമല്ല.", voiceAnnTitle: "ദർശന ശബ്ദ അറിയിപ്പ്", voiceListen: "കേൾക്കുക", voicePause: "നിർത്തുക", voiceReplay: "വീണ്ടും കേൾക്കുക", voiceEnable: "ദർശന ശബ്ദ അറിയിപ്പുകൾ ഓണാക്കുക", voiceUpdated: "പുതുക്കിയത്", voiceUnavailable: "ഇപ്പോൾ ശബ്ദം ലഭ്യമല്ല. അറിയിപ്പ് വായിക്കാം.", voiceBlocked: "ശബ്ദം അനുവദിക്കാൻ ഒരിക്കൽ തൊടുക.", voiceAdminNote: "ഗൈഡ് അഡ്മിന്റെ അറിയിപ്പ്" },
   hi: { websiteSound: "वेबसाइट की आवाज़", soundOn: "चालू", soundOff: "बंद", soundUnavailable: "आवाज़ अस्थायी रूप से उपलब्ध नहीं है।", voiceAnnTitle: "दर्शन वॉइस घोषणा", voiceListen: "सुनें", voicePause: "रोकें", voiceReplay: "फिर से सुनें", voiceEnable: "दर्शन वॉइस घोषणाएँ चालू करें", voiceUpdated: "अपडेट", voiceUnavailable: "अभी आवाज़ उपलब्ध नहीं है। आप घोषणा पढ़ सकते हैं।", voiceBlocked: "आवाज़ की अनुमति के लिए एक बार टैप करें।", voiceAdminNote: "गाइड व्यवस्थापक की घोषणा" },
   or: { websiteSound: "ୱେବସାଇଟ୍ ଶବ୍ଦ", soundOn: "ଚାଲୁ", soundOff: "ବନ୍ଦ", soundUnavailable: "ଶବ୍ଦ ସାମୟିକ ଭାବରେ ଉପଲବ୍ଧ ନାହିଁ।", voiceAnnTitle: "ଦର୍ଶନ ସ୍ୱର ଘୋଷଣା", voiceListen: "ଶୁଣନ୍ତୁ", voicePause: "ବିରତି", voiceReplay: "ପୁଣି ଶୁଣନ୍ତୁ", voiceEnable: "ଦର୍ଶନ ସ୍ୱର ଘୋଷଣା ଚାଲୁ କରନ୍ତୁ", voiceUpdated: "ଅପଡେଟ୍", voiceUnavailable: "ବର୍ତ୍ତମାନ ସ୍ୱର ଉପଲବ୍ଧ ନାହିଁ। ଘୋଷଣା ପଢ଼ିପାରିବେ।", voiceBlocked: "ଶବ୍ଦ ଅନୁମତି ପାଇଁ ଥରେ ଟାପ୍ କରନ୍ତୁ।", voiceAdminNote: "ଗାଇଡ୍ ପ୍ରଶାସକଙ୍କ ଘୋଷଣା" },
+};
+export const VOICE_COPY = {
+  en: { ...copy.en, speechPlaying: speechStatus.en }, te: { ...copy.te, speechPlaying: speechStatus.te },
+  ta: { ...copy.ta, speechPlaying: speechStatus.ta }, kn: { ...copy.kn, speechPlaying: speechStatus.kn },
+  ml: { ...copy.ml, speechPlaying: speechStatus.ml }, hi: { ...copy.hi, speechPlaying: speechStatus.hi },
+  or: { ...copy.or, speechPlaying: speechStatus.or },
 };

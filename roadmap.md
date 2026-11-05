@@ -1,4 +1,5 @@
 # Tirumala Guide work
+- [ ] Repair browser voice handling and admin audio preview; verify stored audio, failure paths and regressions. Actual Vercel production verification requires its URL.
 - [x] Fix hero/logo portability using identical bundled originals and reset photo failures for replacement URLs; 12 stored listing photos load at 360px/1280px, no overflow or page errors, gateway-disabled test and 9 regression tests passed, build OK. No database/security changes.
 - [ ] Verify image repair on Vercel production and GitHub deployment: requires the Vercel site URL and connected repository/deployment confirmation; no manual commit/push performed.
 - [x] Restore existing Home announcement ticker without altering background voice; 360px display and dialog open/close verified, no overflow or page errors, 28 regression tests passed, build OK. No active stored audio was present for a fresh playback check.
