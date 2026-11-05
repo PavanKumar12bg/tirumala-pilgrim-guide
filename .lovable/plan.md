@@ -6,27 +6,20 @@
 The earlier keyboard-accessibility task was inspected but not implemented after the planning-only instruction arrived. Only planning/task-tracking documents were written; no application code, records, auth settings, policies, storage or deployment changed.
 
 ## 1. Verified current state
-Evidence labels: **Source** = inspected code/migrations; **Hosted** = read-only settings/database queries; **Preview** = observed browser; **Proposed** = not implemented.
+**Source:** `/admin` in `src/routes/admin.tsx` uses password sign-in, public signup, browser role checking and first-admin claim. `AdminPanel.tsx` has seven tabs: overview, status, ticker, voice, places, review, transport. No account-management, passkey, recovery, suspension or module/action permission system was found.
 
-| Area | Finding and evidence | Gap / consequence |
-|---|---|---|
-| Admin entry | **Source/Preview:** `/admin`, `src/routes/admin.tsx`; password sign-in, public signup and first-admin claim; signed-out form and signed-in overview rendered. | No password-plus-passkey gate or invitation-only onboarding. |
-| Hosted auth | **Hosted:** email auth enabled; public signup enabled; email auto-confirm disabled; anonymous signup disabled. One user, one Admin, zero unconfirmed users and zero verified native MFA factors at inspection. | Account creation is unrestricted, but registration does **not** automatically grant Admin. Password/MFA rate-limit, HIBP and session-timeout settings were not verified. |
-| Roles | **Source/Hosted:** `public.user_roles`, enum `admin`/`user`, `has_role()`. User can read own role; clients have no role-write policy. | All Admins share global power; no Super Admin, account suspension or module/action permissions. |
-| Bootstrap | **Source:** `claim_first_admin()` allows the authenticated caller only while no Admin exists. Currently one Admin exists. | Retire this public bootstrap when adopting invitations. Check-then-insert lacks visible serialization; concurrent claim behavior was not tested. |
-| Content authorization | **Source/Hosted:** existing table policies require `has_role(auth.uid(),'admin')`; public visibility filters remain separate. | A password-authenticated Admin can directly use the Data API; a UI-only passkey step would be bypassable. |
-| Storage | **Hosted:** both buckets private; writes require global Admin. All `place-images` objects have an anon/authenticated SELECT policy; announcement public reads depend on publication. | Private bucket alone does not make images confidential. Future restricted/draft images need explicit policy review; avoid breaking public signed-photo display. |
-| Server functions | **Source:** generated bearer middleware validates claims; photo identification and voice functions additionally check Admin. `src/start.ts` attaches bearer auth and CSRF protection. | No common action authorization, custom passkey assurance, suspended-account or app-session revocation checks. |
-| Sessions/recovery | **Source:** persisted browser identity session, refresh and sign-out. No password-reset page, passkey enrollment, recovery credentials or Admin session inventory found. | Provider identity session is not privileged assurance; token validation alone does not guarantee immediate revocation. |
-| Audit | **Source/Hosted:** trigger-generated `status_history` exists, read-only to Admins. | Not a general audit log; invitations, security actions, content edits and login failures lack application-wide coverage. |
-| Admin UI | **Source/Preview:** seven tabs: overview, status, ticker, voice, places, review, transport; transport has categories/providers. | Emergency management, verification workflow, correction reports, security and account-management modules are absent. Do not present empty modules as implemented. |
-| Migrations | **Source:** SQL migrations `0000`–`0009`; `drizzle/schema.ts` is generated and intentionally blank. | Preserve migration-led schema; do not replace the blank generated schema or rewrite history. |
+**Hosted read-only evidence:** email sign-in and public signup enabled; email auto-confirm and anonymous signup disabled. One user, one Admin, no unconfirmed users, zero verified native MFA factors. Roles are only `admin`/`user`. Registration does not automatically grant Admin; clients can read own role but have no role-write policy.
+
+**Source + hosted policies:** content/private-provider writes and bucket writes require global `has_role(auth.uid(),'admin')`. Most editors call the Data API/Storage directly. Password-authenticated Admins therefore bypass any future UI-only passkey check. Photo/voice server functions validate bearer claims and Admin; `src/start.ts` adds bearer attachment and CSRF, not passkey/action assurance.
+
+Both buckets are private, but all `place-images` objects allow anonymous/authenticated SELECT; published audio has a publication filter. Private bucket alone does not mean confidential drafts. Preserve public signed-photo display while reviewing this.
+
+`claim_first_admin()` currently cannot grant another Admin while one exists; its check/insert is not visibly serialized. Retire it during invitation cutover; concurrent bootstrap was not tested. `status_history` is an admin-readable trigger snapshot, not general audit logging. Browser sessions persist/refresh; no custom session inventory/revocation or account-recovery flow found. SQL migrations `0000`–`0009` are authoritative; `drizzle/schema.ts` is intentionally blank/generated.
+
+**Preview:** signed-out form and existing signed-in overview rendered. This is not proof of production password authentication. **Not tested:** new accounts, login attempts, writes, attacks, passkey/device support, tests/builds, production Worker compatibility. Hosted rate limits, HIBP and session timeouts remain unverified. Zero provider session rows returned does not prove no sessions exist.
 
 ### Accessibility findings carried forward
 Unassociated Transport field/language/source labels; unnamed place-deletion icon; ambiguous repeated row actions; busy buttons lose names; hidden photo inputs lack a visible focus cue; expandable controls lack state announcements. Existing Radix tabs/sheets provide keyboard primitives, but focus return from programmatically opened editors needs verification. History charts need an equivalent readable data summary. No real screen-reader audit has been performed.
-
-### Verification limits
-No new accounts, password attempts, passkey enrollment, content writes, attack tests, package installs, builds or regression tests were performed for this planning audit. Preview used the existing managed session; this is not proof of a production login ceremony. Native device support, hosted security settings beyond the public auth settings, provider session administration and production Worker compatibility remain unverified. A query returned zero provider session rows; this does not prove no active sessions exist.
 
 ## 2. Recommended authentication architecture — proposed
 Keep Cloud Auth for identity. Add **server-verified WebAuthn privileged sessions**, not a replacement identity provider.
@@ -71,20 +64,19 @@ GRANT, RLS and explicit function EXECUTE restrictions belong in the same migrati
 RLS/grant review covers all existing content tables, private provider data, history, both buckets and `claim_first_admin`, publication/helper RPCs. Preserve approved public reads and voice publication atomicity. Audit successful database changes transactionally; failures/login/security events use trusted append paths without secrets/passwords/tokens/full payloads. Record actor/action/result and limited redacted diffs. Hash chaining with protected external checkpoints can make tampering detectable; it is not immunity against a compromised privileged server or database owner. Retention/export policy needs approval. Avoid full IP/device fingerprint collection by default.
 
 ## 5. Control Center and exact files
-Retain `/admin` as the entry; one shared Admin shell with distinct protected module views. Desktop section navigation; accessible mobile drawer; restrained maroon/gold/stone, compact lists/tables rather than repeated dashboard cards. Show only authorized modules and meaningful measured counts. Unimplemented Emergency, Verification and Reports features remain separately gated by detailed content scope; no invented alerts or empty “complete” modules.
+Retain `/admin` and one shared Admin shell: desktop navigation, accessible mobile drawer, compact lists/tables, traditional colors. Permission-filter all modules. Emergency, Verification and Reports are not existing management features; their content/workflows need separately approved scopes. Never invent dashboard alerts/counts.
 
-| Change | Files/components | Database | Dependencies / tests |
-|---|---|---|---|
-| Entry and privileged gate | `src/routes/admin.tsx`; new protected Admin layout/module routes registered together | Yes | identity/passkey states, direct navigation, expired/revoked sessions |
-| Existing editors and reads | `AdminPanel.tsx`, `TransportAdmin.tsx`, `VoiceAnnouncementAdmin.tsx`, `PhotoIdentifier.tsx`, `StatusHistory.tsx` in `src/components/admin/` | Policies/grants | replace direct privileged calls; preserve save/photo/voice behavior |
-| Server permission enforcement | new `src/lib/admin-auth.functions.ts`, `admin-auth.server.ts`, `admin-permissions.server.ts`, `admin-content.functions.ts`; update `photo-identify.functions.ts`, `voice-announcement.functions.ts` | Yes | fail-closed authorization, action/resource validation, direct endpoint tests |
-| WebAuthn/recovery/invites | new `src/lib/admin-webauthn.functions.ts`, `admin-webauthn.server.ts`, `admin-invitations.functions.ts`, `admin-recovery.functions.ts` and server-only helpers | Yes | domain/crypto/runtime, email delivery, enrollment and replay tests |
-| Account/security/audit UI | new `AdminShell.tsx`, `AdminManagement.tsx`, `RolesPermissions.tsx`, `SecurityCenter.tsx`, `AuditLog.tsx` under Admin components | Yes | sensitive step-up, permission matrix, responsive/accessibility checks |
-| Session plumbing | `src/start.ts`, new app-owned middleware; read generated auth helpers but do not edit them | Yes | CSRF, cookie/session binding, cache purge on sign-out |
-| Labels/focus/copy | existing Admin components, scoped `src/styles.css`, `src/lib/i18n.tsx`, shared Sheet only if necessary | No for presentation | keyboard order, labels, focus return, seven-language labels |
-| Migrations/tests | additive `drizzle/migrations/*` through managed migration tooling; focused auth/permissions/browser tests | Yes | hosted schema/RLS/grants, Worker deployment proof |
+| Proposed work | Exact files | Database / tests / dependencies |
+|---|---|---|
+| Entry, session gate | `src/routes/admin.tsx`, new protected Admin layout/module routes created together | Yes; expired/revoked sessions and direct navigation |
+| Replace direct privileged queries/writes/uploads | `src/components/admin/{AdminPanel,TransportAdmin,VoiceAnnouncementAdmin,PhotoIdentifier,StatusHistory}.tsx` | Policies/grants; preserve saves, photos, voice |
+| Common authorization | new `src/lib/admin-auth.functions.ts`, `admin-auth.server.ts`, `admin-permissions.server.ts`, `admin-content.functions.ts`; update `photo-identify.functions.ts`, `voice-announcement.functions.ts` | Yes; action/resource validation and bypass tests |
+| Passkeys/invitations/recovery | new `src/lib/admin-webauthn.functions.ts`, `admin-webauthn.server.ts`, `admin-invitations.functions.ts`, `admin-recovery.functions.ts`, server-only helpers | Yes; domain/runtime, email, replay/enrollment tests |
+| Account/security/audit UI | new `src/components/admin/{AdminShell,AdminManagement,RolesPermissions,SecurityCenter,AuditLog}.tsx` | Yes; permissions, step-up and accessibility |
+| Plumbing/labels/focus | `src/start.ts`, app-owned middleware, Admin components, scoped `src/styles.css`, `src/lib/i18n.tsx`; shared Sheet only if needed | Sessions yes, presentation no; CSRF, focus return and labels |
+| Schema/testing | additive `drizzle/migrations/*`, focused auth/permissions/browser tests | Hosted RLS/grants and workerd validation |
 
-Public content routes are preserved. New Admin route filenames are finalized with the approved navigation scope; no duplicate app or missing linked routes.
+Read but never edit generated auth/client/types/schema files manually. Finalize new Admin route filenames with navigation approval; preserve public routes and avoid duplicate applications.
 
 ## 6. Recovery, revocation and limits
 Enroll two independent authenticators for Super Admin, ideally one hardware backup stored separately. Proposed recovery: password plus a hashed one-use offline recovery credential, audited delay/notification and enrollment-only access to replace a lost key. No content/role access until new WebAuthn verification. A second authorized Super Admin may approve an identity-verified recovery; cannot simply disable passkeys. Single-owner emergency recovery requires a documented offline custody/identity procedure, not email-only approval.
@@ -92,18 +84,17 @@ Enroll two independent authenticators for Super Admin, ideally one hardware back
 Password reset changes the password only; it never grants passkey assurance. Credential compromise revokes the key and its privileged sessions. App-session revocation gives immediate privileged denial; provider access JWTs can remain valid until expiry and public reads remain available. Provider-wide refresh-token revocation and device inventory require a verified supported API; do not promise remote authenticator deletion or exact physical-device identification from a credential. Existing signed media URLs can remain usable until expiry.
 
 ## 7. Security and accessibility tests
-Test in an isolated approved environment, not by changing live records:
-- Public/uninvited registration, invalid credentials, unconfirmed or suspended member denied; generic errors and rate limits verified.
-- Missing/invalid/revoked/foreign credentials, wrong origin/RP ID, missing user verification, expired/replayed/concurrently reused challenges denied.
-- Expired/reused/wrong-email invitation, unauthorized promotion/delegation, tampered module/action/resource requests denied.
-- Call every server function, old RPC, Data API write/private read and Storage write directly without passkey and with insufficient permission; verify hosted RLS/grants, not just UI.
-- Publish/create/edit/delete permissions independently tested, including field changes that alter publication or expose private data.
-- Stolen identity token cannot access without privileged cookie; revoked/expired session, suspension and permission changes take effect; re-login/recovery cannot bypass enrollment.
-- Sensitive operations require fresh authentication; last-Super-Admin safeguards, lost-device/backup-code reuse and supervised recovery tested.
-- Audit insert accompanies successful mutation; failures recorded; ordinary Admin cannot alter/delete logs; tamper detection and privacy redaction tested.
-- Regression: official/manual darshan, transport private fields, real map/routing, private photo save and atomic seven-language voice publication.
-- Keyboard Tab/Shift+Tab, arrows/Home/End in tabs, Enter/Space, Escape and editor focus return; visible focus, meaningful labels, stable busy names and status announcements. Screen-reader checks with Android TalkBack and desktop NVDA/VoiceOver.
-- Android Chrome, Windows Hello, macOS/iOS and external security keys tested on real supported devices; emulator results are not biometric verification. Confirm deployment under workerd/HTTPS and trusted origins.
+Run in an approved isolated environment, not by editing production:
+- Reject unauthorized registration, invalid credentials, missing/invalid/revoked/foreign passkeys, unconfirmed/suspended accounts; verify rate limits and generic errors.
+- Reject wrong origin/RP ID, absent user verification, replayed/expired/concurrently reused challenges and expired/reused/wrong-email invites.
+- Attempt role/delegation escalation, tampered action/resource requests, direct URLs, every server function, old RPC, Data API/private read and Storage write without passkey or sufficient permission. Check actual hosted RLS/grants, not just hidden menus.
+- Independently test view/create/edit/publish/delete/approve/manage and publication/private-field transitions.
+- Verify stolen identity-token denial without privileged cookie; expiry/revocation/suspension, permission updates, sensitive reauthentication and recovery-session isolation.
+- Exercise lost-device and Super Admin recovery, one-use backup credentials, last-Super-Admin safeguards and maintenance-denial rollback.
+- Verify transactional success audit, failed-event logging, no ordinary-Admin log modification/deletion, tamper detection and privacy redaction.
+- Regress darshan/manual display, transport privacy, map/routing, photo persistence and atomic seven-language voice.
+- Test Tab/Shift+Tab, arrows/Home/End, Enter/Space, Escape, editor focus return, visible focus, labels and status announcements; Android TalkBack, NVDA/VoiceOver.
+- Real Android Chrome, Windows Hello, macOS/iOS and external security keys; HTTPS/workerd/origin tests. Emulator/frontend success is not biometric or security verification.
 
 ## 8. Approval-gated roadmap
 1. **Feasibility and policy gate:** stable domain/RP IDs, WebAuthn runtime proof, trusted server-to-database execution model, invitation email capability, recovery custody, owner identity and session/retention policy. No production cutover until proven.
