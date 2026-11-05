@@ -5,7 +5,8 @@ import { useI18n } from "@/lib/i18n";
 import { LanguageSwitcher } from "./LanguageSwitcher";
 import { AnnouncementTicker } from "./AnnouncementTicker";
 import { CookieNotice } from "./CookieNotice";
-import logo from "@/assets/tirumala-logo.webp.asset.json";
+import logo from "@/assets/tirumala-logo.jpg";
+import { ReliableImage } from "./ReliableImage";
 
 export function TopBar() {
   const { t } = useI18n();
@@ -13,7 +14,7 @@ export function TopBar() {
     <header className="sticky top-0 z-[1100] shrink-0 border-b border-gold/50 bg-primary text-primary-foreground">
       <div className="mx-auto grid max-w-5xl grid-cols-[minmax(0,1fr)_auto] items-center gap-2 px-3 py-1 sm:flex sm:justify-between">
         <Link to="/" className="flex min-h-11 min-w-0 items-center gap-2">
-          <img src={logo.url} alt="" width={36} height={36} className="size-9 shrink-0 rounded-md object-cover object-center ring-1 ring-accent/50" />
+          <ReliableImage src={logo} alt="" width={36} height={36} className="size-9 shrink-0 rounded-md object-cover object-center ring-1 ring-accent/50" />
           <span className="min-w-0 truncate font-display text-lg leading-tight">{t("appName")}</span>
         </Link>
         <div className="flex items-center gap-3">

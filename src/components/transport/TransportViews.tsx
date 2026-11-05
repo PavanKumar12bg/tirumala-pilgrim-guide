@@ -2,6 +2,7 @@ import { Link } from "@tanstack/react-router";
 import { ExternalLink, Phone, MapPin } from "lucide-react";
 import { pickLocalized, useI18n } from "@/lib/i18n";
 import { TEMPLATE_DEFS, telHref, type PublicCategory, type PublicItem, type PublicOffer } from "@/lib/transport";
+import { ReliableImage } from "@/components/ReliableImage";
 
 export function SourcesBlock({ category }: { category: PublicCategory }) {
   const { t } = useI18n();
@@ -67,7 +68,7 @@ function ItemCard({ item, category }: { item: PublicItem; category: PublicCatego
   const title = pickLocalized(item.title, lang);
   return (
     <article className="overflow-hidden border-t py-5">
-      {item.photoSrcs?.[0] ? <img src={item.photoSrcs[0]} alt={title} loading="lazy" className="mb-4 aspect-[16/9] w-full rounded-md object-cover" /> : null}
+      {item.photoSrcs?.[0] ? <ReliableImage src={item.photoSrcs[0]} alt={title} loading="lazy" className="mb-4 aspect-[16/9] w-full rounded-md object-cover" /> : null}
       <div className="space-y-2">
         <h3 className="text-xl text-primary">{title}</h3>
         <p className="whitespace-pre-line text-sm">{pickLocalized(item.body, lang)}</p>

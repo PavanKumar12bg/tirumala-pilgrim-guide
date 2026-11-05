@@ -4,7 +4,8 @@ import { MapPin, Mic, Hospital, Utensils, Building2, ChevronRight } from "lucide
 import { AppShell } from "@/components/AppShell";
 import { PlacesGrid, StatusCards } from "@/components/HomeSections";
 import { useI18n } from "@/lib/i18n";
-import heroAsset from "@/assets/venkateswara-swamy-hero.jpg.asset.json";
+import heroImage from "@/assets/venkateswara-swamy-hero.jpg";
+import { ReliableImage } from "@/components/ReliableImage";
 import { BackgroundDarshanAudio } from "@/components/BackgroundDarshanAudio";
 import { VoiceAssistant } from "@/components/VoiceAssistant";
 import { Button } from "@/components/ui/button";
@@ -35,8 +36,9 @@ function Index() {
           aria-label={t("appName")}
           className="relative overflow-hidden rounded-3xl shadow-lift ring-1 ring-border"
         >
-          <img
-            src={heroAsset.url}
+          <ReliableImage
+            src={heroImage}
+            fetchPriority="high"
             alt="Lord Sri Venkateswara Swamy"
             className="absolute inset-0 h-full w-full object-cover object-[50%_15%]"
           />
