@@ -1,5 +1,5 @@
 # Tirumala Guide work
-- [ ] Clean public text and reduce oversized headings; preserve useful information and verify narrow-screen pages.
+- [x] Clean public text: smaller headings, simple Home title, removed redundant introductions and decorative category text; 34 regression tests passed and seven public pages checked at phone/desktop sizes with no overflow or page errors. Preserved safety/source notes and existing functions.
 - [x] Approved premium redesign phase 1: traditional semantic tokens, shared navigation and in-flow consent; 37 targeted tests passed, 320–1280px rendering, all seven language-menu choices and authenticated Admin checked without data writes. Physical phone/assistive technology review remains unavailable.
 - [x] Approved page redesign: Darshan status/provenance, Transport route layouts and Map controls; added a read-only Emergency facility directory with honest empty/unverified states. 47 regression tests passed, build OK, seven-language rendering and 320–1280px layouts checked; simulated-GPS real route Start/Stop verified. No database/admin changes; checklist separate.
 - [ ] Emergency contact content: requires source-verified contacts and native safety-language review; no medical places currently published in canonical data.
