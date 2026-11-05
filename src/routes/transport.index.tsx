@@ -4,6 +4,7 @@ import { InfoPage, pageMeta } from "@/components/InfoPage";
 import { pickLocalized, useI18n } from "@/lib/i18n";
 import { transportListQuery } from "@/lib/transport";
 import { ArrowUpRight } from "lucide-react";
+import { ReliableImage } from "@/components/ReliableImage";
 
 export const Route = createFileRoute("/transport/")({
   head: () => pageMeta("Trip & Transport", "Tirupati to Tirumala travel options, TTD free buses, temple packages and pickup help, with official sources."),
@@ -27,7 +28,7 @@ function Page() {
           {data.map((c, index) => (
             <li key={c.id}>
               <Link to="/transport/$slug" params={{ slug: c.slug }} className="group flex min-h-32 items-start gap-4 border-b px-1 py-5 transition-colors hover:bg-secondary/50 md:pr-6">
-                {c.imageSrc ? <img src={c.imageSrc} alt="" loading="lazy" width={80} height={80} className="size-20 shrink-0 rounded-md object-cover" /> : <span aria-hidden className="pt-1 font-display text-xl text-gold">{String(index + 1).padStart(2, "0")}</span>}
+                {c.imageSrc ? <ReliableImage src={c.imageSrc} alt="" loading="lazy" width={80} height={80} className="size-20 shrink-0 rounded-md object-cover" /> : <span aria-hidden className="pt-1 font-display text-xl text-gold">{String(index + 1).padStart(2, "0")}</span>}
                 <span className="min-w-0">
                   <span className="block font-display text-xl text-primary">{pickLocalized(c.title, lang)}</span>
                   <span className="mt-2 block text-sm text-muted-foreground">{pickLocalized(c.description, lang)}</span>
