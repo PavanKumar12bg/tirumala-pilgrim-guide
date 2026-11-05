@@ -1,6 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { Home, Map as MapIcon, CalendarDays, Bus } from "lucide-react";
-import type { ReactNode } from "react";
+import { useEffect, useRef, type ReactNode } from "react";
 import { useI18n } from "@/lib/i18n";
 import { LanguageSwitcher } from "./LanguageSwitcher";
 import { AnnouncementTicker } from "./AnnouncementTicker";
@@ -30,9 +30,19 @@ export function TopBar() {
 
 export function BottomNav() {
   const { t } = useI18n();
-  const item = "flex min-h-14 min-w-0 flex-1 flex-col items-center justify-center gap-1 border-t-2 border-transparent px-1 text-center text-xs font-semibold text-muted-foreground transition-colors";
+  const ref = useRef<HTMLElement>(null);
+  useEffect(() => {
+    const nav = ref.current;
+    if (!nav) return;
+    const update = () => document.documentElement.style.setProperty("--bottom-nav-height", `${nav.getBoundingClientRect().height}px`);
+    update();
+    const observer = new ResizeObserver(update);
+    observer.observe(nav);
+    return () => { observer.disconnect(); document.documentElement.style.removeProperty("--bottom-nav-height"); };
+  }, []);
+  const item = "flex min-h-14 min-w-0 flex-1 flex-col items-center justify-center gap-1 border-t-2 border-transparent px-1 py-1 text-center text-xs leading-snug font-semibold text-muted-foreground transition-colors";
   return (
-    <nav aria-label={t("appName")} className="fixed inset-x-0 bottom-0 z-[1100] border-t bg-card pb-[env(safe-area-inset-bottom)] md:hidden">
+    <nav ref={ref} aria-label={t("appName")} className="fixed inset-x-0 bottom-0 z-[1100] border-t bg-card pb-[env(safe-area-inset-bottom)] md:hidden">
       <div className="mx-auto flex max-w-md">
         <Link to="/" className={item} activeOptions={{ exact: true }} activeProps={{ className: "border-primary text-primary" }}>
           <Home className="size-5" aria-hidden />
@@ -58,15 +68,15 @@ export function BottomNav() {
 export function AppShell({ children }: { children: ReactNode }) {
   const { t } = useI18n();
   return (
-    <div className="min-h-screen pb-[calc(4rem+env(safe-area-inset-bottom))] md:pb-0">
+    <div className="min-h-screen pb-[calc(var(--bottom-nav-height)+0.75rem)] md:pb-0">
       <TopBar />
       <main>{children}</main>
-      <footer className="mx-auto mt-6 max-w-5xl border-t px-4 py-6 text-sm text-muted-foreground">
-        <p>{t("officialNote")}</p>
-        <p className="mt-2 text-xs">{t("notAffiliated")}</p>
-        <nav aria-label={t("about")} className="mt-3 flex flex-wrap gap-x-4">
+      <footer className="mx-auto mt-4 max-w-5xl border-t px-4 py-3 text-xs leading-relaxed text-muted-foreground">
+        <p>{t("notAffiliated")}</p>
+        <nav aria-label={t("about")} className="mt-2 flex flex-wrap gap-x-4 gap-y-0">
+          <a href="https://www.tirumala.org/" target="_blank" rel="noopener noreferrer" className="inline-flex min-h-8 max-w-full items-center py-1 underline-offset-4 hover:underline">{t("ttdWebsite")}</a>
           {([["/emergency","emergencyTitle"],["/about","about"],["/ttd","ttdPage"],["/privacy","privacy"],["/terms","terms"],["/contact","contact"],["/admin","admin"]] as const).map(([to,k]) => (
-            <Link key={to} to={to} className="inline-flex min-h-11 items-center underline-offset-4 hover:underline">{t(k)}</Link>
+            <Link key={to} to={to} className="inline-flex min-h-8 max-w-full items-center py-1 underline-offset-4 hover:underline">{t(k)}</Link>
           ))}
         </nav>
       </footer>

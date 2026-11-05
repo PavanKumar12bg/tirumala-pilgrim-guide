@@ -484,13 +484,12 @@ export default function MapExplorer({ initialSlug, initialCategory, initialComma
 
       {/* bottom stack: floating controls sit above the place card, so they never overlap */}
       <div className="pointer-events-none absolute inset-x-0 bottom-0 z-[600] flex flex-col gap-2 px-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)]">
-        <div className="pointer-events-auto flex items-center gap-2 self-end">
+        <div className="pointer-events-auto flex max-w-full flex-wrap items-center justify-end gap-2 self-end">
         {here ? (
           <Button variant="ghost" onClick={() => setPanel(panel === "nearby" ? "none" : "nearby")} aria-expanded={panel === "nearby"} className="flex h-8 items-center rounded-md bg-map-nearby px-3 text-xs font-semibold text-primary-foreground shadow-lift">
             {t("nearby")} · {nearby.length}
           </Button>
         ) : null}
-        <Button variant="secondary" size="icon" className="size-11 rounded-md shadow-lift" aria-label={t("voiceAssistant")} title={t("voiceAssistant")} onClick={() => setVoiceOpen(true)}><Mic className="size-5" /></Button>
         <Button variant="ghost" onClick={() => setPanel(panel === "legend" ? "none" : "legend")} aria-label={t("legend")} aria-expanded={panel === "legend"} className={fab}><Layers className="size-4" /></Button>
         <Button variant="ghost" onClick={() => (nav.state === "active" ? recenter() : startWatch())} aria-label={nav.state === "active" ? t("recenter") : t("myLocation")} className={fab}>
           {gps === "locating" ? <Loader2 className="size-5 animate-spin" aria-hidden /> : <LocateFixed className={cn("size-5", gps === "watching" ? "text-map-me" : "text-primary")} aria-hidden />}
@@ -503,6 +502,9 @@ export default function MapExplorer({ initialSlug, initialCategory, initialComma
               onRetry={() => { if (here && hasVerifiedCoords(sel)) void requestRoute(here, [sel.lat, sel.lng], false); else startNav(); }} />
           </div>
         ) : null}
+      </div>
+      <div className="pointer-events-none absolute inset-y-0 right-3 z-[600] flex items-center">
+        <Button variant="secondary" size="icon" className="pointer-events-auto size-11 shrink-0 rounded-md shadow-lift" aria-label={t("voiceAssistant")} title={t("voiceAssistant")} onClick={() => setVoiceOpen(true)}><Mic className="size-5" /></Button>
       </div>
       <VoiceAssistant open={voiceOpen} onOpenChange={setVoiceOpen} onAction={executeVoice} />
     </div>

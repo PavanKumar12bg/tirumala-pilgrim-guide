@@ -10,6 +10,8 @@
 <!-- LOVABLE:END -->
 
 ## Tirumala Guide architecture
+- Transport server reads import browser-safe data definitions, never query modules, to avoid circular server-function imports; public connection settings resolve inside handlers with the existing publishable configuration fallback, never admin credentials.
+- BottomNav measures its rendered height into a shared CSS variable so page and map clearance follow wrapped labels and device safe areas.
 - Device speech selects only matching-language voices with exact Indian locale preference and current voice lookup per tap; background audio retries remain inside the existing language menu and respect user opt-out and admin settings.
 - Bundle the original hero and logo images as local imports for third-party hosting; Lovable-only asset paths are not portable to Vercel. Shared image handling resets failures when a new source arrives.
 - The Emergency page is a read-only view of canonical medical places, not a new contacts CMS; do not imply emergency-service capability or add phone numbers without verified content approval.

@@ -2,6 +2,7 @@ export const CONTACT_EMAIL = "pavankumarg4636@gmail.com";
 
 export const SITE_COPY = {
   en: {
+    ttdWebsite: "TTD Official Website",
     about: "About", privacy: "Privacy Policy", terms: "Terms of Use", contact: "Contact", ttdPage: "Official TTD reports",
     notAffiliated: "Tirumala Guide is an independent pilgrim guide. It is not affiliated with or run by Tirumala Tirupati Devasthanams (TTD).",
     cookieText: "We use cookies and device storage to remember your language and settings. Advertising partners such as Google may use cookies to show ads.",
@@ -16,6 +17,7 @@ export const SITE_COPY = {
     openTtdSite: "Open TTD News (news.tirumala.org)", readFullReport: "Read today's full report",
   },
   te: {
+    ttdWebsite: "టీటీడీ అధికారిక వెబ్‌సైట్",
     about: "మా గురించి", privacy: "గోప్యతా విధానం", terms: "వినియోగ నిబంధనలు", contact: "సంప్రదించండి", ttdPage: "అధికారిక టీటీడీ నివేదికలు",
     notAffiliated: "తిరుమల గైడ్ ఒక స్వతంత్ర భక్తుల గైడ్. ఇది తిరుమల తిరుపతి దేవస్థానం (టీటీడీ)కి చెందినది కాదు, వారు నడిపేది కాదు.",
     cookieText: "మీ భాష, సెట్టింగ్‌లు గుర్తుంచుకోవడానికి కుకీలు, పరికర నిల్వ వాడతాం. Google వంటి ప్రకటన భాగస్వాములు ప్రకటనల కోసం కుకీలు వాడవచ్చు.",
@@ -30,6 +32,7 @@ export const SITE_COPY = {
     openTtdSite: "టీటీడీ వార్తలు తెరవండి (news.tirumala.org)", readFullReport: "నేటి పూర్తి నివేదిక చదవండి",
   },
   ta: {
+    ttdWebsite: "TTD அதிகாரப்பூர்வ இணையதளம்",
     about: "எங்களைப் பற்றி", privacy: "தனியுரிமைக் கொள்கை", terms: "பயன்பாட்டு விதிமுறைகள்", contact: "தொடர்பு", ttdPage: "அதிகாரப்பூர்வ TTD அறிக்கைகள்",
     notAffiliated: "திருமலை வழிகாட்டி ஒரு சுயாதீன பக்தர் வழிகாட்டி. இது திருமலை திருப்பதி தேவஸ்தானத்துடன் (TTD) தொடர்புடையதல்ல.",
     cookieText: "உங்கள் மொழி, அமைப்புகளை நினைவில் கொள்ள குக்கீகள் மற்றும் சாதன சேமிப்பைப் பயன்படுத்துகிறோம். Google போன்ற விளம்பர கூட்டாளர்கள் குக்கீகளைப் பயன்படுத்தலாம்.",
@@ -44,6 +47,7 @@ export const SITE_COPY = {
     openTtdSite: "TTD செய்திகளைத் திற (news.tirumala.org)", readFullReport: "இன்றைய முழு அறிக்கையைப் படி",
   },
   kn: {
+    ttdWebsite: "TTD ಅಧಿಕೃತ ವೆಬ್‌ಸೈಟ್",
     about: "ನಮ್ಮ ಬಗ್ಗೆ", privacy: "ಗೌಪ್ಯತಾ ನೀತಿ", terms: "ಬಳಕೆಯ ನಿಯಮಗಳು", contact: "ಸಂಪರ್ಕಿಸಿ", ttdPage: "ಅಧಿಕೃತ TTD ವರದಿಗಳು",
     notAffiliated: "ತಿರುಮಲ ಗೈಡ್ ಸ್ವತಂತ್ರ ಭಕ್ತರ ಮಾರ್ಗದರ್ಶಿ. ಇದು ತಿರುಮಲ ತಿರುಪತಿ ದೇವಸ್ಥಾನಂ (TTD) ಜೊತೆ ಸಂಬಂಧ ಹೊಂದಿಲ್ಲ.",
     cookieText: "ನಿಮ್ಮ ಭಾಷೆ ಮತ್ತು ಸೆಟ್ಟಿಂಗ್‌ಗಳನ್ನು ನೆನಪಿಡಲು ಕುಕೀಗಳು ಮತ್ತು ಸಾಧನ ಸಂಗ್ರಹ ಬಳಸುತ್ತೇವೆ. Google ನಂತಹ ಜಾಹೀರಾತು ಪಾಲುದಾರರು ಕುಕೀಗಳನ್ನು ಬಳಸಬಹುದು.",
@@ -58,6 +62,7 @@ export const SITE_COPY = {
     openTtdSite: "TTD ಸುದ್ದಿ ತೆರೆಯಿರಿ (news.tirumala.org)", readFullReport: "ಇಂದಿನ ಪೂರ್ಣ ವರದಿ ಓದಿ",
   },
   ml: {
+    ttdWebsite: "TTD ഔദ്യോഗിക വെബ്‌സൈറ്റ്",
     about: "ഞങ്ങളെക്കുറിച്ച്", privacy: "സ്വകാര്യതാ നയം", terms: "ഉപയോഗ നിബന്ധനകൾ", contact: "ബന്ധപ്പെടുക", ttdPage: "ഔദ്യോഗിക TTD റിപ്പോർട്ടുകൾ",
     notAffiliated: "തിരുമല ഗൈഡ് ഒരു സ്വതന്ത്ര തീർത്ഥാടക ഗൈഡാണ്. ഇത് തിരുമല തിരുപ്പതി ദേവസ്ഥാനവുമായി (TTD) ബന്ധമുള്ളതല്ല.",
     cookieText: "നിങ്ങളുടെ ഭാഷയും ക്രമീകരണങ്ങളും ഓർക്കാൻ കുക്കികളും ഉപകരണ സംഭരണവും ഉപയോഗിക്കുന്നു. Google പോലുള്ള പരസ്യ പങ്കാളികൾ കുക്കികൾ ഉപയോഗിച്ചേക്കാം.",
@@ -72,6 +77,7 @@ export const SITE_COPY = {
     openTtdSite: "TTD വാർത്തകൾ തുറക്കുക (news.tirumala.org)", readFullReport: "ഇന്നത്തെ പൂർണ്ണ റിപ്പോർട്ട് വായിക്കുക",
   },
   hi: {
+    ttdWebsite: "TTD आधिकारिक वेबसाइट",
     about: "हमारे बारे में", privacy: "गोपनीयता नीति", terms: "उपयोग की शर्तें", contact: "संपर्क करें", ttdPage: "आधिकारिक TTD रिपोर्ट",
     notAffiliated: "तिरुमला गाइड एक स्वतंत्र तीर्थयात्री गाइड है। यह तिरुमला तिरुपति देवस्थानम (TTD) से संबद्ध नहीं है।",
     cookieText: "आपकी भाषा और सेटिंग याद रखने के लिए हम कुकीज़ और डिवाइस स्टोरेज का उपयोग करते हैं। Google जैसे विज्ञापन साझेदार कुकीज़ का उपयोग कर सकते हैं।",
@@ -86,6 +92,7 @@ export const SITE_COPY = {
     openTtdSite: "TTD समाचार खोलें (news.tirumala.org)", readFullReport: "आज की पूरी रिपोर्ट पढ़ें",
   },
   or: {
+    ttdWebsite: "TTD ଅଧିକୃତ ୱେବସାଇଟ୍",
     about: "ଆମ ବିଷୟରେ", privacy: "ଗୋପନୀୟତା ନୀତି", terms: "ବ୍ୟବହାର ସର୍ତ୍ତାବଳୀ", contact: "ଯୋଗାଯୋଗ", ttdPage: "ଅଧିକୃତ TTD ରିପୋର୍ଟ",
     notAffiliated: "ତିରୁମଲା ଗାଇଡ୍ ଏକ ସ୍ୱାଧୀନ ତୀର୍ଥଯାତ୍ରୀ ଗାଇଡ୍। ଏହା ତିରୁମଲା ତିରୁପତି ଦେବସ୍ଥାନମ୍ (TTD) ସହ ସମ୍ବନ୍ଧିତ ନୁହେଁ।",
     cookieText: "ଆପଣଙ୍କ ଭାଷା ଓ ସେଟିଂ ମନେ ରଖିବାକୁ ଆମେ କୁକିଜ୍ ଓ ଡିଭାଇସ୍ ଷ୍ଟୋରେଜ୍ ବ୍ୟବହାର କରୁ। Google ପରି ବିଜ୍ଞାପନ ସହଯୋଗୀ କୁକିଜ୍ ବ୍ୟବହାର କରିପାରନ୍ତି।",

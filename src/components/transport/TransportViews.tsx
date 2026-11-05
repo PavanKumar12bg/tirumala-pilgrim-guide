@@ -38,12 +38,12 @@ export function ProvidersBlock({ category, offers }: { category: PublicCategory;
         const tel = telHref(o.provider.public_phone);
         return (
           <article key={o.id} className="border-l-2 border-gold bg-card p-4">
-            <div className="flex flex-wrap items-start justify-between gap-3">
+            <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-2 sm:flex sm:justify-between sm:gap-3">
               <div className="min-w-0">
-                <h3 className="font-semibold">{o.provider.display_name}</h3>
+                <h3 className="break-words font-semibold">{o.provider.display_name}</h3>
                 <p className="text-sm text-muted-foreground">{[o.provider.vehicle_type, o.provider.capacity ? `${o.provider.capacity} ${t("capacity")}` : null].filter(Boolean).join(" · ")}</p>
               </div>
-              {tel ? <a href={tel} className="inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-md bg-primary px-4 text-sm font-semibold text-primary-foreground"><Phone className="size-4" aria-hidden />{t("callProvider")}</a> : null}
+              {tel ? <a href={tel} className="inline-flex min-h-11 max-w-28 shrink-0 items-center justify-center gap-1.5 rounded-md bg-primary px-2 text-center text-xs font-semibold text-primary-foreground sm:max-w-none sm:px-4 sm:text-sm"><Phone className="size-4 shrink-0" aria-hidden />{t("callProvider")}</a> : null}
             </div>
             <dl className="mt-3 grid gap-2 text-sm sm:grid-cols-2">
               <Row label={t("price")} value={o.price_text} />
