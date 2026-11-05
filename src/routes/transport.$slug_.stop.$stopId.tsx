@@ -25,9 +25,9 @@ function Page() {
   if (!data || !item) return <Missing />;
   const title = pickLocalized(item.title, lang);
   return (
-    <InfoPage title={title}>
+    <InfoPage title={title} className="transport-page sm:px-6 sm:py-10">
       <Link to="/transport/$slug" params={{ slug }} className="-mt-2 inline-flex min-h-11 items-center gap-1 text-sm font-semibold text-primary"><ArrowLeft className="size-4" aria-hidden />{pickLocalized(data.category.title, lang)}</Link>
-      {item.photoSrcs?.length ? <div className="flex snap-x gap-2 overflow-x-auto">{item.photoSrcs.map((s, i) => <img key={s} src={s} alt={`${title} ${i + 1}`} className="aspect-[4/3] w-[85%] shrink-0 snap-center rounded-xl object-cover sm:w-80" />)}</div> : null}
+      {item.photoSrcs?.length ? <div className="flex snap-x gap-2 overflow-x-auto">{item.photoSrcs.map((s, i) => <img key={s} src={s} alt={`${title} ${i + 1}`} loading="lazy" className="aspect-[4/3] w-[85%] shrink-0 snap-center rounded-md object-cover sm:w-80" />)}</div> : null}
       <p className="whitespace-pre-line">{pickLocalized(item.body, lang)}</p>
       <dl className="grid gap-3 text-sm sm:grid-cols-2">
         {item.duration_text ? <div><dt className="text-xs text-muted-foreground">{t("duration")}</dt><dd>{item.duration_text}</dd></div> : null}
