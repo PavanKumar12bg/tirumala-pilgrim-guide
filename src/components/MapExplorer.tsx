@@ -352,39 +352,39 @@ export default function MapExplorer({ initialSlug, initialCategory, initialComma
     : [];
   const gpsMsg: DictKey | null = gps === "denied" ? "gpsDenied" : gps === "unavailable" ? "gpsUnavailable" : gps === "timeout" ? "gpsTimeout" : stale ? "gpsLost" : fix && fix.accuracy > NAV_CONFIG.warnAccuracyMeters ? "lowAccuracy" : fix && !here ? "outsideArea" : null;
   const showNotice = gpsMsg && dismissed !== gpsMsg;
-  const chip = (active: boolean) => cn("flex h-8 shrink-0 items-center gap-1 rounded-full px-3 text-xs font-semibold shadow-soft transition-colors", active ? "bg-primary text-primary-foreground" : "bg-card/95 text-foreground");
-  const fab = "grid size-11 place-items-center rounded-full bg-card shadow-lift";
+  const chip = (active: boolean) => cn("flex h-11 shrink-0 items-center gap-1 rounded-md border px-3 text-xs font-semibold transition-colors", active ? "border-primary bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground" : "border-border bg-card text-foreground");
+  const fab = "grid size-11 place-items-center rounded-md border border-gold/50 bg-card text-primary shadow-soft";
 
   return (
-    <div className="relative h-full overflow-hidden">
-      <div ref={elRef} className="absolute inset-0 z-0 bg-secondary" aria-label={t("routeMapTitle")} role="application" />
+    <div className="map-experience relative h-full overflow-hidden">
+      <div ref={elRef} className="absolute inset-0 z-0 bg-secondary" aria-label={t("routeMapTitle")} role="region" />
 
       {/* compact search + filter chips */}
       <div className="pointer-events-none absolute inset-x-0 top-0 z-[500] space-y-2 px-3 pt-2">
         <div className="pointer-events-auto relative mx-auto max-w-md">
           {searchOpen ? (
-            <div className="flex h-10 items-center gap-2 rounded-full bg-card pl-3 pr-1 shadow-lift">
+            <div className="flex h-11 items-center gap-2 rounded-md bg-card pl-3 pr-1 shadow-lift">
               <Search className="size-4 shrink-0 text-muted-foreground" aria-hidden />
               <input autoFocus value={query} onChange={(e) => setQuery(e.target.value)} placeholder={t("searchPlaces")} aria-label={t("searchPlaces")}
                 onKeyDown={(e) => e.key === "Escape" && (setQuery(""), setSearchOpen(false))}
                 className="min-w-0 flex-1 bg-transparent text-base outline-none" />
-              <button onClick={() => { setQuery(""); setSearchOpen(false); }} aria-label={t("close")} className="grid size-8 shrink-0 place-items-center rounded-full hover:bg-muted"><X className="size-4" /></button>
+              <Button variant="ghost" onClick={() => { setQuery(""); setSearchOpen(false); }} aria-label={t("close")} className="grid size-8 shrink-0 place-items-center rounded-md hover:bg-muted"><X className="size-4" /></Button>
             </div>
           ) : (
-            <button onClick={() => setSearchOpen(true)} className="flex h-10 w-full items-center gap-2 rounded-full bg-card/95 px-3 text-sm text-muted-foreground shadow-lift">
+            <Button variant="ghost" onClick={() => setSearchOpen(true)} className="flex h-11 w-full items-center gap-2 rounded-md bg-card/95 px-3 text-sm text-muted-foreground shadow-lift">
               <Search className="size-4" aria-hidden /> {t("searchPlaces")}
               {isLoading || mapData.isLoading ? <Loader2 className="ml-auto size-4 animate-spin" aria-label={t("loading")} /> : null}
-            </button>
+            </Button>
           )}
           {searchOpen && searchResults.length ? (
-            <ul className="absolute inset-x-0 top-12 max-h-72 overflow-y-auto rounded-2xl bg-card py-1 shadow-lift">
+            <ul className="absolute inset-x-0 top-12 max-h-72 overflow-y-auto rounded-lg bg-card py-1 shadow-lift">
               {searchResults.map((p) => (
                 <li key={p.id}>
-                  <button className="flex min-h-11 w-full items-center gap-2.5 px-3 text-left text-sm hover:bg-muted" onClick={() => { choose(p.slug); setQuery(""); setSearchOpen(false); }}>
+                  <Button variant="ghost" className="flex min-h-11 w-full items-center gap-2.5 px-3 text-left text-sm hover:bg-muted" onClick={() => { choose(p.slug); setQuery(""); setSearchOpen(false); }}>
                     <span aria-hidden>{catIcon(p.category)}</span>
                     <span className="min-w-0 flex-1 truncate">{pickLocalized(p.name, lang)}</span>
                     {!hasVerifiedCoords(p) ? <span className="text-[11px] text-muted-foreground">⏳ {t("coordsPending")}</span> : null}
-                  </button>
+                  </Button>
                 </li>
               ))}
             </ul>
@@ -392,58 +392,58 @@ export default function MapExplorer({ initialSlug, initialCategory, initialComma
         </div>
         {!searchOpen ? (
           <div className="pointer-events-auto -mx-3 flex gap-1.5 overflow-x-auto px-3 pb-1 [scrollbar-width:none]" role="toolbar" aria-label={t("legend")}>
-            <button onClick={() => setCat("all")} aria-pressed={cat === "all"} className={chip(cat === "all")}>{t("all")}</button>
+            <Button variant="ghost" onClick={() => setCat("all")} aria-pressed={cat === "all"} className={chip(cat === "all")}>{t("all")}</Button>
             {topCats.map((id) => (
-              <button key={id} onClick={() => setCat(id)} aria-pressed={cat === id} className={chip(cat === id)}>
+              <Button variant="ghost" key={id} onClick={() => setCat(id)} aria-pressed={cat === id} className={chip(cat === id)}>
                 <span aria-hidden>{catIcon(id)}</span>{t(catKey(id))}
-              </button>
+              </Button>
             ))}
             {moreCats.some((c) => c.id === cat) ? (
-              <button aria-pressed className={chip(true)}><span aria-hidden>{catIcon(cat)}</span>{t(catKey(cat))}</button>
+              <Button variant="ghost" aria-pressed className={chip(true)}><span aria-hidden>{catIcon(cat)}</span>{t(catKey(cat))}</Button>
             ) : null}
             {moreCats.length ? (
-              <button onClick={() => setPanel(panel === "cats" ? "none" : "cats")} aria-expanded={panel === "cats"} className={chip(false)}>
+              <Button variant="ghost" onClick={() => setPanel(panel === "cats" ? "none" : "cats")} aria-expanded={panel === "cats"} className={chip(false)}>
                 <SlidersHorizontal className="size-3.5" aria-hidden />{t("moreCats")}
-              </button>
+              </Button>
             ) : null}
           </div>
         ) : null}
         {panel === "cats" ? (
-          <div className="pointer-events-auto ml-auto w-52 rounded-2xl bg-card p-1.5 shadow-lift">
+          <div className="pointer-events-auto ml-auto w-52 rounded-lg bg-card p-1.5 shadow-lift">
             {moreCats.map((c) => (
-              <button key={c.id} onClick={() => { setCat(c.id); setPanel("none"); }} className={cn("flex min-h-10 w-full items-center gap-2 rounded-xl px-2.5 text-left text-sm", cat === c.id ? "bg-primary text-primary-foreground" : "hover:bg-muted")}>
+              <Button variant="ghost" key={c.id} onClick={() => { setCat(c.id); setPanel("none"); }} className={cn("flex min-h-10 w-full items-center gap-2 rounded-md px-2.5 text-left text-sm", cat === c.id ? "bg-primary text-primary-foreground" : "hover:bg-muted")}>
                 <span aria-hidden>{c.icon}</span><span className="flex-1 truncate">{t(catKey(c.id))}</span><span className="text-xs opacity-70">{c.n}</span>
-              </button>
+              </Button>
             ))}
           </div>
         ) : null}
         {voiceMessage ? <div role="status" className="pointer-events-auto flex items-center gap-2 rounded-lg bg-card p-2 text-xs shadow-soft"><span className="min-w-0 flex-1">{voiceMessage}</span><Button variant="ghost" size="icon" className="size-8" aria-label={t("close")} onClick={() => setVoiceMessage("")}><X className="size-4" /></Button></div> : null}
         {!isLoading && cat !== "all" && !filtered.length ? <p role="status" className="pointer-events-auto rounded-lg bg-card p-2 text-xs shadow-soft">{t("noPlaces")}</p> : null}
         {isError || mapData.isError ? (
-          <div className="pointer-events-auto mx-auto flex max-w-md items-center gap-2 rounded-full bg-card py-1 pl-3 pr-1 text-xs shadow-soft" role="alert">
+          <div className="pointer-events-auto mx-auto flex max-w-md items-center gap-2 rounded-md bg-card py-1 pl-3 pr-1 text-xs shadow-soft" role="alert">
             <AlertTriangle className="size-3.5 shrink-0 text-destructive" aria-hidden />
             <span className="min-w-0 flex-1 truncate">{t("mapDataError")}</span>
-            <button className="h-8 rounded-full px-3 font-semibold text-primary" onClick={() => { void refetch(); void mapData.refetch(); }}>{t("retry")}</button>
+            <Button variant="ghost" className="h-8 rounded-md px-3 font-semibold text-primary" onClick={() => { void refetch(); void mapData.refetch(); }}>{t("retry")}</Button>
           </div>
         ) : null}
         {showNotice ? (
-          <div className="pointer-events-auto mx-auto flex max-w-md items-center gap-2 rounded-full bg-card py-1 pl-3 pr-1 text-xs shadow-soft" role="status">
+          <div className="pointer-events-auto mx-auto flex max-w-md items-center gap-2 rounded-md bg-card py-1 pl-3 pr-1 text-xs shadow-soft" role="status">
             <AlertTriangle className="size-3.5 shrink-0 text-warning" aria-hidden />
             <span className="min-w-0 flex-1 truncate">{t(gpsMsg)}{fix && gpsMsg === "lowAccuracy" ? ` (±${Math.round(fix.accuracy)} m)` : ""}</span>
-            {gpsMsg !== "outsideArea" && gpsMsg !== "lowAccuracy" ? <button className="h-8 rounded-full px-2 font-semibold text-primary" onClick={() => { setDismissed(null); startWatch(); }}>{t("retry")}</button> : null}
-            <button onClick={() => setDismissed(gpsMsg)} aria-label={t("close")} className="grid size-8 place-items-center rounded-full hover:bg-muted"><X className="size-3.5" /></button>
+            {gpsMsg !== "outsideArea" && gpsMsg !== "lowAccuracy" ? <Button variant="ghost" className="h-8 rounded-md px-2 font-semibold text-primary" onClick={() => { setDismissed(null); startWatch(); }}>{t("retry")}</Button> : null}
+            <Button variant="ghost" onClick={() => setDismissed(gpsMsg)} aria-label={t("close")} className="grid size-8 place-items-center rounded-md hover:bg-muted"><X className="size-3.5" /></Button>
           </div>
         ) : null}
       </div>
 
       {panel === "legend" ? (
-        <div className="absolute bottom-16 right-16 z-[650] w-52 rounded-2xl bg-card p-3 text-xs shadow-lift">
+        <div className="absolute bottom-16 right-16 z-[650] w-52 rounded-lg bg-card p-3 text-xs shadow-lift">
           <ul className="space-y-1.5">
-            <li className="flex items-center gap-2"><span className="size-3 rounded-full bg-map-me ring-2 ring-card" /> {t("you")}</li>
-            <li className="flex items-center gap-2"><span className="size-3 rounded-full bg-accent ring-2 ring-primary" /> {t("destination")}</li>
-            <li className="flex items-center gap-2"><span className="h-1 w-4 rounded-full bg-map-route" /> {t("route")}</li>
-            <li className="flex items-center gap-2"><span className="size-3 rounded-full ring-[3px] ring-map-nearby" /> {t("nearby")}</li>
-            <li className="flex items-center gap-2"><span className="size-3 rounded-full ring-2 ring-primary" /> {t("otherPlaces")}</li>
+            <li className="flex items-center gap-2"><span className="size-3 rounded-md bg-map-me ring-2 ring-card" /> {t("you")}</li>
+            <li className="flex items-center gap-2"><span className="size-3 rounded-md bg-accent ring-2 ring-primary" /> {t("destination")}</li>
+            <li className="flex items-center gap-2"><span className="h-1 w-4 rounded-md bg-map-route" /> {t("route")}</li>
+            <li className="flex items-center gap-2"><span className="size-3 rounded-md ring-[3px] ring-map-nearby" /> {t("nearby")}</li>
+            <li className="flex items-center gap-2"><span className="size-3 rounded-md ring-2 ring-primary" /> {t("otherPlaces")}</li>
           </ul>
           <ul className="mt-2 grid grid-cols-2 gap-1 border-t pt-2 text-[11px]">
             {CATEGORIES.map((c) => <li key={c.id} className="truncate">{c.icon} {t(catKey(c.id))}</li>)}
@@ -452,28 +452,28 @@ export default function MapExplorer({ initialSlug, initialCategory, initialComma
       ) : null}
 
       {panel === "nearby" && here ? (
-        <div className="absolute inset-x-3 bottom-3 z-[650] mx-auto max-h-[55%] max-w-md overflow-y-auto rounded-2xl bg-card p-3 shadow-lift">
+        <div className="absolute inset-x-3 bottom-3 z-[650] mx-auto max-h-[55%] max-w-md overflow-y-auto rounded-lg bg-card p-3 shadow-lift">
           <div className="flex items-center justify-between gap-2">
             <p className="text-sm font-semibold">{t("nearby")}</p>
-            <button onClick={() => setPanel("none")} aria-label={t("close")} className="grid size-9 place-items-center rounded-full hover:bg-muted"><X className="size-4" /></button>
+            <Button variant="ghost" onClick={() => setPanel("none")} aria-label={t("close")} className="grid size-9 place-items-center rounded-md hover:bg-muted"><X className="size-4" /></Button>
           </div>
           <div className="mt-1 flex gap-1.5" role="radiogroup" aria-label={t("within")}>
             {NAV_CONFIG.nearbyOptions.map((m) => (
-              <button key={m} role="radio" aria-checked={nearbyM === m} onClick={() => setNearbyM(m)}
-                className={cn("h-8 flex-1 rounded-full text-xs font-semibold", nearbyM === m ? "bg-map-nearby text-primary-foreground" : "bg-muted")}>
+              <Button variant="ghost" key={m} role="radio" aria-checked={nearbyM === m} onClick={() => setNearbyM(m)}
+                className={cn("h-8 flex-1 rounded-md text-xs font-semibold", nearbyM === m ? "bg-map-nearby text-primary-foreground" : "bg-muted")}>
                 {formatDistance(m)}
-              </button>
+              </Button>
             ))}
           </div>
           {nearby.length ? (
             <ul className="mt-2 divide-y">
               {nearby.map(({ item, meters }) => (
                 <li key={item.id}>
-                  <button className="flex min-h-11 w-full items-center gap-2.5 py-1 text-left text-sm" onClick={() => { choose(item.slug); setPanel("none"); }}>
+                  <Button variant="ghost" className="flex min-h-11 w-full items-center gap-2.5 py-1 text-left text-sm" onClick={() => { choose(item.slug); setPanel("none"); }}>
                     <span aria-hidden>{catIcon(item.category)}</span>
                     <span className="min-w-0 flex-1 truncate">{pickLocalized(item.name, lang)}</span>
                     <span className="shrink-0 text-xs font-semibold text-map-nearby">{formatDistance(meters)}</span>
-                  </button>
+                  </Button>
                 </li>
               ))}
             </ul>
@@ -486,15 +486,15 @@ export default function MapExplorer({ initialSlug, initialCategory, initialComma
       <div className="pointer-events-none absolute inset-x-0 bottom-0 z-[600] flex flex-col gap-2 px-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)]">
         <div className="pointer-events-auto flex items-center gap-2 self-end">
         {here ? (
-          <button onClick={() => setPanel(panel === "nearby" ? "none" : "nearby")} aria-expanded={panel === "nearby"} className="flex h-8 items-center rounded-full bg-map-nearby px-3 text-xs font-semibold text-primary-foreground shadow-lift">
+          <Button variant="ghost" onClick={() => setPanel(panel === "nearby" ? "none" : "nearby")} aria-expanded={panel === "nearby"} className="flex h-8 items-center rounded-md bg-map-nearby px-3 text-xs font-semibold text-primary-foreground shadow-lift">
             {t("nearby")} · {nearby.length}
-          </button>
+          </Button>
         ) : null}
-        <Button variant="secondary" size="icon" className="size-11 rounded-full shadow-lift" aria-label={t("voiceAssistant")} title={t("voiceAssistant")} onClick={() => setVoiceOpen(true)}><Mic className="size-5" /></Button>
-        <button onClick={() => setPanel(panel === "legend" ? "none" : "legend")} aria-label={t("legend")} aria-expanded={panel === "legend"} className={fab}><Layers className="size-4" /></button>
-        <button onClick={() => (nav.state === "active" ? recenter() : startWatch())} aria-label={nav.state === "active" ? t("recenter") : t("myLocation")} className={fab}>
+        <Button variant="secondary" size="icon" className="size-11 rounded-md shadow-lift" aria-label={t("voiceAssistant")} title={t("voiceAssistant")} onClick={() => setVoiceOpen(true)}><Mic className="size-5" /></Button>
+        <Button variant="ghost" onClick={() => setPanel(panel === "legend" ? "none" : "legend")} aria-label={t("legend")} aria-expanded={panel === "legend"} className={fab}><Layers className="size-4" /></Button>
+        <Button variant="ghost" onClick={() => (nav.state === "active" ? recenter() : startWatch())} aria-label={nav.state === "active" ? t("recenter") : t("myLocation")} className={fab}>
           {gps === "locating" ? <Loader2 className="size-5 animate-spin" aria-hidden /> : <LocateFixed className={cn("size-5", gps === "watching" ? "text-map-me" : "text-primary")} aria-hidden />}
-        </button>
+        </Button>
         </div>
         {sel ? (
           <div className="pointer-events-auto mx-auto w-full max-w-md">
@@ -518,13 +518,13 @@ function SelectedCard({ place, fix, nav, collapsed, onToggle, onClose, onStart, 
   const verified = hasVerifiedCoords(place);
   const straight = verified && fix ? haversineMeters(fix.pos, [place.lat, place.lng]) : null;
   const tags = place.osm_tags ?? {};
-  const btn = "flex h-11 items-center justify-center gap-1.5 rounded-full px-4 text-sm font-semibold";
+  const btn = "flex min-h-11 h-auto whitespace-normal items-center justify-center gap-1.5 rounded-md px-4 py-2 text-sm font-semibold";
   const summary = nav.state === "active" ? `${formatDistance(nav.remaining)} · ~${walkingMinutes(nav.remaining)} ${t("min")}` : straight != null ? `${formatDistance(straight)} · ${t("straightLineLabel")}` : null;
 
   return (
-    <div className="animate-rise overflow-hidden rounded-2xl bg-card shadow-lift">
+    <div className="overflow-hidden rounded-lg border-t-2 border-gold bg-card shadow-lift">
       <div className="flex items-center gap-2.5 p-2.5">
-        <div className={cn("shrink-0 overflow-hidden rounded-xl", collapsed ? "size-10" : "size-14")}>
+        <div className={cn("shrink-0 overflow-hidden rounded-md", collapsed ? "size-10" : "size-14")}>
           <PlaceImage src={place.imageSrc} category={place.category} alt={name} />
         </div>
         <div className="min-w-0 flex-1">
@@ -532,15 +532,15 @@ function SelectedCard({ place, fix, nav, collapsed, onToggle, onClose, onStart, 
           <h2 className="truncate text-base leading-snug text-foreground">{name}</h2>
           {!collapsed && summary ? <p className="text-xs text-muted-foreground">{summary}</p> : null}
         </div>
-        <button onClick={onToggle} aria-label={collapsed ? t("moreCats") : t("collapse")} aria-expanded={!collapsed} className="grid size-9 shrink-0 place-items-center rounded-full hover:bg-muted">
+        <Button variant="ghost" onClick={onToggle} aria-label={collapsed ? t("moreCats") : t("collapse")} aria-expanded={!collapsed} className="grid size-9 shrink-0 place-items-center rounded-md hover:bg-muted">
           {collapsed ? <ChevronUp className="size-4" /> : <ChevronDown className="size-4" />}
-        </button>
-        {nav.state !== "active" ? <button onClick={onClose} aria-label={t("close")} className="grid size-9 shrink-0 place-items-center rounded-full hover:bg-muted"><X className="size-4" /></button> : null}
+        </Button>
+        {nav.state !== "active" ? <Button variant="ghost" onClick={onClose} aria-label={t("close")} className="grid size-9 shrink-0 place-items-center rounded-md hover:bg-muted"><X className="size-4" /></Button> : null}
       </div>
 
       {collapsed ? (
         nav.state === "active" ? (
-          <div className="px-2.5 pb-2.5"><button onClick={onStop} className={cn(btn, "w-full bg-destructive text-destructive-foreground")}><Square className="size-4" aria-hidden /> {t("stopNav")}</button></div>
+          <div className="px-2.5 pb-2.5"><Button variant="ghost" onClick={onStop} className={cn(btn, "w-full bg-destructive text-destructive-foreground")}><Square className="size-4" aria-hidden /> {t("stopNav")}</Button></div>
         ) : null
       ) : !verified ? (
         <p className="border-t px-3 py-2 text-sm text-muted-foreground">⏳ {t("coordsPending")}</p>
@@ -552,27 +552,27 @@ function SelectedCard({ place, fix, nav, collapsed, onToggle, onClose, onStart, 
             <Stat label={t("walkTime")} value={`~${walkingMinutes(nav.remaining)} ${t("min")}`} />
           </div>
           <p className="mt-1 text-[11px] text-muted-foreground">{t("routeBy")} · {t("tracking")}{fix ? ` · ±${Math.round(fix.accuracy)} m` : ""}</p>
-          <button onClick={onStop} className={cn(btn, "mt-2 w-full bg-destructive text-destructive-foreground")}><Square className="size-4" aria-hidden /> {t("stopNav")}</button>
+          <Button variant="ghost" onClick={onStop} className={cn(btn, "mt-2 w-full bg-destructive text-destructive-foreground")}><Square className="size-4" aria-hidden /> {t("stopNav")}</Button>
         </div>
       ) : nav.state === "routing" ? (
         <p className="flex items-center gap-2 border-t px-3 py-3 text-sm"><Loader2 className="size-4 animate-spin" /> {nav.reroute ? t("rerouting") : t("routing")}</p>
       ) : nav.state === "arrived" ? (
         <div className="flex items-center justify-between gap-2 border-t px-3 py-2">
           <p className="flex items-center gap-2 font-display text-base text-success"><CheckCircle2 className="size-5" /> {t("arrived")}</p>
-          <button onClick={onStop} className={cn(btn, "bg-primary text-primary-foreground")}>{t("close")}</button>
+          <Button variant="ghost" onClick={onStop} className={cn(btn, "bg-primary text-primary-foreground")}>{t("close")}</Button>
         </div>
       ) : (
         <div className="border-t px-3 py-2">
           {nav.state === "error" ? (
             <div className="mb-2 flex items-center justify-between gap-2 text-sm text-destructive" role="alert">
               <span>{t(nav.msg)}</span>
-              {nav.msg === "routeFailed" ? <button onClick={onRetry} className="flex h-9 items-center gap-1 font-semibold text-primary"><RefreshCw className="size-4" />{t("retry")}</button> : null}
+              {nav.msg === "routeFailed" ? <Button variant="ghost" onClick={onRetry} className="flex h-9 items-center gap-1 font-semibold text-primary"><RefreshCw className="size-4" />{t("retry")}</Button> : null}
             </div>
           ) : null}
           {desc ? <p className="mb-2 line-clamp-2 text-xs text-muted-foreground">{desc}</p> : null}
           {straight == null ? <p className="mb-2 text-xs text-muted-foreground">{t("enableGpsHint")}</p> : null}
           <div className="flex items-center gap-2">
-            <button onClick={onStart} className={cn(btn, "flex-1 bg-primary text-primary-foreground")}><Navigation className="size-4" aria-hidden /> {t("startNav")}</button>
+            <Button variant="ghost" onClick={onStart} className={cn(btn, "flex-1 bg-primary text-primary-foreground")}><Navigation className="size-4" aria-hidden /> {t("startNav")}</Button>
             {straight != null ? <span className="flex shrink-0 items-center gap-1 text-xs text-muted-foreground"><Footprints className="size-3.5" aria-hidden />~{walkingMinutes(straight)} {t("min")}</span> : null}
           </div>
           <details className="mt-1 text-[11px] text-muted-foreground">

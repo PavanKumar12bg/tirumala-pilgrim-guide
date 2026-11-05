@@ -10,6 +10,7 @@
 <!-- LOVABLE:END -->
 
 ## Tirumala Guide architecture
+- The Emergency page is a read-only view of canonical medical places, not a new contacts CMS; do not imply emergency-service capability or add phone numbers without verified content approval.
 - Official dashboard/ticker figures come from a cached, read-only TTD News fetch; preserve explicit wait ranges and queue counts with report dates, never infer crowd ratings or overwrite admin status/history with automated reports.
 - Android home-screen support is manifest-only with standalone display and local photo-derived icons; do not register app-shell service workers because offline support was not requested.
 - One canonical `places` table feeds both homepage cards and map markers; markers render only when `coords_verified` is true, so unverified places never get fabricated pins.

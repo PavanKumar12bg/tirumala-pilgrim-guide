@@ -33,7 +33,7 @@ function Page() {
   const { data } = useSuspenseQuery(transportCategoryQuery(slug));
   if (!data) return <Missing />;
   return (
-    <InfoPage title={`${data.category.icon} ${pickLocalized(data.category.title, lang)}`}>
+    <InfoPage title={pickLocalized(data.category.title, lang)} className="transport-page max-w-4xl sm:px-6 sm:py-10">
       <Link to="/transport" className="-mt-2 inline-flex min-h-11 items-center gap-1 text-sm font-semibold text-primary"><ArrowLeft className="size-4" aria-hidden />{t("transportTitle")}</Link>
       <CategoryDetail category={data.category} items={data.items} offers={data.offers} />
     </InfoPage>

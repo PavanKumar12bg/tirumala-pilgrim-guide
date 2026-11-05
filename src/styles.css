@@ -258,3 +258,25 @@ html:lang(or) {
 [lang="ml"] { font-family: "Noto Sans Malayalam", sans-serif; }
 [lang="hi"] { font-family: "Noto Sans Devanagari", sans-serif; }
 [lang="or"] { font-family: "Noto Sans Oriya", sans-serif; }
+
+.darshan-status > div:not([role="alert"]) {
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  border-top: 2px solid var(--gold);
+  padding: 1rem 0.5rem;
+}
+.darshan-status > div:not([role="alert"]) + div:not([role="alert"]) {
+  border-left: 1px solid var(--border);
+  padding-left: 1rem;
+}
+.darshan-status > p { border-top: 1px solid var(--border); padding-top: 1rem; }
+.darshan-external > a { border-radius: 0; background: transparent; box-shadow: none; padding: 0.75rem 0; }
+.transport-page > h1, .emergency-page > h1 {
+  font-size: 1.875rem;
+  border-bottom: 1px solid var(--gold);
+  padding-bottom: 1rem;
+}
+.transport-page dd { overflow-wrap: anywhere; }
+.map-experience button { letter-spacing: 0; }
+.map-experience button:focus-visible { outline-offset: -3px; }

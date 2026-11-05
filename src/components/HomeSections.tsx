@@ -13,7 +13,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import hillsImg from "@/assets/tirumala-hills.jpg";
 
-export function StatusCards() {
+export function StatusCards({ compact = false }: { compact?: boolean }) {
   const { t, lang } = useI18n();
   const { data, isLoading: officialLoading, isError, refetch } = useQuery(officialStatusQuery());
   const manual = useQuery({ ...statusQuery(), refetchInterval: 60_000 });
@@ -25,7 +25,7 @@ export function StatusCards() {
   if (isError && !shown) return <ErrorBox onRetry={() => refetch()} />;
 
   return (
-    <div className="grid grid-cols-2 gap-3">
+    <div className={cn("grid grid-cols-2 gap-3", compact && "darshan-status")}>
       {!isAdmin && shouldAlertWaitJump(report, data?.previous) ? (
         <div role="alert" className="col-span-2 flex items-start gap-2 rounded-lg bg-warning/15 p-3 text-sm font-semibold text-foreground ring-1 ring-warning/50">
           <TrendingUp className="mt-0.5 size-4 shrink-0 text-warning" aria-hidden />

@@ -14,6 +14,7 @@ import { Route as AboutRouteImport } from './routes/about'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as ContactRouteImport } from './routes/contact'
 import { Route as DarshanRouteImport } from './routes/darshan'
+import { Route as EmergencyRouteImport } from './routes/emergency'
 import { Route as JourneyRouteImport } from './routes/journey'
 import { Route as MapRouteImport } from './routes/map'
 import { Route as PrivacyRouteImport } from './routes/privacy'
@@ -46,6 +47,11 @@ const ContactRoute = ContactRouteImport.update({
 const DarshanRoute = DarshanRouteImport.update({
   id: '/darshan',
   path: '/darshan',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EmergencyRoute = EmergencyRouteImport.update({
+  id: '/emergency',
+  path: '/emergency',
   getParentRoute: () => rootRouteImport,
 } as any)
 const JourneyRoute = JourneyRouteImport.update({
@@ -95,6 +101,7 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AdminRoute
   '/contact': typeof ContactRoute
   '/darshan': typeof DarshanRoute
+  '/emergency': typeof EmergencyRoute
   '/journey': typeof JourneyRoute
   '/map': typeof MapRoute
   '/privacy': typeof PrivacyRoute
@@ -110,6 +117,7 @@ export interface FileRoutesByTo {
   '/admin': typeof AdminRoute
   '/contact': typeof ContactRoute
   '/darshan': typeof DarshanRoute
+  '/emergency': typeof EmergencyRoute
   '/journey': typeof JourneyRoute
   '/map': typeof MapRoute
   '/privacy': typeof PrivacyRoute
@@ -126,6 +134,7 @@ export interface FileRoutesById {
   '/admin': typeof AdminRoute
   '/contact': typeof ContactRoute
   '/darshan': typeof DarshanRoute
+  '/emergency': typeof EmergencyRoute
   '/journey': typeof JourneyRoute
   '/map': typeof MapRoute
   '/privacy': typeof PrivacyRoute
@@ -143,6 +152,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/contact'
     | '/darshan'
+    | '/emergency'
     | '/journey'
     | '/map'
     | '/privacy'
@@ -158,6 +168,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/contact'
     | '/darshan'
+    | '/emergency'
     | '/journey'
     | '/map'
     | '/privacy'
@@ -173,6 +184,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/contact'
     | '/darshan'
+    | '/emergency'
     | '/journey'
     | '/map'
     | '/privacy'
@@ -189,6 +201,7 @@ export interface RootRouteChildren {
   AdminRoute: typeof AdminRoute
   ContactRoute: typeof ContactRoute
   DarshanRoute: typeof DarshanRoute
+  EmergencyRoute: typeof EmergencyRoute
   JourneyRoute: typeof JourneyRoute
   MapRoute: typeof MapRoute
   PrivacyRoute: typeof PrivacyRoute
@@ -234,6 +247,13 @@ declare module '@tanstack/react-router' {
       path: '/darshan'
       fullPath: '/darshan'
       preLoaderRoute: typeof DarshanRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/emergency': {
+      id: '/emergency'
+      path: '/emergency'
+      fullPath: '/emergency'
+      preLoaderRoute: typeof EmergencyRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/journey': {
@@ -301,6 +321,7 @@ const rootRouteChildren: RootRouteChildren = {
   AdminRoute: AdminRoute,
   ContactRoute: ContactRoute,
   DarshanRoute: DarshanRoute,
+  EmergencyRoute: EmergencyRoute,
   JourneyRoute: JourneyRoute,
   MapRoute: MapRoute,
   PrivacyRoute: PrivacyRoute,

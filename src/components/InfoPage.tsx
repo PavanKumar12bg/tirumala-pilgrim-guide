@@ -1,10 +1,11 @@
 import type { ReactNode } from "react";
 import { AppShell } from "./AppShell";
+import { cn } from "@/lib/utils";
 
-export function InfoPage({ title, children }: { title: string; children: ReactNode }) {
+export function InfoPage({ title, children, className }: { title: string; children: ReactNode; className?: string }) {
   return (
     <AppShell>
-      <article className="mx-auto max-w-3xl space-y-4 px-4 py-6 text-foreground">
+      <article className={cn("mx-auto max-w-3xl space-y-4 px-4 py-6 text-foreground", className)}>
         <h1 className="text-2xl text-primary">{title}</h1>
         {children}
       </article>
