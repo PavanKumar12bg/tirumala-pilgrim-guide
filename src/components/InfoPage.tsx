@@ -6,7 +6,7 @@ export function InfoPage({ title, children, className }: { title: string; childr
   return (
     <AppShell>
       <article className={cn("mx-auto max-w-3xl space-y-4 px-4 py-6 text-foreground", className)}>
-        <h1 className="text-2xl text-primary">{title}</h1>
+        <h1 className="text-xl font-semibold leading-snug text-primary">{title}</h1>
         {children}
       </article>
     </AppShell>

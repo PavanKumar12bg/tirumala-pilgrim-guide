@@ -158,6 +158,7 @@ html:lang(or) {
   }
   h1, h2, h3 {
     font-family: var(--font-display-stack);
+    letter-spacing: 0;
   }
   :focus-visible {
     outline: 2px solid var(--ring);
@@ -273,7 +274,7 @@ html:lang(or) {
 .darshan-status > p { border-top: 1px solid var(--border); padding-top: 1rem; }
 .darshan-external > a { border-radius: 0; background: transparent; box-shadow: none; padding: 0.75rem 0; }
 .transport-page > h1, .emergency-page > h1 {
-  font-size: 1.875rem;
+  font-size: 1.25rem;
   border-bottom: 1px solid var(--gold);
   padding-bottom: 1rem;
 }

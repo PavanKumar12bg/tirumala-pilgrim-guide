@@ -14,8 +14,7 @@ function DarshanPage() {
   return <AppShell>
     <article className="mx-auto max-w-5xl px-4 py-7 sm:px-6 sm:py-10">
       <header className="border-b border-gold/50 pb-5">
-        <h1 className="text-3xl text-primary">{t("darshanTitle")}</h1>
-        <p className="mt-2 max-w-2xl text-sm text-muted-foreground">{t("officialNote")}</p>
+        <h1 className="text-xl font-semibold text-primary">{t("darshanTitle")}</h1>
       </header>
       <div className="grid gap-8 pt-6 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]">
         <section aria-labelledby="report-heading">
