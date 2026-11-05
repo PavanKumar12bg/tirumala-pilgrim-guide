@@ -1,6 +1,6 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Loader2, Play, RefreshCw, Send, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -39,6 +39,10 @@ export function VoiceAnnouncementAdmin() {
   const [text, setText] = useState("");
   const [srcLang, setSrcLang] = useState<VoiceLang>("te");
   const [busy, setBusy] = useState<string | null>(null);
+  const preview = useRef<HTMLAudioElement | null>(null);
+  const previewRequest = useRef(0);
+  const [previewPath, setPreviewPath] = useState<string | null>(null);
+  useEffect(() => () => { previewRequest.current++; preview.current?.pause(); }, []);
   const refresh = () => qc.invalidateQueries({ queryKey: ["admin_voice_ann"] }).then(() => qc.invalidateQueries({ queryKey: ["voice_announcement"] }));
 
   const runVoices = async (id: string, langs: VoiceLang[]) => {
@@ -62,8 +66,21 @@ export function VoiceAnnouncementAdmin() {
 
   const play = async (path: string | null) => {
     if (!path) return;
-    const { data } = await supabase.storage.from(AUDIO_BUCKET).createSignedUrl(path, 600);
-    if (data?.signedUrl) void new Audio(data.signedUrl).play();
+    const request = ++previewRequest.current;
+    preview.current?.pause();
+    setPreviewPath(path);
+    try {
+      const { data, error } = await supabase.storage.from(AUDIO_BUCKET).createSignedUrl(path, 600);
+      if (request !== previewRequest.current) return;
+      if (error || !data?.signedUrl) throw new Error("Audio unavailable");
+      const audio = new Audio(data.signedUrl);
+      preview.current = audio;
+      audio.onended = () => { if (request === previewRequest.current) setPreviewPath(null); };
+      audio.onerror = () => { if (request === previewRequest.current) { setPreviewPath(null); toast.error("Could not play audio. Try again."); } };
+      await audio.play();
+    } catch {
+      if (request === previewRequest.current) { setPreviewPath(null); toast.error("Could not play audio. Your browser may require another tap."); }
+    }
   };
 
   const saveSettings = async (patch: { autoplay_enabled?: boolean; repeat_enabled?: boolean; repeat_minutes?: number }) => {
@@ -86,7 +103,7 @@ export function VoiceAnnouncementAdmin() {
               <Badge variant={st === "ready" ? "default" : st === "failed" ? "destructive" : "secondary"}>{st === "working" && <Loader2 className="size-3 animate-spin" />}{st}</Badge></div>
             <div className="min-w-0 flex-1 text-sm" lang={lang}>{l?.text ?? "—"}{l?.error && <p className="mt-1 text-xs text-destructive">{l.error}</p>}</div>
             <div className="flex gap-2">
-              <Button size="sm" variant="outline" className="min-h-10" disabled={!l?.audio_path} onClick={() => void play(l?.audio_path ?? null)} aria-label={`Play ${LANG_NAMES[lang]}`}><Play className="size-4" /></Button>
+              <Button size="sm" variant="outline" className="min-h-10" disabled={!l?.audio_path} onClick={() => void play(l?.audio_path ?? null)} aria-label={`Play ${LANG_NAMES[lang]}`} aria-pressed={!!l?.audio_path && previewPath === l.audio_path}><Play className="size-4" /></Button>
               {editable && st === "failed" && <Button size="sm" variant="outline" className="min-h-10" disabled={!!busy} onClick={() => l?.text_status === "failed" ? void generate(a.id) : void runVoices(a.id, [lang])}><RefreshCw className="size-4" />Retry</Button>}
             </div>
           </li>

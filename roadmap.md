@@ -1,4 +1,6 @@
 # Tirumala Guide work
+- [x] Repair device speech selection/loading/error/stop handling, explicit blocked-sound retry, unchanged-data recovery and admin preview promise/overlap handling; 39 tests passed, real stored Telugu/English WAV playback and sound-off verified at 394px/1280px, controlled assistant interaction verified, build OK. Physical-device pronunciation and authenticated admin preview remain unverified.
+- [ ] Verify voice repair on Vercel production and GitHub deployment: requires actual production URL and deployment access; no manual commit/push or production deployment performed.
 - [x] Fix hero/logo portability using identical bundled originals and reset photo failures for replacement URLs; 12 stored listing photos load at 360px/1280px, no overflow or page errors, gateway-disabled test and 9 regression tests passed, build OK. No database/security changes.
 - [ ] Verify image repair on Vercel production and GitHub deployment: requires the Vercel site URL and connected repository/deployment confirmation; no manual commit/push performed.
 - [x] Restore existing Home announcement ticker without altering background voice; 360px display and dialog open/close verified, no overflow or page errors, 28 regression tests passed, build OK. No active stored audio was present for a fresh playback check.

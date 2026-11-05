@@ -126,4 +126,23 @@ describe("background announcement lifecycle", () => {
     expect(owner.snapshot().blocked).toBe(false);
     expect(audio.src).toBe("b.mp3");
   });
+  it("explicit retry works after a persisted On preference is autoplay-blocked", async () => {
+    const { owner, audio } = setup("on");
+    audio.play.mockRejectedValueOnce(new DOMException("Blocked", "NotAllowedError"));
+    owner.setClip({ key: "a", url: "a.wav" });
+    await vi.advanceTimersByTimeAsync(0);
+    owner.retry();
+    expect(audio.play).toHaveBeenCalledTimes(2);
+    await vi.advanceTimersByTimeAsync(0);
+    expect(owner.snapshot().blocked).toBe(false);
+  });
+  it("retry cannot bypass sound opt-out or admin disable", () => {
+    const { owner, audio } = setup("off");
+    owner.setClip({ key: "a", url: "a.wav" });
+    owner.retry();
+    owner.setSettings({ ...settings, autoplay_enabled: false });
+    owner.setPreference("on");
+    owner.retry();
+    expect(audio.play).not.toHaveBeenCalled();
+  });
 });

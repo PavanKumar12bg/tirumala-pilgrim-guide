@@ -63,7 +63,7 @@ export function BackgroundDarshanAudio({ suspended = false }: { suspended?: bool
   useEffect(() => { announcementAudio.setSettings(settings.data ?? null); }, [settings.data]);
   useEffect(() => {
     if (ann.data !== undefined) announcementAudio.setClip(ann.data);
-  }, [ann.data]);
+  }, [ann.data, ann.dataUpdatedAt]);
   useEffect(() => {
     const update = () => announcementAudio.setEnvironment(document.visibilityState === "visible", suspended);
     update();

@@ -45,6 +45,7 @@ export function LanguageSwitcher({ tone = "dark" }: { tone?: "dark" | "light" })
             <DropdownMenuRadioItem value="on" className="min-h-11">{t("soundOn")}</DropdownMenuRadioItem>
             <DropdownMenuRadioItem value="off" className="min-h-11">{t("soundOff")}</DropdownMenuRadioItem>
           </DropdownMenuRadioGroup>
+          {(sound.blocked || sound.failed) && sound.preference !== "off" && <DropdownMenuItem className="min-h-11" onSelect={() => announcementAudio.retry()}>{t("retry")}</DropdownMenuItem>}
           {sound.blocked && <DropdownMenuLabel className="max-w-64 whitespace-normal text-xs font-normal">{t("voiceBlocked")}</DropdownMenuLabel>}
           {sound.failed && <DropdownMenuLabel className="max-w-64 whitespace-normal text-xs font-normal">{t("soundUnavailable")}</DropdownMenuLabel>}
         </DropdownMenuContent>
