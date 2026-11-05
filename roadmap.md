@@ -1,5 +1,6 @@
 # Tirumala Guide work
-- [ ] Fix hero/logo portability and photo error recovery; verify stored photos, mobile/desktop and tests. Vercel production check requires its URL; GitHub synchronization is platform-managed.
+- [x] Fix hero/logo portability using identical bundled originals and reset photo failures for replacement URLs; 12 stored listing photos load at 360px/1280px, no overflow or page errors, gateway-disabled test and 9 regression tests passed, build OK. No database/security changes.
+- [ ] Verify image repair on Vercel production and GitHub deployment: requires the Vercel site URL and connected repository/deployment confirmation; no manual commit/push performed.
 - [x] Restore existing Home announcement ticker without altering background voice; 360px display and dialog open/close verified, no overflow or page errors, 28 regression tests passed, build OK. No active stored audio was present for a fresh playback check.
 - [ ] Exact Android source/workflow delivery: blocked by truncated `main.dart` ending at `itemCount: list.length` and stray `Pa`; awaiting complete byte-for-byte source. Web files remain untouched.
 - [ ] Admin accessibility improvements: inspected; implementation paused by the subsequent read-only security planning request.
