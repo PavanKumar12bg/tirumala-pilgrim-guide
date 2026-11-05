@@ -116,7 +116,7 @@ const en = {
   selectAnother: "Choose another destination",
   website: "Website",
 };
-export type DictKey = keyof typeof en | keyof typeof JOURNEY_COPY.en | keyof typeof UPGRADE_COPY.en | keyof typeof TTD_REPORT_COPY.en | keyof typeof SITE_COPY.en | keyof typeof TRANSPORT_COPY.en | keyof typeof VOICE_COPY.en;
+export type DictKey = keyof typeof en | keyof typeof JOURNEY_COPY.en | keyof typeof UPGRADE_COPY.en | keyof typeof TTD_REPORT_COPY.en | keyof typeof SITE_COPY.en | keyof typeof TRANSPORT_COPY.en | keyof typeof VOICE_COPY.en | keyof typeof PAGE_DESIGN_COPY.en;
 type Dict = Record<keyof typeof en, string>;
 
 const te: Dict = {
