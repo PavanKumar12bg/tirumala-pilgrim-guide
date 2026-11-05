@@ -23,7 +23,7 @@ function publicClient(url: string | undefined, key: string | undefined) {
 
 /** Published categories only (RLS also enforces this for anonymous readers). */
 export const listPublicTransportCategories = createServerFn({ method: "GET" }).handler(async (): Promise<PublicCategory[]> => {
-  const sb = publicClient(process.env["SUPABASE_URL"] || import.meta.env.VITE_SUPABASE_URL, process.env["SUPABASE_PUBLISHABLE_KEY"] || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY);
+  const sb = publicClient(process.env["SUPABASE_URL"] || import.meta.env["VITE_SUPABASE_URL"], process.env["SUPABASE_PUBLISHABLE_KEY"] || import.meta.env["VITE_SUPABASE_PUBLISHABLE_KEY"]);
   const { data, error } = await sb.from("transport_categories").select(PUBLIC_CATEGORY_COLS).eq("status", "published").order("sort_order");
   if (error) { console.error("transport list", error.message); throw new Error("Could not load transport information"); }
   return ((data ?? []) as unknown as PublicCategory[]).filter((c) => isTemplate(c.template));
@@ -32,7 +32,7 @@ export const listPublicTransportCategories = createServerFn({ method: "GET" }).h
 export const getPublicTransportCategory = createServerFn({ method: "GET" })
   .inputValidator((d: { slug: string }) => ({ slug: String(d.slug).slice(0, 80) }))
   .handler(async ({ data }): Promise<{ category: PublicCategory; items: PublicItem[]; offers: PublicOffer[] } | null> => {
-    const sb = publicClient(process.env["SUPABASE_URL"] || import.meta.env.VITE_SUPABASE_URL, process.env["SUPABASE_PUBLISHABLE_KEY"] || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY);
+    const sb = publicClient(process.env["SUPABASE_URL"] || import.meta.env["VITE_SUPABASE_URL"], process.env["SUPABASE_PUBLISHABLE_KEY"] || import.meta.env["VITE_SUPABASE_PUBLISHABLE_KEY"]);
     const { data: cat, error } = await sb.from("transport_categories").select(PUBLIC_CATEGORY_COLS).eq("slug", data.slug).eq("status", "published").maybeSingle();
     if (error) { console.error("transport category", error.message); throw new Error("Could not load transport information"); }
     if (!cat) return null;
