@@ -74,6 +74,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       <footer className="mx-auto mt-4 max-w-5xl border-t px-4 py-3 text-xs leading-relaxed text-muted-foreground">
         <p>{t("notAffiliated")}</p>
         <nav aria-label={t("about")} className="mt-2 flex flex-wrap gap-x-4 gap-y-0">
+          <a href="https://www.tirumala.org/" target="_blank" rel="noopener noreferrer" className="inline-flex min-h-8 max-w-full items-center py-1 underline-offset-4 hover:underline">{t("ttdWebsite")}</a>
           {([["/emergency","emergencyTitle"],["/about","about"],["/ttd","ttdPage"],["/privacy","privacy"],["/terms","terms"],["/contact","contact"],["/admin","admin"]] as const).map(([to,k]) => (
             <Link key={to} to={to} className="inline-flex min-h-8 max-w-full items-center py-1 underline-offset-4 hover:underline">{t(k)}</Link>
           ))}
