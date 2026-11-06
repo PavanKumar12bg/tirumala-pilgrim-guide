@@ -7,7 +7,7 @@ beforeEach(() => vi.clearAllMocks());
 it.each(VOICE_LANGS)("accepts verified speech bytes for %s with the existing Google model", async (lang) => {
   mocks.speech.mockResolvedValue({ contentType: "audio/wav", blob: async () => ({ size: 2048, arrayBuffer: async () => new ArrayBuffer(2048) }) });
   expect((await speak("Test announcement", lang)).bytes.byteLength).toBe(2048);
-  expect(mocks.speech.mock.calls[0][0].model).toBe("google/gemini-3.1-flash-tts-preview");
+  expect(mocks.speech.mock.calls[0]?.[0]?.model).toBe("google/gemini-3.1-flash-tts-preview");
 });
 it("rejects non-audio provider responses", async () => {
   mocks.speech.mockResolvedValue({ contentType: "application/json", blob: async () => ({ size: 2048 }) });

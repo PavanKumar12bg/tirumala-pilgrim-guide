@@ -5,7 +5,7 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { AUDIO_BUCKET, numbersPreserved, textHash, validateSource, VOICE_LANGS, type VoiceLang } from "./voice-announcement";
 
 type Client = SupabaseClient<Database>;
-export type VoiceResult = { ok: true; id?: string; cleanupError?: string } | { ok: false; error: string; id?: string; deleted?: boolean };
+export type VoiceResult = { ok: true; id?: string | undefined; cleanupError?: string } | { ok: false; error: string; id?: string | undefined; deleted?: boolean };
 
 function failure(e: unknown): string {
   console.error("voice announcement operation failed", e);
@@ -72,7 +72,7 @@ async function removeAnnouncement(sb: Client, id: string): Promise<VoiceResult> 
 /** Translate a draft; retryLang preserves successful languages and their audio. */
 export const createAndTranslate = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: { text: string; sourceLang?: string; draftId?: string; retryLang?: VoiceLang }) => ({
+  .inputValidator((d: { text: string; sourceLang?: string | undefined; draftId?: string | undefined; retryLang?: VoiceLang | undefined }) => ({
     text: validateSource(d?.text),
     sourceLang: (VOICE_LANGS as readonly string[]).includes(d?.sourceLang ?? "") ? (d.sourceLang as VoiceLang) : "te",
     draftId: d?.draftId ? validId(d.draftId) : undefined,

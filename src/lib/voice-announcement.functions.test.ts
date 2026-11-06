@@ -25,7 +25,7 @@ function client() {
       if (table === "voice_announcements") {
         if (op.action === "delete") { parent = null; rows = []; return { data: [{ id }], error: null }; }
         if (op.action === "update") Object.assign(parent, op.patch);
-        if (op.filters.status === "retired") return { data: [], error: null };
+        if (op.filters['status'] === "retired") return { data: [], error: null };
         return { data: single ? parent : parent ? [parent] : [], error: null };
       }
       if (op.action === "upsert") {
@@ -34,7 +34,7 @@ function client() {
       }
       const selected = rows.filter((row) => Object.entries(op.filters).every(([k,v]) => row[k] === v));
       if (op.action === "update") selected.forEach((r) => Object.assign(r, op.patch));
-      return { data: single ? selected[0] ?? null : selected, error: null };
+      return { data: structuredClone(single ? selected[0] ?? null : selected), error: null };
     }
     return chain;
   } };
@@ -60,7 +60,7 @@ describe("checked announcement generation", () => {
     expect(ai.translate).not.toHaveBeenCalled();
   });
   it("surfaces a failed language save", async () => {
-    fail = (op) => op.action === "update" && op.patch?.text_status === "ready" && op.filters.lang === "or" ? "save denied" : null;
+    fail = (op) => op.action === "update" && op.patch?.text_status === "ready" && op.filters['lang'] === "or" ? "save denied" : null;
     expect(await invoke(createAndTranslate, { text, sourceLang: "en", draftId: id })).toMatchObject({ ok: false, error: expect.stringContaining("save denied") });
     expect(rows.find((r) => r.lang === "or").text_status).toBe("failed");
     expect(rows.find((r) => r.lang === "te").text_status).toBe("ready");
@@ -129,7 +129,7 @@ describe("checked deletion", () => {
   });
   it("distinguishes publication success from retirement listing failure", async () => {
     rows.forEach((r) => { r.audio_status = "ready"; r.audio_path = `${id}/${r.lang}.wav`; r.audio_hash = r.text_hash; });
-    fail = (op) => op.filters.status === "retired" ? "retirement read denied" : null;
+    fail = (op) => op.filters['status'] === "retired" ? "retirement read denied" : null;
     expect(await invoke(publishAnnouncement, { id })).toMatchObject({ ok: true, cleanupError: expect.stringContaining("retirement read denied") });
   });
 });
