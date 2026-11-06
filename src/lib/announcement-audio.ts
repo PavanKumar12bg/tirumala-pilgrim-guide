@@ -48,7 +48,7 @@ export function createAnnouncementAudio(deps: {
       const name = typeof error === "object" && error !== null && "name" in error ? error.name : null;
       if (name === "NotAllowedError") emit({ blocked: true, failed: false });
       else if (name !== "AbortError") {
-        emit({ failed: true });
+        emit({ blocked: false, failed: true });
         recover?.();
       }
     };
