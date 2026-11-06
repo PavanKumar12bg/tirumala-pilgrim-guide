@@ -16,9 +16,11 @@ type Ann = { id: string; source_text: string; source_lang: string; status: strin
 type LangRow = { lang: VoiceLang; text: string | null; text_status: string; audio_status: string; audio_path: string | null; audio_hash: string | null; text_hash: string | null; error: string | null };
 
 const listQuery = { queryKey: ["admin_voice_ann"], queryFn: async () => {
-  const { data: anns } = await supabase.from("voice_announcements").select("id, source_text, source_lang, status, published_at, updated_at").in("status", ["draft", "published"]);
+  const { data: anns, error: announcementError } = await supabase.from("voice_announcements").select("id, source_text, source_lang, status, published_at, updated_at").in("status", ["draft", "published"]);
+  if (announcementError) throw announcementError;
   const ids = (anns ?? []).map((a) => a.id);
-  const { data: langs } = ids.length ? await supabase.from("voice_announcement_langs").select("*").in("announcement_id", ids) : { data: [] };
+  const { data: langs, error: languageError } = ids.length ? await supabase.from("voice_announcement_langs").select("*").in("announcement_id", ids) : { data: [], error: null };
+  if (languageError) throw languageError;
   const by = (id: string) => (langs ?? []).filter((l) => l.announcement_id === id) as unknown as LangRow[];
   const draft = (anns ?? []).find((a) => a.status === "draft") as Ann | undefined;
   const live = (anns ?? []).find((a) => a.status === "published") as Ann | undefined;
@@ -45,23 +47,61 @@ export function VoiceAnnouncementAdmin() {
   useEffect(() => () => { previewRequest.current++; preview.current?.pause(); }, []);
   const refresh = () => qc.invalidateQueries({ queryKey: ["admin_voice_ann"] }).then(() => qc.invalidateQueries({ queryKey: ["voice_announcement"] }));
 
+  const errorText = (e: unknown) => e instanceof Error ? e.message : "Announcement operation failed";
+  const [cleanupId, setCleanupId] = useState<string | null>(null);
   const runVoices = async (id: string, langs: VoiceLang[]) => {
-    for (const lang of langs) {
-      setBusy(`voice:${lang}`);
-      const r = await voice({ data: { id, lang } });
-      if (!r.ok) toast.error(`${LANG_NAMES[lang]}: ${r.error}`);
-      await refresh();
-    }
-    setBusy(null);
+    try {
+      for (const lang of langs) {
+        setBusy(`voice:${lang}`);
+        try {
+          const r = await voice({ data: { id, lang } });
+          if (!r.ok) toast.error(`${LANG_NAMES[lang]}: ${r.error}`);
+        } catch (e) { toast.error(`${LANG_NAMES[lang]}: ${errorText(e)}`); }
+        finally { try { await refresh(); } catch (e) { toast.error(errorText(e)); } }
+      }
+    } finally { setBusy(null); }
   };
 
-  const generate = async (draftId?: string) => {
+  const generate = async (draftId?: string, retryLang?: VoiceLang) => {
     setBusy("translate");
-    const r = await translate({ data: { text, sourceLang: srcLang, draftId } });
-    await refresh();
-    if (!r.ok || !r.id) { setBusy(null); toast.error(r.ok ? "Failed" : r.error); return; }
-    const { data: rows } = await supabase.from("voice_announcement_langs").select("lang, text_status").eq("announcement_id", r.id);
-    await runVoices(r.id, (rows ?? []).filter((x) => x.text_status === "ready").map((x) => x.lang as VoiceLang));
+    try {
+      const savedDraft = q.data?.draft;
+      const r = await translate({ data: {
+        text: retryLang && savedDraft ? savedDraft.source_text : text,
+        sourceLang: retryLang && savedDraft ? savedDraft.source_lang : srcLang,
+        draftId, retryLang,
+      } });
+      if (!r.ok) toast.error(r.error);
+      await refresh();
+      if (!r.id) return;
+      const { data: rows, error } = await supabase.from("voice_announcement_langs").select("lang,text_status,audio_status,audio_hash,text_hash,audio_path").eq("announcement_id", r.id);
+      if (error) throw error;
+      await runVoices(r.id, (rows ?? []).filter((x) => x.text_status === "ready" && (!retryLang || x.lang === retryLang) && !(x.audio_status === "ready" && x.audio_path && x.audio_hash === x.text_hash)).map((x) => x.lang as VoiceLang));
+    } catch (e) { toast.error(errorText(e)); }
+    finally { setBusy(null); await refresh(); }
+  };
+
+  const removeOne = async (id: string) => {
+    setBusy("delete");
+    previewRequest.current++; preview.current?.pause(); setPreviewPath(null);
+    try {
+      const r = await remove({ data: { id } });
+      if (r.ok) { toast.success("Deleted"); setCleanupId(null); }
+      else { toast.error(r.error); if (r.deleted) setCleanupId(id); }
+    } catch (e) { toast.error(errorText(e)); }
+    finally { setBusy(null); await refresh(); }
+  };
+
+  const publishDraft = async (id: string) => {
+    setBusy("publish");
+    try {
+      const r = await publish({ data: { id } });
+      if (r.ok) {
+        toast.success("Published to Home page"); setText("");
+        if (r.cleanupError) toast.error(`Published; cleanup incomplete: ${r.cleanupError}`);
+      } else toast.error(r.error);
+    } catch (e) { toast.error(errorText(e)); }
+    finally { setBusy(null); await refresh(); }
   };
 
   const play = async (path: string | null) => {
@@ -103,8 +143,8 @@ export function VoiceAnnouncementAdmin() {
               <Badge variant={st === "ready" ? "default" : st === "failed" ? "destructive" : "secondary"}>{st === "working" && <Loader2 className="size-3 animate-spin" />}{st}</Badge></div>
             <div className="min-w-0 flex-1 text-sm" lang={lang}>{l?.text ?? "—"}{l?.error && <p className="mt-1 text-xs text-destructive">{l.error}</p>}</div>
             <div className="flex gap-2">
-              <Button size="sm" variant="outline" className="min-h-10" disabled={!l?.audio_path} onClick={() => void play(l?.audio_path ?? null)} aria-label={`Play ${LANG_NAMES[lang]}`} aria-pressed={!!l?.audio_path && previewPath === l.audio_path}><Play className="size-4" /></Button>
-              {editable && st === "failed" && <Button size="sm" variant="outline" className="min-h-10" disabled={!!busy} onClick={() => l?.text_status === "failed" ? void generate(a.id) : void runVoices(a.id, [lang])}><RefreshCw className="size-4" />Retry</Button>}
+              <Button size="sm" variant="outline" className="min-h-10" disabled={!l || !ready(l)} onClick={() => void play(l?.audio_path ?? null)} aria-label={`Play ${LANG_NAMES[lang]}`} aria-pressed={!!l?.audio_path && previewPath === l.audio_path}><Play className="size-4" /></Button>
+              {editable && (st === "failed" || st === "waiting") && <Button size="sm" variant="outline" className="min-h-10" disabled={!!busy} onClick={() => l?.text_status === "failed" ? void generate(a.id, lang) : void runVoices(a.id, [lang])}><RefreshCw className="size-4" />Retry</Button>}
             </div>
           </li>
         );
@@ -114,6 +154,8 @@ export function VoiceAnnouncementAdmin() {
 
   return (
     <div className="space-y-6">
+      {q.error && <p className="text-sm text-destructive">{errorText(q.error)}</p>}
+      {cleanupId && <Button variant="outline" disabled={!!busy} onClick={() => void removeOne(cleanupId)}><RefreshCw className="size-4" />Retry audio cleanup</Button>}
       <section className="rounded-xl border bg-card p-4">
         <h2 className="text-lg font-semibold">Voice announcement — currently on Home page</h2>
         {live ? <>
@@ -122,7 +164,7 @@ export function VoiceAnnouncementAdmin() {
           <Table a={live} editable={false} />
           <div className="mt-3 flex flex-wrap gap-2">
             <Button variant="outline" className="min-h-11" onClick={() => { setText(live.source_text); setSrcLang(live.source_lang as VoiceLang); }}>Edit as new announcement</Button>
-            <Button variant="destructive" className="min-h-11" disabled={!!busy} onClick={async () => { if (!confirm("Remove this announcement from the Home page?")) return; await remove({ data: { id: live.id } }); toast.success("Deleted"); await refresh(); }}><Trash2 className="size-4" />Delete</Button>
+            <Button variant="destructive" className="min-h-11" disabled={!!busy} onClick={async () => { if (!confirm("Remove this announcement from the Home page?")) return; await removeOne(live.id); }}><Trash2 className="size-4" />Delete</Button>
           </div>
         </> : <p className="mt-1 text-sm text-muted-foreground">No announcement is live.</p>}
       </section>
@@ -138,15 +180,15 @@ export function VoiceAnnouncementAdmin() {
           <Label htmlFor="ann-text">Announcement</Label>
           <Textarea id="ann-text" rows={4} maxLength={MAX_SOURCE_CHARS} value={text} onChange={(e) => setText(e.target.value)} placeholder="Today's darshan waiting time is about 6 hours. 7 compartments are full." />
           <p className="text-xs text-muted-foreground">{text.length}/{MAX_SOURCE_CHARS}. Write numbers as digits (6, 7) so they can be checked.</p>
-          <Button className="min-h-12" disabled={!!busy || text.trim().length < 3} onClick={() => void generate()}>{busy ? <Loader2 className="size-4 animate-spin" /> : <RefreshCw className="size-4" />}{busy === "translate" ? "Translating…" : busy ? "Making voices…" : "Generate 7 languages and voices"}</Button>
+          <Button className="min-h-12" disabled={!!busy || text.trim().length < 3} onClick={() => void generate(draft?.id)}>{busy ? <Loader2 className="size-4 animate-spin" /> : <RefreshCw className="size-4" />}{busy === "translate" ? "Translating…" : busy ? "Making voices…" : "Generate 7 languages and voices"}</Button>
         </div>
         {draft && <>
           <h3 className="mt-5 font-semibold">Draft preview</h3>
           <p className="whitespace-pre-wrap text-sm">{draft.source_text}</p>
           <Table a={draft} editable />
           <div className="mt-3 flex flex-wrap gap-2">
-            <Button className="min-h-12" disabled={!allReady || !!busy} onClick={async () => { setBusy("publish"); const r = await publish({ data: { id: draft.id } }); setBusy(null); if (r.ok) { toast.success("Published to Home page"); setText(""); } else toast.error(r.error); await refresh(); }}><Send className="size-4" />Publish</Button>
-            <Button variant="outline" className="min-h-12" disabled={!!busy} onClick={async () => { await remove({ data: { id: draft.id } }); await refresh(); }}><Trash2 className="size-4" />Discard draft</Button>
+            <Button className="min-h-12" disabled={!allReady || !!busy} onClick={() => void publishDraft(draft.id)}><Send className="size-4" />Publish</Button>
+            <Button variant="outline" className="min-h-12" disabled={!!busy} onClick={() => void removeOne(draft.id)}><Trash2 className="size-4" />Discard draft</Button>
           </div>
           {!allReady && <p className="mt-2 text-sm text-muted-foreground">Publish unlocks when all 7 languages show "ready".</p>}
         </>}

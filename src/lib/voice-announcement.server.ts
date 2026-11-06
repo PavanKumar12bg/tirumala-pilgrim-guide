@@ -25,8 +25,11 @@ export async function speak(text: string, lang: VoiceLang): Promise<{ bytes: Arr
     model: "google/gemini-3.1-flash-tts-preview",
     contents: [{ role: "user", parts: [{ text: `Read this ${LANG_NAMES[lang]} temple announcement aloud in ${LANG_NAMES[lang]}, slowly, clearly and calmly, like a public announcement:\n\n${text}` }] }],
     generationConfig: { responseModalities: ["AUDIO"], speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: "Kore" } } } },
-  } as Parameters<typeof generateSpeech>[0]);
+  });
   const blob = await b.blob();
   if (blob.size < 1000) throw new Error("Voice output was empty");
-  return { bytes: await blob.arrayBuffer(), contentType: b.contentType || "audio/wav" };
+  const contentType = b.contentType || blob.type;
+  if (!/^audio\/(wav|x-wav|mpeg|ogg)(;|$)/i.test(contentType)) throw new Error(`Unsupported voice content type: ${contentType || "missing"}`);
+  console.info("voice speech received", { lang, contentType, bytes: blob.size, runId: b.runId });
+  return { bytes: await blob.arrayBuffer(), contentType };
 }
