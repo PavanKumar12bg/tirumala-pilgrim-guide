@@ -145,4 +145,90 @@ describe("background announcement lifecycle", () => {
     owner.retry();
     expect(audio.play).not.toHaveBeenCalled();
   });
+  it("Allow synchronously plays the pending clip once and persists consent only after success", async () => {
+    const { owner, audio, storage } = setup();
+    audio.play.mockRejectedValueOnce(new DOMException("Blocked", "NotAllowedError"));
+    owner.setClip({ key: "a:te", url: "te.wav" });
+    await vi.advanceTimersByTimeAsync(0);
+    expect(owner.snapshot().blocked).toBe(true);
+    owner.unlock();
+    owner.unlock();
+    expect(audio.play).toHaveBeenCalledTimes(2);
+    expect(audio.src).toBe("te.wav");
+    expect(storage.setItem).not.toHaveBeenCalled();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(storage.setItem).toHaveBeenCalledWith("tirumala-guide-voice-announcements", "on");
+    expect(owner.snapshot().blocked).toBe(false);
+    owner.setClip({ key: "b:te", url: "next.wav" });
+    await vi.advanceTimersByTimeAsync(0);
+    expect(owner.snapshot().blocked).toBe(false);
+    expect(audio.play).toHaveBeenCalledTimes(3);
+  });
+  it.each(["te", "en", "hi", "ta", "kn", "ml", "or"])("Allow uses the newly selected %s clip, never the blocked old language", async lang => {
+    const { owner, audio } = setup();
+    audio.play.mockRejectedValue(new DOMException("Blocked", "NotAllowedError"));
+    owner.setClip({ key: "a:old", url: "old.wav" });
+    await vi.advanceTimersByTimeAsync(0);
+    owner.setClip(null); // New language is still loading.
+    owner.unlock();
+    expect(audio.play).toHaveBeenCalledTimes(1);
+    owner.setClip({ key: `a:${lang}`, url: `${lang}.wav` });
+    await vi.advanceTimersByTimeAsync(0);
+    audio.play.mockImplementation(async () => { audio.paused = false; });
+    owner.unlock();
+    expect(audio.src).toBe(`${lang}.wav`);
+    expect(audio.play).toHaveBeenCalledTimes(3);
+    await vi.advanceTimersByTimeAsync(0);
+    expect(owner.snapshot().blocked).toBe(false);
+  });
+  it("ordinary autoplay success never requests permission or changes consent", async () => {
+    const { owner, audio, storage } = setup();
+    owner.setClip({ key: "a:te", url: "te.wav" });
+    await vi.advanceTimersByTimeAsync(0);
+    expect(owner.snapshot().blocked).toBe(false);
+    owner.unlock();
+    expect(audio.play).toHaveBeenCalledTimes(1);
+    expect(storage.setItem).not.toHaveBeenCalled();
+  });
+  it("saved consent still permits recovery from a later genuine browser denial", async () => {
+    const { owner, audio } = setup("on");
+    owner.setClip({ key: "a", url: "a.wav" });
+    await vi.advanceTimersByTimeAsync(0);
+    audio.play.mockRejectedValueOnce(new DOMException("Blocked again", "NotAllowedError"));
+    owner.setClip({ key: "b", url: "b.wav" });
+    await vi.advanceTimersByTimeAsync(0);
+    expect(owner.snapshot().blocked).toBe(true);
+    owner.unlock();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(owner.snapshot().blocked).toBe(false);
+  });
+  it("failed Allow retains the clip and prompt without persisting consent", async () => {
+    const { owner, audio, storage } = setup();
+    audio.play.mockRejectedValue(new DOMException("Blocked", "NotAllowedError"));
+    owner.setClip({ key: "a", url: "a.wav" });
+    await vi.advanceTimersByTimeAsync(0);
+    owner.unlock();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(owner.snapshot().blocked).toBe(true);
+    expect(audio.src).toBe("a.wav");
+    expect(storage.setItem).not.toHaveBeenCalled();
+  });
+  it("non-permission errors never request permission, including synchronous throws", async () => {
+    const { owner, audio } = setup();
+    audio.play.mockImplementationOnce(() => { throw new Error("Unavailable"); });
+    owner.setClip({ key: "a", url: "a.wav" });
+    await vi.advanceTimersByTimeAsync(0);
+    expect(owner.snapshot().blocked).toBe(false);
+    expect(owner.snapshot().failed).toBe(true);
+  });
+  it("admin disabling autoplay dismisses blocked recovery and prevents Allow playback", async () => {
+    const { owner, audio } = setup();
+    audio.play.mockRejectedValueOnce(new DOMException("Blocked", "NotAllowedError"));
+    owner.setClip({ key: "a", url: "a.wav" });
+    await vi.advanceTimersByTimeAsync(0);
+    owner.setSettings({ ...settings, autoplay_enabled: false });
+    owner.unlock();
+    expect(owner.snapshot().blocked).toBe(false);
+    expect(audio.play).toHaveBeenCalledTimes(1);
+  });
 });

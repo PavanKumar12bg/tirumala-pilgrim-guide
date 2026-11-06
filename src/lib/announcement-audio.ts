@@ -33,28 +33,36 @@ export function createAnnouncementAudio(deps: {
     pending = false;
     cancelTimer();
     audio?.pause();
+    emit({ blocked: false });
   };
-  const play = () => {
+  const play = (unlock = false) => {
     if (!allowed() || !clip || !audio || pending || !audio.paused) return;
     // Use the latest signed URL on the next play without interrupting a playing clip.
     if (audio.getAttribute("src") !== clip.url) audio.src = clip.url;
     const token = generation;
     pending = true;
     // Call play synchronously here so the menu's explicit tap retains user activation.
-    void audio.play().then(() => {
-      if (token !== generation) return;
-      pending = false;
-      emit({ blocked: false, failed: false });
-    }).catch((error: unknown) => {
+    const onFailure = (error: unknown) => {
       if (token !== generation) return;
       pending = false;
       const name = typeof error === "object" && error !== null && "name" in error ? error.name : null;
-      if (name === "NotAllowedError") emit({ blocked: true });
+      if (name === "NotAllowedError") emit({ blocked: true, failed: false });
       else if (name !== "AbortError") {
         emit({ failed: true });
         recover?.();
       }
-    });
+    };
+    let attempt: Promise<void>;
+    try { attempt = audio.play(); } catch (error) { onFailure(error); return; }
+    void attempt.then(() => {
+      if (token !== generation) return;
+      pending = false;
+      if (unlock) {
+        // Site sound consent, not a guarantee of browser-wide autoplay permission.
+        try { deps.storage().setItem(VOICE_PREF_KEY, "on"); } catch { /* optional */ }
+      }
+      emit({ blocked: false, failed: false, ...(unlock ? { preference: "on" as const } : {}) });
+    }).catch(onFailure);
   };
   const onEnded = () => {
     cancelTimer();
@@ -129,6 +137,10 @@ export function createAnnouncementAudio(deps: {
       stop();
       emit({ blocked: false, failed: false });
       play();
+    },
+    unlock() {
+      // No await, fetching, new element or timer before play: retain this tap's activation.
+      if (state.blocked) play(true);
     },
   };
 }

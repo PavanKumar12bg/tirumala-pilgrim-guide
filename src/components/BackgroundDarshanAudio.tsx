@@ -1,12 +1,15 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useSyncExternalStore } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useI18n } from "@/lib/i18n";
 import { AUDIO_BUCKET, clipKey } from "@/lib/voice-announcement";
 import { announcementAudio, type AudioSettings } from "@/lib/announcement-audio";
+import { AlertDialog, AlertDialogContent, AlertDialogTitle, AlertDialogDescription } from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
 
 export function BackgroundDarshanAudio({ suspended = false }: { suspended?: boolean }) {
-  const { lang } = useI18n();
+  const { lang, t } = useI18n();
+  const sound = useSyncExternalStore(announcementAudio.subscribe, announcementAudio.snapshot, announcementAudio.serverSnapshot);
   const client = useQueryClient();
   const lastRecovery = useRef(0);
   const retries = useRef(0);
@@ -63,12 +66,20 @@ export function BackgroundDarshanAudio({ suspended = false }: { suspended?: bool
   useEffect(() => { announcementAudio.setSettings(settings.data ?? null); }, [settings.data]);
   useEffect(() => {
     if (ann.data !== undefined) announcementAudio.setClip(ann.data);
-  }, [ann.data, ann.dataUpdatedAt]);
+  }, [lang, ann.data, ann.dataUpdatedAt]);
   useEffect(() => {
     const update = () => announcementAudio.setEnvironment(document.visibilityState === "visible", suspended);
     update();
     document.addEventListener("visibilitychange", update);
     return () => document.removeEventListener("visibilitychange", update);
   }, [suspended]);
-  return null;
+  return (
+    <AlertDialog open={sound.blocked && !!ann.data && !suspended}>
+      <AlertDialogContent className="max-w-[calc(100%-2rem)] rounded-lg sm:max-w-sm" onEscapeKeyDown={event => event.preventDefault()}>
+        <AlertDialogTitle>{t("websiteSound")}</AlertDialogTitle>
+        <AlertDialogDescription>{t("voiceBlocked")}</AlertDialogDescription>
+        <Button className="min-h-11 justify-self-end" onClick={() => announcementAudio.unlock()}>{t("voiceAllow")}</Button>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
 }
