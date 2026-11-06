@@ -128,7 +128,12 @@ export const createAndTranslate = createServerFn({ method: "POST" })
           if (!saved.data) throw new Error(`Missing ${lang} translation row`);
           if (changed && old?.audio_path) await removeFiles(sb, [old.audio_path]);
           if (!good) errors.push(`${lang}: ${msg}`);
-        } catch (e) { errors.push(`${lang}: ${failure(e)}`); }
+        } catch (e) {
+          let msg = failure(e);
+          const recorded = await sb.from("voice_announcement_langs").update({ text_status: "failed", audio_status: "pending", audio_hash: null, error: msg }).eq("announcement_id", id).eq("lang", lang);
+          if (recorded.error) msg += `; Save failure status: ${recorded.error.message}`;
+          errors.push(`${lang}: ${msg}`);
+        }
       }
       return errors.length ? { ok: false, id, error: errors.join("; ") } : { ok: true, id };
     } catch (e) {
@@ -155,6 +160,7 @@ export const generateVoice = createServerFn({ method: "POST" })
     const sb = context.supabase;
     let rowId: string | undefined;
     let hash: string | null = null;
+    let claimed = false;
     try {
       const parent = await sb.from("voice_announcements").select("status").eq("id", data.id).single();
       check(parent.error, "Read announcement");
@@ -171,6 +177,7 @@ export const generateVoice = createServerFn({ method: "POST" })
       const claim = await sb.from("voice_announcement_langs").update({ audio_status: "working", audio_hash: null, error: null }).eq("id", row.id).eq("text_hash", hash).eq("updated_at", row.updated_at).eq("text_status", "ready").select("id").single();
       check(claim.error, "Start voice generation");
       if (!claim.data) throw new Error("Translation changed or generation is already running");
+      claimed = true;
       const { speak } = await import("./voice-announcement.server");
       const audio = await speak(row.text, data.lang);
       const ext = audio.contentType.includes("mpeg") ? "mp3" : audio.contentType.includes("ogg") ? "ogg" : "wav";
@@ -189,7 +196,7 @@ export const generateVoice = createServerFn({ method: "POST" })
       return { ok: true };
     } catch (e) {
       let msg = failure(e);
-      if (rowId && hash) {
+      if (claimed && rowId && hash) {
         const recorded = await sb.from("voice_announcement_langs").update({ audio_status: "failed", audio_hash: null, error: msg }).eq("id", rowId).eq("text_hash", hash);
         if (recorded.error) msg += `; Save failure status: ${recorded.error.message}`;
       }
