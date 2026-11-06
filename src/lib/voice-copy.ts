@@ -2,6 +2,10 @@ const speechStatus = {
   en: "Playing…", te: "వినిపిస్తోంది…", ta: "ஒலிக்கிறது…", kn: "ಧ್ವನಿ ಕೇಳಿಸುತ್ತಿದೆ…",
   ml: "ശബ്ദം പ്ലേ ചെയ്യുന്നു…", hi: "आवाज़ चल रही है…", or: "ଶବ୍ଦ ଚାଲୁଛି…",
 };
+const allow = {
+  en: "Allow", te: "అనుమతించండి", ta: "அனுமதி", kn: "ಅನುಮತಿಸಿ",
+  ml: "അനുവദിക്കുക", hi: "अनुमति दें", or: "ଅନୁମତି ଦିଅନ୍ତୁ",
+};
 
 const copy = {
   en: { websiteSound: "Website sound", soundOn: "On", soundOff: "Off", soundUnavailable: "Sound is temporarily unavailable.", voiceAnnTitle: "Darshan voice announcement", voiceListen: "Listen", voicePause: "Pause", voiceReplay: "Replay", voiceEnable: "Enable Darshan voice announcements", voiceUpdated: "Updated", voiceUnavailable: "Voice is not available right now. You can still read the announcement.", voiceBlocked: "Your browser needs one tap to allow sound.", voiceAdminNote: "Announced by the guide admin" },
@@ -13,8 +17,8 @@ const copy = {
   or: { websiteSound: "ୱେବସାଇଟ୍ ଶବ୍ଦ", soundOn: "ଚାଲୁ", soundOff: "ବନ୍ଦ", soundUnavailable: "ଶବ୍ଦ ସାମୟିକ ଭାବରେ ଉପଲବ୍ଧ ନାହିଁ।", voiceAnnTitle: "ଦର୍ଶନ ସ୍ୱର ଘୋଷଣା", voiceListen: "ଶୁଣନ୍ତୁ", voicePause: "ବିରତି", voiceReplay: "ପୁଣି ଶୁଣନ୍ତୁ", voiceEnable: "ଦର୍ଶନ ସ୍ୱର ଘୋଷଣା ଚାଲୁ କରନ୍ତୁ", voiceUpdated: "ଅପଡେଟ୍", voiceUnavailable: "ବର୍ତ୍ତମାନ ସ୍ୱର ଉପଲବ୍ଧ ନାହିଁ। ଘୋଷଣା ପଢ଼ିପାରିବେ।", voiceBlocked: "ଶବ୍ଦ ଅନୁମତି ପାଇଁ ଥରେ ଟାପ୍ କରନ୍ତୁ।", voiceAdminNote: "ଗାଇଡ୍ ପ୍ରଶାସକଙ୍କ ଘୋଷଣା" },
 };
 export const VOICE_COPY = {
-  en: { ...copy.en, speechPlaying: speechStatus.en }, te: { ...copy.te, speechPlaying: speechStatus.te },
-  ta: { ...copy.ta, speechPlaying: speechStatus.ta }, kn: { ...copy.kn, speechPlaying: speechStatus.kn },
-  ml: { ...copy.ml, speechPlaying: speechStatus.ml }, hi: { ...copy.hi, speechPlaying: speechStatus.hi },
-  or: { ...copy.or, speechPlaying: speechStatus.or },
+  en: { ...copy.en, speechPlaying: speechStatus.en, voiceAllow: allow.en }, te: { ...copy.te, speechPlaying: speechStatus.te, voiceAllow: allow.te },
+  ta: { ...copy.ta, speechPlaying: speechStatus.ta, voiceAllow: allow.ta }, kn: { ...copy.kn, speechPlaying: speechStatus.kn, voiceAllow: allow.kn },
+  ml: { ...copy.ml, speechPlaying: speechStatus.ml, voiceAllow: allow.ml }, hi: { ...copy.hi, speechPlaying: speechStatus.hi, voiceAllow: allow.hi },
+  or: { ...copy.or, speechPlaying: speechStatus.or, voiceAllow: allow.or },
 };
