@@ -13,7 +13,7 @@ it("Delete checks the result and refreshes public and admin queries even on clea
   m.data.live = { id, source_text: "Test", source_lang: "en", langs: [], status: "published" };
   m.remove.mockResolvedValue({ ok: false, deleted: true, error: "Audio cleanup failed" });
   render(<VoiceAnnouncementAdmin />);
-  fireEvent.click(screen.getByRole("button", { name: "Delete", exact: true }));
+  fireEvent.click(screen.getByRole("button", { name: /^Delete$/ }));
   await waitFor(() => expect(m.invalidate).toHaveBeenCalledWith({ queryKey: ["voice_announcement"] }));
   expect(m.invalidate).toHaveBeenCalledWith({ queryKey: ["admin_voice_ann"] });
   expect(m.success).not.toHaveBeenCalled(); expect(m.error).toHaveBeenCalledWith("Audio cleanup failed");
@@ -32,6 +32,6 @@ it("one thrown language call does not stop remaining languages and busy clears",
 it("successful deletion alone reports Deleted", async () => {
   m.data.live = { id, source_text: "Test", source_lang: "en", langs: [] };
   m.remove.mockResolvedValue({ ok: true }); render(<VoiceAnnouncementAdmin />);
-  fireEvent.click(screen.getByRole("button", { name: "Delete", exact: true }));
+  fireEvent.click(screen.getByRole("button", { name: /^Delete$/ }));
   await waitFor(() => expect(m.success).toHaveBeenCalledWith("Deleted"));
 });
