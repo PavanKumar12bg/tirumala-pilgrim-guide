@@ -5,6 +5,7 @@ class FakeAudio extends EventTarget {
   paused = true;
   src = "";
   preload = "";
+  currentTime = 0;
   play = vi.fn(async () => { this.paused = false; });
   pause = vi.fn(() => { this.paused = true; });
   removeAttribute() { this.src = ""; }
@@ -22,6 +23,32 @@ function setup(saved: string | null = null) {
   return { audio, owner, storage, recover, unmount };
 }
 describe("background announcement lifecycle", () => {
+  it("agent pauses immediately and resumes same element at saved playback position", async () => {
+    const { owner, audio } = setup(); owner.setClip({ key: "a:te", url: "a.wav" }); await vi.advanceTimersByTimeAsync(0);
+    audio.currentTime = 24; owner.setAgentActive(true);
+    expect(audio.paused).toBe(true); expect(audio.play).toHaveBeenCalledTimes(1);
+    owner.setAgentActive(true); owner.setAgentActive(false); await vi.advanceTimersByTimeAsync(0);
+    expect(audio.currentTime).toBe(24); expect(audio.play).toHaveBeenCalledTimes(2);
+  });
+  it.each(["off", "deleted", "disabled"])("does not resume announcement after %s during agent response", async action => {
+    const { owner, audio } = setup(); owner.setClip({ key: "a", url: "a.wav" }); await vi.advanceTimersByTimeAsync(0); owner.setAgentActive(true);
+    if (action === "off") owner.setPreference("off");
+    if (action === "deleted") owner.setClip(null);
+    if (action === "disabled") owner.setSettings({ ...settings, autoplay_enabled: false });
+    owner.setAgentActive(false); await vi.advanceTimersByTimeAsync(0); expect(audio.play).toHaveBeenCalledTimes(1);
+  });
+  it("replacement during agent speech never resumes retired audio", async () => {
+    const { owner, audio } = setup(); owner.setClip({ key: "a", url: "a.wav" }); await vi.advanceTimersByTimeAsync(0);
+    audio.currentTime = 24; owner.setAgentActive(true); owner.setClip({ key: "b", url: "b.wav" }); audio.currentTime = 0;
+    expect(audio.play).toHaveBeenCalledTimes(1); owner.setAgentActive(false); await vi.advanceTimersByTimeAsync(0);
+    expect(audio.src).toBe("b.wav"); expect(audio.currentTime).toBe(0);
+  });
+  it("scheduled repeat waits for agent completion without changing interval", async () => {
+    const { owner, audio } = setup(); owner.setClip({ key: "a", url: "a.wav" }); await vi.advanceTimersByTimeAsync(0); audio.end(); owner.setAgentActive(true);
+    await vi.advanceTimersByTimeAsync(59999); expect(audio.play).toHaveBeenCalledTimes(1);
+    await vi.advanceTimersByTimeAsync(1); expect(audio.play).toHaveBeenCalledTimes(1);
+    owner.setAgentActive(false); await vi.advanceTimersByTimeAsync(0); expect(audio.play).toHaveBeenCalledTimes(2);
+  });
   beforeEach(() => vi.useFakeTimers());
   afterEach(() => vi.useRealTimers());
   it("honors persisted opt-out even when admin autoplay is on", () => {
