@@ -86,7 +86,7 @@ export function KnowledgeAdmin() {
           {list.data.map(e => (
             <li key={e.id} className="flex items-start justify-between gap-3 p-3">
               <button type="button" className="min-w-0 flex-1 text-left" onClick={() => setEditing({ ...e })}>
-                <p className="font-semibold">{e.question.te || e.question.en || Object.values(e.question).find(Boolean)}</p>
+                <p className="font-semibold">{e.question["te"] || e.question["en"] || Object.values(e.question).find(Boolean)}</p>
                 <p className="mt-1 flex flex-wrap gap-1 text-xs"><Badge variant={e.status === "published" ? "default" : "secondary"}>{e.status}</Badge>{e.ttd_verified ? <Badge variant="outline">TTD verified</Badge> : null}<span className="text-muted-foreground">{e.category}</span></p>
               </button>
               <Button variant="ghost" size="icon" aria-label="Delete" onClick={() => void remove(e.id)}><Trash2 className="size-4" /></Button>
