@@ -3,6 +3,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { AUDIO_BUCKET, numbersPreserved, textHash, validateSource, VOICE_LANGS, type VoiceLang } from "./voice-announcement";
+import { validateAudioFile } from "./announcement-audio-file";
 
 type Client = SupabaseClient<Database>;
 export type VoiceResult = { ok: true; id?: string | undefined; cleanupError?: string } | { ok: false; error: string; id?: string | undefined; deleted?: boolean };
@@ -32,6 +33,7 @@ async function filesFor(sb: Client, id: string): Promise<string[]> {
     const { data, error } = await sb.storage.from(AUDIO_BUCKET).list(id, { limit: 100, offset });
     check(error, "List announcement audio");
     const rows = data ?? [];
+    if (rows.some((f) => !f.name || f.name.includes("/") || f.name.includes("\\") || f.name === "." || f.name === "..")) throw new Error("Invalid announcement audio object name");
     paths.push(...rows.map((f) => `${id}/${f.name}`));
     if (rows.length < 100) return paths;
   }
@@ -41,10 +43,13 @@ async function removeFiles(sb: Client, paths: string[]) {
   const { error } = await sb.storage.from(AUDIO_BUCKET).remove(paths);
   check(error, "Remove announcement audio");
 }
-async function verifyAudio(sb: Client, path: string) {
+async function verifyAudio(sb: Client, path: string, id: string) {
+  if (!path.startsWith(`${id}/`) || path.slice(id.length + 1).includes("/") || path.includes("\\") || path.endsWith("/..")) throw new Error("Audio belongs to another announcement");
   const { data, error } = await sb.storage.from(AUDIO_BUCKET).download(path);
   check(error, "Verify stored audio");
   if (!data || data.size < 1000) throw new Error("Stored audio is missing or empty");
+  const contentType = data.type || (path.endsWith(".wav") ? "audio/wav" : path.endsWith(".mp3") ? "audio/mpeg" : path.endsWith(".ogg") ? "audio/ogg" : "");
+  validateAudioFile(await data.arrayBuffer(), contentType);
 }
 
 /** Delete only the selected announcement. Keep the folder recoverable if cleanup fails. */
@@ -82,34 +87,40 @@ export const createAndTranslate = createServerFn({ method: "POST" })
     await assertAdmin(context);
     const sb = context.supabase;
     let id = data.draftId;
+    let sourceChanged = !id;
+    let langs: VoiceLang[] = [];
     try {
       if (id) {
         const draft = await sb.from("voice_announcements").select("source_text,source_lang").eq("id", id).eq("status", "draft").single();
         check(draft.error, "Read draft");
+        sourceChanged = draft.data?.source_text !== data.text || draft.data.source_lang !== data.sourceLang;
         if (data.retryLang && (draft.data?.source_text !== data.text || draft.data.source_lang !== data.sourceLang)) throw new Error("Retry must use the saved draft text and language");
+        if (sourceChanged) {
+          // Invalidate before updating source or invoking AI so even a failed request cannot publish stale audio.
+          const invalidated = await sb.from("voice_announcement_langs").update({ text_status: "pending", audio_status: "pending", audio_hash: null, error: null }).eq("announcement_id", id).select("id");
+          check(invalidated.error, "Invalidate edited draft");
+        }
         const updated = await sb.from("voice_announcements").update({ source_text: data.text, source_lang: data.sourceLang }).eq("id", id).eq("status", "draft").select("id").single();
         check(updated.error, "Update draft");
         if (!updated.data) throw new Error("Draft was not updated");
       } else {
-        const olds = await sb.from("voice_announcements").select("id").eq("status", "draft");
-        check(olds.error, "Read older drafts");
-        for (const old of olds.data ?? []) {
-          const removed = await removeAnnouncement(sb, old.id);
-          if (!removed.ok) throw new Error(removed.error);
-        }
         const row = await sb.from("voice_announcements").insert({ source_text: data.text, source_lang: data.sourceLang, created_by: context.userId }).select("id").single();
         check(row.error, "Create draft");
         if (!row.data) throw new Error("Draft was not created");
         id = row.data.id;
       }
-      const langs = data.retryLang ? [data.retryLang] : [...VOICE_LANGS];
       const oldRows = await sb.from("voice_announcement_langs").select("*").eq("announcement_id", id);
       check(oldRows.error, "Read draft languages");
+      langs = data.retryLang ? [data.retryLang] : VOICE_LANGS.filter((lang) => {
+        const old = oldRows.data?.find((r) => r.lang === lang);
+        return sourceChanged || !old?.text || old.text_status !== "ready" || old.text_hash !== textHash(old.text);
+      });
+      if (!langs.length) return { ok: true, id };
       const started = await sb.from("voice_announcement_langs").upsert(langs.map((lang) => ({ announcement_id: id as string, lang, text_status: "working", error: null })), { onConflict: "announcement_id,lang" }).select("lang");
       check(started.error, "Prepare translation rows");
       if (started.data?.length !== langs.length) throw new Error("Translation rows were not created");
       const { translateAll } = await import("./voice-announcement.server");
-      const tr = await translateAll(data.text);
+      const tr = await translateAll(data.text, langs);
       tr[data.sourceLang] = data.text;
       const errors: string[] = [];
       for (const lang of langs) {
@@ -118,7 +129,7 @@ export const createAndTranslate = createServerFn({ method: "POST" })
           const hash = text ? textHash(text) : null;
           const good = !!text && numbersPreserved(data.text, text);
           const old = oldRows.data?.find((r) => r.lang === lang);
-          const changed = !good || old?.text !== text || old.text_hash !== hash;
+          const changed = !good || old?.text !== text || old.text_hash !== hash || old.audio_hash !== hash;
           const msg = good ? null : text ? "A number changed or went missing in translation. Press Retry." : "No translation returned";
           const saved = await sb.from("voice_announcement_langs").update({
             text: text || null, text_hash: hash, text_status: good ? "ready" : "failed", error: msg,
@@ -126,7 +137,10 @@ export const createAndTranslate = createServerFn({ method: "POST" })
           }).eq("announcement_id", id).eq("lang", lang).select("id").single();
           check(saved.error, `Save ${lang} translation`);
           if (!saved.data) throw new Error(`Missing ${lang} translation row`);
-          if (changed && old?.audio_path) await removeFiles(sb, [old.audio_path]);
+          if (changed && old?.audio_path) {
+            if (!old.audio_path.startsWith(`${id}/`) || old.audio_path.slice(id.length + 1).includes("/")) throw new Error("Audio belongs to another announcement");
+            await removeFiles(sb, [old.audio_path]);
+          }
           if (!good) errors.push(`${lang}: ${msg}`);
         } catch (e) {
           let msg = failure(e);
@@ -138,9 +152,9 @@ export const createAndTranslate = createServerFn({ method: "POST" })
       return errors.length ? { ok: false, id, error: errors.join("; ") } : { ok: true, id };
     } catch (e) {
       let msg = failure(e);
-      if (id) {
+      if (id && langs.length) {
         let update = sb.from("voice_announcement_langs").update({ text_status: "failed", audio_status: "pending", error: msg }).eq("announcement_id", id);
-        if (data.retryLang) update = update.eq("lang", data.retryLang);
+        update = update.in("lang", langs);
         const recorded = await update;
         if (recorded.error) msg += `; Save failure status: ${recorded.error.message}`;
       }
@@ -171,7 +185,7 @@ export const generateVoice = createServerFn({ method: "POST" })
       if (!row || row.text_status !== "ready" || !row.text || row.text_hash !== textHash(row.text)) throw new Error("Translation is not ready");
       rowId = row.id; hash = row.text_hash;
       if (row.audio_status === "ready" && row.audio_hash === hash && row.audio_path) {
-        try { await verifyAudio(sb, row.audio_path); return { ok: true }; } catch { /* Explicit retry repairs a missing object. */ }
+        try { await verifyAudio(sb, row.audio_path, data.id); return { ok: true }; } catch { /* Explicit retry repairs a missing object. */ }
       }
       if (row.audio_status === "working" && Date.now() - new Date(row.updated_at).getTime() < 90_000) throw new Error("Already generating");
       const claim = await sb.from("voice_announcement_langs").update({ audio_status: "working", audio_hash: null, error: null }).eq("id", row.id).eq("text_hash", hash).eq("updated_at", row.updated_at).eq("text_status", "ready").select("id").single();
@@ -180,12 +194,16 @@ export const generateVoice = createServerFn({ method: "POST" })
       claimed = true;
       const { speak } = await import("./voice-announcement.server");
       const audio = await speak(row.text, data.lang);
+      validateAudioFile(audio.bytes, audio.contentType);
       const ext = audio.contentType.includes("mpeg") ? "mp3" : audio.contentType.includes("ogg") ? "ogg" : "wav";
       const path = `${data.id}/${data.lang}-${hash}.${ext}`;
       const upload = await sb.storage.from(AUDIO_BUCKET).upload(path, new Blob([audio.bytes], { type: audio.contentType }), { upsert: true, contentType: audio.contentType, cacheControl: "31536000" });
       check(upload.error, "Upload voice audio");
-      await verifyAudio(sb, path);
-      if (row.audio_path && row.audio_path !== path) await removeFiles(sb, [row.audio_path]);
+      await verifyAudio(sb, path, data.id);
+      if (row.audio_path && row.audio_path !== path) {
+        if (!row.audio_path.startsWith(`${data.id}/`) || row.audio_path.slice(data.id.length + 1).includes("/")) throw new Error("Audio belongs to another announcement");
+        await removeFiles(sb, [row.audio_path]);
+      }
       const saved = await sb.from("voice_announcement_langs").update({ audio_status: "ready", audio_path: path, audio_hash: hash, error: null }).eq("id", row.id).eq("text_hash", hash).eq("text", row.text).eq("text_status", "ready").eq("audio_status", "working").select("audio_path,audio_hash,text_hash,audio_status").single();
       if (saved.error || saved.data?.audio_hash !== hash || saved.data.text_hash !== hash || saved.data.audio_path !== path || saved.data.audio_status !== "ready") {
         await removeFiles(sb, [path]);
@@ -216,22 +234,14 @@ export const publishAnnouncement = createServerFn({ method: "POST" })
       for (const lang of VOICE_LANGS) {
         const row = rows.data?.find((r) => r.lang === lang);
         if (!row?.text || !row.audio_path || row.text_status !== "ready" || row.audio_status !== "ready" || row.audio_hash !== row.text_hash || row.text_hash !== textHash(row.text)) throw new Error(`${lang}: text and matching audio must be ready`);
-        await verifyAudio(sb, row.audio_path);
+        await verifyAudio(sb, row.audio_path, data.id);
       }
       const published = await sb.rpc("publish_voice_announcement", { _id: data.id });
       check(published.error, "Publish announcement");
       if (published.data !== true) throw new Error("Announcement was not published");
     } catch (e) { return { ok: false, error: failure(e) }; }
-    try {
-      const retired = await sb.from("voice_announcements").select("id").eq("status", "retired");
-      check(retired.error, "Read retired announcements");
-      const errors: string[] = [];
-      for (const r of retired.data ?? []) {
-        const removed = await removeAnnouncement(sb, r.id);
-        if (!removed.ok) errors.push(removed.error);
-      }
-      return { ok: true, ...(errors.length ? { cleanupError: errors.join("; ") } : {}) };
-    } catch (e) { return { ok: true, cleanupError: failure(e) }; }
+    // Publication retires the old live item atomically; deletion is a separate, explicitly scoped action.
+    return { ok: true };
   });
 
 export const deleteAnnouncement = createServerFn({ method: "POST" })
