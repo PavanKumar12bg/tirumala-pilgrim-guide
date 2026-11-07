@@ -106,7 +106,7 @@ export function parseIntent(raw: string): AgentIntent | null {
     return { kind: "open", page: "/blogs" };
   }
   if (FREE_FOOD.test(text)) return { kind: "freeFood" };
-  if (SYNONYM_GROUPS[0]!.re.test(text) && !NAV.test(text)) return { kind: "info", query: text };
+  if (SYNONYM_GROUPS[0]!.re.test(text) && !NAV.test(text) && !rx("darshan|దర్శన|தரிசன|ದರ್ಶನ|ദർശന|दर्शन|ଦର୍ଶନ").test(text)) return { kind: "info", query: text };
   const cat = CATEGORY_WORDS.find(([, re]) => re.test(text))?.[0];
   if (cat && (NEAR_WORD.test(text) || text.split(" ").length <= 3)) return { kind: "nearest", category: cat };
   const nav = firstGroup(text.match(NAV)) ?? firstGroup(text.match(NAV_SUFFIX));
