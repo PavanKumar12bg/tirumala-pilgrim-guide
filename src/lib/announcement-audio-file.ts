@@ -1,6 +1,7 @@
 /** Validate complete PCM WAVs and supported compressed-audio containers, not just MIME/size. */
 export function validateAudioFile(bytes: ArrayBuffer, contentType: string): void {
   const data = new Uint8Array(bytes);
+  const byte = (offset: number) => data[offset] ?? 0;
   const tag = (offset: number, length: number) => String.fromCharCode(...data.subarray(offset, offset + length));
   if (data.length < 1000) throw new Error("Stored audio is missing or empty");
   if (/^audio\/(wav|x-wav)(;|$)/i.test(contentType)) {
@@ -28,8 +29,8 @@ export function validateAudioFile(bytes: ArrayBuffer, contentType: string): void
   if (/^audio\/ogg(;|$)/i.test(contentType) && tag(0, 4) === "OggS" && data[4] === 0 && (tag(28, 8) === "OpusHead" || tag(29, 6) === "vorbis")) return;
   if (/^audio\/mpeg(;|$)/i.test(contentType)) {
     let offset = 0;
-    if (tag(0, 3) === "ID3") offset = 10 + ((data[6] & 127) << 21 | (data[7] & 127) << 14 | (data[8] & 127) << 7 | data[9] & 127);
-    if (offset + 4 < data.length && data[offset] === 255 && (data[offset + 1] & 224) === 224 && (data[offset + 1] & 6) !== 0 && (data[offset + 2] & 240) !== 0 && (data[offset + 2] & 240) !== 240) return;
+    if (tag(0, 3) === "ID3") offset = 10 + ((byte(6) & 127) << 21 | (byte(7) & 127) << 14 | (byte(8) & 127) << 7 | byte(9) & 127);
+    if (offset + 4 < data.length && byte(offset) === 255 && (byte(offset + 1) & 224) === 224 && (byte(offset + 1) & 6) !== 0 && (byte(offset + 2) & 240) !== 0 && (byte(offset + 2) & 240) !== 240) return;
   }
   throw new Error("Invalid or unsupported stored audio");
 }
