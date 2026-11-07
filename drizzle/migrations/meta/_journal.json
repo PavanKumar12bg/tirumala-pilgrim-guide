@@ -78,6 +78,13 @@
       "when": 1794064555621,
       "tag": "0010_knowledge_entries",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1794068200720,
+      "tag": "0011_blogs_and_place_aliases",
+      "breakpoints": true
     }
   ]
 }
