@@ -18,6 +18,7 @@ import { Route as EmergencyRouteImport } from './routes/emergency'
 import { Route as JourneyRouteImport } from './routes/journey'
 import { Route as MapRouteImport } from './routes/map'
 import { Route as PrivacyRouteImport } from './routes/privacy'
+import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as TermsRouteImport } from './routes/terms'
 import { Route as TtdRouteImport } from './routes/ttd'
 import { Route as BlogsIndexRouteImport } from './routes/blogs.index'
@@ -71,6 +72,11 @@ const PrivacyRoute = PrivacyRouteImport.update({
   path: '/privacy',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
+  id: '/sitemap.xml',
+  path: '/sitemap.xml',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const TermsRoute = TermsRouteImport.update({
   id: '/terms',
   path: '/terms',
@@ -117,6 +123,7 @@ export interface FileRoutesByFullPath {
   '/journey': typeof JourneyRoute
   '/map': typeof MapRoute
   '/privacy': typeof PrivacyRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/terms': typeof TermsRoute
   '/ttd': typeof TtdRoute
   '/blogs/$slug': typeof BlogsSlugRoute
@@ -135,6 +142,7 @@ export interface FileRoutesByTo {
   '/journey': typeof JourneyRoute
   '/map': typeof MapRoute
   '/privacy': typeof PrivacyRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/terms': typeof TermsRoute
   '/ttd': typeof TtdRoute
   '/blogs/$slug': typeof BlogsSlugRoute
@@ -154,6 +162,7 @@ export interface FileRoutesById {
   '/journey': typeof JourneyRoute
   '/map': typeof MapRoute
   '/privacy': typeof PrivacyRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/terms': typeof TermsRoute
   '/ttd': typeof TtdRoute
   '/blogs/$slug': typeof BlogsSlugRoute
@@ -174,6 +183,7 @@ export interface FileRouteTypes {
     | '/journey'
     | '/map'
     | '/privacy'
+    | '/sitemap.xml'
     | '/terms'
     | '/ttd'
     | '/blogs/$slug'
@@ -192,6 +202,7 @@ export interface FileRouteTypes {
     | '/journey'
     | '/map'
     | '/privacy'
+    | '/sitemap.xml'
     | '/terms'
     | '/ttd'
     | '/blogs/$slug'
@@ -210,6 +221,7 @@ export interface FileRouteTypes {
     | '/journey'
     | '/map'
     | '/privacy'
+    | '/sitemap.xml'
     | '/terms'
     | '/ttd'
     | '/blogs/$slug'
@@ -229,6 +241,7 @@ export interface RootRouteChildren {
   JourneyRoute: typeof JourneyRoute
   MapRoute: typeof MapRoute
   PrivacyRoute: typeof PrivacyRoute
+  SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   TermsRoute: typeof TermsRoute
   TtdRoute: typeof TtdRoute
   BlogsSlugRoute: typeof BlogsSlugRoute
@@ -303,6 +316,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PrivacyRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/sitemap.xml': {
+      id: '/sitemap.xml'
+      path: '/sitemap.xml'
+      fullPath: '/sitemap.xml'
+      preLoaderRoute: typeof SitemapDotxmlRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/terms': {
       id: '/terms'
       path: '/terms'
@@ -365,6 +385,7 @@ const rootRouteChildren: RootRouteChildren = {
   JourneyRoute: JourneyRoute,
   MapRoute: MapRoute,
   PrivacyRoute: PrivacyRoute,
+  SitemapDotxmlRoute: SitemapDotxmlRoute,
   TermsRoute: TermsRoute,
   TtdRoute: TtdRoute,
   BlogsSlugRoute: BlogsSlugRoute,
