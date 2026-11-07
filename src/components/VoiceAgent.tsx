@@ -6,6 +6,8 @@ import { DICTS, pickLocalized, useI18n, type Lang } from "@/lib/i18n";
 import { announcementsQuery, catKey, placesQuery, type Place } from "@/lib/places";
 import { transportListQuery } from "@/lib/transport";
 import { knowledgeQuery } from "@/lib/knowledge";
+import { voiceTrainingQuery } from "@/lib/voice-training-query";
+import { matchTraining, trainingIntent } from "@/lib/voice-training";
 import { blogPlainText, blogQuery, blogsQuery, searchBlogs, type Blog } from "@/lib/blogs";
 import { createAgentSpeech } from "@/lib/agent-speech";
 import { announcementAudio } from "@/lib/announcement-audio";
@@ -114,6 +116,7 @@ export function VoiceAgent() {
         partial += r[0].transcript;
       }
       setInterim(partial);
+      if (partial.trim()) announcementAudio.setAgentActive(true);
     };
     rec.onerror = e => {
       if (e.error === "not-allowed" || e.error === "service-not-allowed") {
@@ -124,6 +127,7 @@ export function VoiceAgent() {
     rec.onend = () => {
       recRef.current = null;
       setInterim("");
+      if (!speakingRef.current && stateRef.current !== "thinking") announcementAudio.setAgentActive(false);
       if (prefsRef.current.denied) return;
       if (errorsRef.current >= MAX_ERRORS) { pausedRef.current = true; setState("errors"); return; }
       if (!shouldListen()) { if (stateRef.current === "listening" || stateRef.current === "permission") setState(pausedRef.current ? "paused" : "off"); return; }
@@ -190,9 +194,11 @@ export function VoiceAgent() {
     goMap({ slug: p.slug });
     say(parts.join(" "));
   };
-  const openPlace = (p: Place, say: Say) => {
+  const openPlace = async (p: Place, say: Say, ctx?: CommandCtx) => {
     const name = pickLocalized(p.name, langRef.current);
     if (!hasCoords(p)) { goMap({ slug: p.slug }); return say(fill(t("agentNoCoords"), { name })); }
+    await getFix(); // Permission is user-command initiated; existing Start Navigation remains the confirmation.
+    if (ctx && !ctx.isCurrent()) return;
     goMap({ slug: p.slug, action: "navigate" });
     say(fill(t("agentOpening"), { name }));
   };
@@ -242,7 +248,8 @@ export function VoiceAgent() {
         if (!ctx.isCurrent()) return;
         const found = (intent.kind === "blogSearch" ? searchBlogs(intent.query, all) : all).slice(0, 4);
         if (!found.length) { if (pathname !== "/blogs") goTo("/blogs"); return say(t("agentBlogsNone")); }
-        if (found.length === 1) { goTo("/blogs/$slug", { params: { slug: found[0]!.slug } }); return say(fill(t("agentBlogOpening"), { name: found[0]!.title })); }
+        const only = found.length === 1 ? found[0] : undefined;
+        if (only) { goTo("/blogs/$slug", { params: { slug: only.slug } }); return say(fill(t("agentBlogOpening"), { name: only.title })); }
         blogChoicesRef.current = found;
         if (pathname !== "/blogs") goTo("/blogs");
         return say(fill(t(intent.kind === "blogsLatest" ? "agentBlogsLatest" : "agentBlogsFound"), { list: found.map((b, i) => `${i + 1}. ${b.title}`).join(", ") }));
@@ -258,7 +265,7 @@ export function VoiceAgent() {
         // Only real published listings; never an invented location.
         const found = findFreeFood(list);
         if (!found.length) return say(t("agentNoFreeFood"));
-        if (found.length === 1) return describe(found[0]!, say);
+        if (found.length === 1 && found[0]) return describe(found[0], say);
         return offerChoices(found.slice(0, 4), say);
       }
       case "nearest": {
@@ -275,7 +282,7 @@ export function VoiceAgent() {
       }
       case "navigate": case "info": {
         const r = findPlaces(intent.query, list);
-        if (r.match) return intent.kind === "navigate" ? openPlace(r.match, say) : describe(r.match, say);
+        if (r.match) return intent.kind === "navigate" ? openPlace(r.match, say, ctx) : describe(r.match, say);
         if (r.options.length) return offerChoices(r.options, say);
         const tc = await matchTransport(intent.query);
         if (!ctx.isCurrent()) return;
@@ -319,10 +326,34 @@ export function VoiceAgent() {
         choicesRef.current = [];
         const n = Number(clean.match(/\d+/)?.[0]);
         const pick = Number.isInteger(n) && options[n - 1] ? options[n - 1] : findPlaces(clean, options).match;
-        if (pick) { openPlace(pick, ctx.say); return; }
+        if (pick) { await openPlace(pick, ctx.say, ctx); return; }
       }
       const intent = parseIntent(clean);
       if (!intent) return;
+      // Built-in control commands cannot be overridden by external training.
+      if (["query", "info", "navigate", "freeFood", "nearest"].includes(intent.kind)) {
+        const rows = await load(voiceTrainingQuery(), []);
+        if (!ctx.isCurrent()) return;
+        const trained = matchTraining(clean, rows);
+        if (trained.ambiguous) { ctx.say(t("agentNotUnderstood")); return; }
+        if (trained.match) {
+          const row = trained.match;
+          if (row.destinationType === "Listing") {
+            const list = await load(placesQuery(), [] as Place[]);
+            if (!ctx.isCurrent()) return;
+            const place = list.find(p => p.visible && p.id === row.destinationId);
+            if (!place) { ctx.say(fill(t("agentNoPlace"), { q: row.canonical })); return; }
+            if (row.action === "Navigate") await openPlace(place, ctx.say, ctx);
+            else describe(place, ctx.say);
+            return;
+          }
+          if (row.destinationType === "General Answer") {
+            ctx.say(row.responses[langRef.current] || t("agentNotUnderstood")); return;
+          }
+          const mapped = trainingIntent(row);
+          if (mapped) { await run(mapped, ctx); return; }
+        }
+      }
       await run(intent, ctx);
     } finally {
       if (ctx.isCurrent()) { settleIdle(); if (!speakingRef.current) { announcementAudio.setAgentActive(false); resumeSoon(); } }

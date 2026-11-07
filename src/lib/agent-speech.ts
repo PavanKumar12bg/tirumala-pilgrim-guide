@@ -2,7 +2,7 @@ import { selectSpeechVoice } from "./browser-speech";
 
 export type NativeTts = { speak: (options: { text: string; lang: string; rate: number }) => Promise<unknown>; stop: () => Promise<unknown>; isLanguageSupported: (options: { lang: string }) => Promise<{ supported: boolean }> };
 /** Retains utterances, waits briefly for lazy device voices, and reports actual failures. */
-export function createAgentSpeech(deps: { synth?: SpeechSynthesis; utterance: (text: string) => SpeechSynthesisUtterance; native?: NativeTts }) {
+export function createAgentSpeech(deps: { synth?: SpeechSynthesis | undefined; utterance: (text: string) => SpeechSynthesisUtterance; native?: NativeTts | undefined }) {
   let seq = 0;
   let current: SpeechSynthesisUtterance | undefined;
   let timer: ReturnType<typeof setTimeout> | undefined;
