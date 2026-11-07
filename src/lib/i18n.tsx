@@ -7,6 +7,7 @@ import { TRANSPORT_COPY } from "./transport-copy";
 import { VOICE_COPY } from "./voice-copy";
 import { PAGE_DESIGN_COPY } from "./page-design-copy";
 import { AGENT_COPY } from "./agent-copy";
+import { BLOG_COPY } from "./blog-copy";
 
 export const LANGS = [
   { code: "te", label: "తెలుగు", primary: true },
@@ -117,7 +118,7 @@ const en = {
   selectAnother: "Choose another destination",
   website: "Website",
 };
-export type DictKey = keyof typeof en | keyof typeof JOURNEY_COPY.en | keyof typeof UPGRADE_COPY.en | keyof typeof TTD_REPORT_COPY.en | keyof typeof SITE_COPY.en | keyof typeof TRANSPORT_COPY.en | keyof typeof VOICE_COPY.en | keyof typeof PAGE_DESIGN_COPY.en | keyof typeof AGENT_COPY.en;
+export type DictKey = keyof typeof en | keyof typeof JOURNEY_COPY.en | keyof typeof UPGRADE_COPY.en | keyof typeof TTD_REPORT_COPY.en | keyof typeof SITE_COPY.en | keyof typeof TRANSPORT_COPY.en | keyof typeof VOICE_COPY.en | keyof typeof PAGE_DESIGN_COPY.en | keyof typeof AGENT_COPY.en | keyof typeof BLOG_COPY.en;
 type Dict = Record<keyof typeof en, string>;
 
 const te: Dict = {
@@ -697,10 +698,10 @@ const or: Dict = {
 };
 
 export const DICTS = {
-  en: { ...en, ...JOURNEY_COPY.en, ...UPGRADE_COPY.en, ...TTD_REPORT_COPY.en, ...SITE_COPY.en, ...TRANSPORT_COPY.en, ...VOICE_COPY.en, ...PAGE_DESIGN_COPY.en, ...AGENT_COPY.en }, te: { ...te, ...JOURNEY_COPY.te, ...UPGRADE_COPY.te, ...TTD_REPORT_COPY.te, ...SITE_COPY.te, ...TRANSPORT_COPY.te, ...VOICE_COPY.te, ...PAGE_DESIGN_COPY.te, ...AGENT_COPY.te },
-  ta: { ...ta, ...JOURNEY_COPY.ta, ...UPGRADE_COPY.ta, ...TTD_REPORT_COPY.ta, ...SITE_COPY.ta, ...TRANSPORT_COPY.ta, ...VOICE_COPY.ta, ...PAGE_DESIGN_COPY.ta, ...AGENT_COPY.ta }, kn: { ...kn, ...JOURNEY_COPY.kn, ...UPGRADE_COPY.kn, ...TTD_REPORT_COPY.kn, ...SITE_COPY.kn, ...TRANSPORT_COPY.kn, ...VOICE_COPY.kn, ...PAGE_DESIGN_COPY.kn, ...AGENT_COPY.kn },
-  ml: { ...ml, ...JOURNEY_COPY.ml, ...UPGRADE_COPY.ml, ...TTD_REPORT_COPY.ml, ...SITE_COPY.ml, ...TRANSPORT_COPY.ml, ...VOICE_COPY.ml, ...PAGE_DESIGN_COPY.ml, ...AGENT_COPY.ml }, hi: { ...hi, ...JOURNEY_COPY.hi, ...UPGRADE_COPY.hi, ...TTD_REPORT_COPY.hi, ...SITE_COPY.hi, ...TRANSPORT_COPY.hi, ...VOICE_COPY.hi, ...PAGE_DESIGN_COPY.hi, ...AGENT_COPY.hi },
-  or: { ...or, ...JOURNEY_COPY.or, ...UPGRADE_COPY.or, ...TTD_REPORT_COPY.or, ...SITE_COPY.or, ...TRANSPORT_COPY.or, ...VOICE_COPY.or, ...PAGE_DESIGN_COPY.or, ...AGENT_COPY.or },
+  en: { ...en, ...JOURNEY_COPY.en, ...UPGRADE_COPY.en, ...TTD_REPORT_COPY.en, ...SITE_COPY.en, ...TRANSPORT_COPY.en, ...VOICE_COPY.en, ...PAGE_DESIGN_COPY.en, ...AGENT_COPY.en, ...BLOG_COPY.en }, te: { ...te, ...JOURNEY_COPY.te, ...UPGRADE_COPY.te, ...TTD_REPORT_COPY.te, ...SITE_COPY.te, ...TRANSPORT_COPY.te, ...VOICE_COPY.te, ...PAGE_DESIGN_COPY.te, ...AGENT_COPY.te, ...BLOG_COPY.te },
+  ta: { ...ta, ...JOURNEY_COPY.ta, ...UPGRADE_COPY.ta, ...TTD_REPORT_COPY.ta, ...SITE_COPY.ta, ...TRANSPORT_COPY.ta, ...VOICE_COPY.ta, ...PAGE_DESIGN_COPY.ta, ...AGENT_COPY.ta, ...BLOG_COPY.ta }, kn: { ...kn, ...JOURNEY_COPY.kn, ...UPGRADE_COPY.kn, ...TTD_REPORT_COPY.kn, ...SITE_COPY.kn, ...TRANSPORT_COPY.kn, ...VOICE_COPY.kn, ...PAGE_DESIGN_COPY.kn, ...AGENT_COPY.kn, ...BLOG_COPY.kn },
+  ml: { ...ml, ...JOURNEY_COPY.ml, ...UPGRADE_COPY.ml, ...TTD_REPORT_COPY.ml, ...SITE_COPY.ml, ...TRANSPORT_COPY.ml, ...VOICE_COPY.ml, ...PAGE_DESIGN_COPY.ml, ...AGENT_COPY.ml, ...BLOG_COPY.ml }, hi: { ...hi, ...JOURNEY_COPY.hi, ...UPGRADE_COPY.hi, ...TTD_REPORT_COPY.hi, ...SITE_COPY.hi, ...TRANSPORT_COPY.hi, ...VOICE_COPY.hi, ...PAGE_DESIGN_COPY.hi, ...AGENT_COPY.hi, ...BLOG_COPY.hi },
+  or: { ...or, ...JOURNEY_COPY.or, ...UPGRADE_COPY.or, ...TTD_REPORT_COPY.or, ...SITE_COPY.or, ...TRANSPORT_COPY.or, ...VOICE_COPY.or, ...PAGE_DESIGN_COPY.or, ...AGENT_COPY.or, ...BLOG_COPY.or },
 };
 
 /** Pick a localized string from a {lang: text} object with sensible fallbacks. */

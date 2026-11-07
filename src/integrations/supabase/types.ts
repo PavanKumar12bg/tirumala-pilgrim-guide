@@ -38,6 +38,66 @@ export type Database = {
         }
         Relationships: []
       }
+      blogs: {
+        Row: {
+          category: string
+          content: Json
+          created_at: string
+          created_by: string | null
+          excerpt: string
+          featured_image_path: string | null
+          id: string
+          keywords: string[]
+          lang: string
+          published_at: string | null
+          seo_description: string | null
+          seo_title: string | null
+          slug: string
+          status: string
+          tags: string[]
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          category?: string
+          content?: Json
+          created_at?: string
+          created_by?: string | null
+          excerpt?: string
+          featured_image_path?: string | null
+          id?: string
+          keywords?: string[]
+          lang?: string
+          published_at?: string | null
+          seo_description?: string | null
+          seo_title?: string | null
+          slug: string
+          status?: string
+          tags?: string[]
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          content?: Json
+          created_at?: string
+          created_by?: string | null
+          excerpt?: string
+          featured_image_path?: string | null
+          id?: string
+          keywords?: string[]
+          lang?: string
+          published_at?: string | null
+          seo_description?: string | null
+          seo_title?: string | null
+          slug?: string
+          status?: string
+          tags?: string[]
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       knowledge_entries: {
         Row: {
           answer: Json
@@ -85,6 +145,7 @@ export type Database = {
       }
       places: {
         Row: {
+          aliases: string[]
           category: string
           coords_source: string | null
           coords_verified: boolean
@@ -109,6 +170,7 @@ export type Database = {
           visible: boolean
         }
         Insert: {
+          aliases?: string[]
           category?: string
           coords_source?: string | null
           coords_verified?: boolean
@@ -133,6 +195,7 @@ export type Database = {
           visible?: boolean
         }
         Update: {
+          aliases?: string[]
           category?: string
           coords_source?: string | null
           coords_verified?: boolean
@@ -621,6 +684,7 @@ export type Database = {
     }
     Functions: {
       admin_exists: { Args: never; Returns: boolean }
+      blog_image_is_public: { Args: { _path: string }; Returns: boolean }
       claim_first_admin: { Args: never; Returns: boolean }
       has_role: {
         Args: {

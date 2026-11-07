@@ -43,6 +43,8 @@ export type Place = {
   osm_tags: Record<string, string>;
   coords_source: string | null;
   needs_review: boolean;
+  /** Admin-entered spoken/search names (public). */
+  aliases?: string[];
   imageSrc?: string | null;
 };
 

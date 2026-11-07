@@ -6,7 +6,9 @@ import { DICTS, pickLocalized, useI18n, type Lang } from "@/lib/i18n";
 import { announcementsQuery, catKey, placesQuery, type Place } from "@/lib/places";
 import { transportListQuery } from "@/lib/transport";
 import { knowledgeQuery } from "@/lib/knowledge";
+import { blogPlainText, blogQuery, blogsQuery, searchBlogs, type Blog } from "@/lib/blogs";
 import { selectSpeechVoice } from "@/lib/browser-speech";
+import { getPosition } from "@/lib/platform";
 import { formatDistance, type LatLng } from "@/lib/geo";
 import { fill, findFreeFood, findKnowledge, findPlaces, hasCoords, localizedWithFlag, nameScore, nearestPlaces, parseIntent, type AgentIntent } from "@/lib/voice-agent";
 import { createCommandGate, createDispatcher, type CommandCtx } from "@/lib/agent-session";
@@ -66,6 +68,7 @@ export function VoiceAgent() {
   const utterRef = useRef(0);
   const lastReplyRef = useRef("");
   const choicesRef = useRef<Place[]>([]);
+  const blogChoicesRef = useRef<Blog[]>([]);
   const agentNavRef = useRef(false);
   const gateRef = useRef(createCommandGate());
   const dispatchRef = useRef<ReturnType<typeof createDispatcher> | null>(null);
@@ -179,10 +182,7 @@ export function VoiceAgent() {
     else goTo("/map", { search: { place: d.slug, category: d.category, action: d.action } });
   };
 
-  const getFix = () => new Promise<LatLng | null>(resolve => {
-    if (!("geolocation" in navigator)) return resolve(null);
-    navigator.geolocation.getCurrentPosition(p => resolve([p.coords.latitude, p.coords.longitude]), () => resolve(null), { enableHighAccuracy: true, timeout: 12_000, maximumAge: 30_000 });
-  });
+  const getFix = (): Promise<LatLng | null> => getPosition();
 
   const describe = (p: Place, say: Say) => {
     const name = pickLocalized(p.name, langRef.current);
@@ -239,6 +239,23 @@ export function VoiceAgent() {
       case "stopNav": goMap({ action: "stop" }); return say(t("agentDone"));
       case "open": if (pathname !== intent.page) goTo(intent.page); return say(t("agentDone"));
       case "language": setLang(intent.language); setReply(DICTS[intent.language].agentDone); return;
+      case "blogsLatest": case "blogSearch": {
+        const all = await load(blogsQuery(), [] as Blog[]);
+        if (!ctx.isCurrent()) return;
+        const found = (intent.kind === "blogSearch" ? searchBlogs(intent.query, all) : all).slice(0, 4);
+        if (!found.length) { if (pathname !== "/blogs") goTo("/blogs"); return say(t("agentBlogsNone")); }
+        if (found.length === 1) { goTo("/blogs/$slug", { params: { slug: found[0]!.slug } }); return say(fill(t("agentBlogOpening"), { name: found[0]!.title })); }
+        blogChoicesRef.current = found;
+        if (pathname !== "/blogs") goTo("/blogs");
+        return say(fill(t(intent.kind === "blogsLatest" ? "agentBlogsLatest" : "agentBlogsFound"), { list: found.map((b, i) => `${i + 1}. ${b.title}`).join(", ") }));
+      }
+      case "readBlog": {
+        const slug = pathname.startsWith("/blogs/") ? decodeURIComponent(pathname.slice(7)) : "";
+        if (!slug) return run({ kind: "blogsLatest" }, ctx);
+        const b = await load(blogQuery(slug), null as Blog | null);
+        if (!ctx.isCurrent()) return;
+        return say(b ? blogPlainText(b).slice(0, 3500) : t("agentBlogsNone"));
+      }
       case "freeFood": {
         // Only real published listings; never an invented location.
         const found = findFreeFood(list);
@@ -292,6 +309,13 @@ export function VoiceAgent() {
     log("you", clean);
     setState("thinking");
     try {
+      if (blogChoicesRef.current.length) {
+        const options = blogChoicesRef.current;
+        blogChoicesRef.current = [];
+        const n = Number(clean.match(/\d+/)?.[0]);
+        const pick = Number.isInteger(n) ? options[n - 1] : searchBlogs(clean, options)[0];
+        if (pick) { goTo("/blogs/$slug", { params: { slug: pick.slug } }); ctx.say(fill(t("agentBlogOpening"), { name: pick.title })); return; }
+      }
       if (choicesRef.current.length) {
         const options = choicesRef.current;
         choicesRef.current = [];

@@ -18,8 +18,11 @@ import { Route as EmergencyRouteImport } from './routes/emergency'
 import { Route as JourneyRouteImport } from './routes/journey'
 import { Route as MapRouteImport } from './routes/map'
 import { Route as PrivacyRouteImport } from './routes/privacy'
+import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as TermsRouteImport } from './routes/terms'
 import { Route as TtdRouteImport } from './routes/ttd'
+import { Route as BlogsIndexRouteImport } from './routes/blogs.index'
+import { Route as BlogsSlugRouteImport } from './routes/blogs.$slug'
 import { Route as TransportIndexRouteImport } from './routes/transport.index'
 import { Route as TransportSlugRouteImport } from './routes/transport.$slug'
 import { Route as TransportSlugStopStopIdRouteImport } from './routes/transport.$slug_.stop.$stopId'
@@ -69,6 +72,11 @@ const PrivacyRoute = PrivacyRouteImport.update({
   path: '/privacy',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
+  id: '/sitemap.xml',
+  path: '/sitemap.xml',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const TermsRoute = TermsRouteImport.update({
   id: '/terms',
   path: '/terms',
@@ -77,6 +85,16 @@ const TermsRoute = TermsRouteImport.update({
 const TtdRoute = TtdRouteImport.update({
   id: '/ttd',
   path: '/ttd',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BlogsIndexRoute = BlogsIndexRouteImport.update({
+  id: '/blogs/',
+  path: '/blogs/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BlogsSlugRoute = BlogsSlugRouteImport.update({
+  id: '/blogs/$slug',
+  path: '/blogs/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
 const TransportIndexRoute = TransportIndexRouteImport.update({
@@ -105,9 +123,12 @@ export interface FileRoutesByFullPath {
   '/journey': typeof JourneyRoute
   '/map': typeof MapRoute
   '/privacy': typeof PrivacyRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/terms': typeof TermsRoute
   '/ttd': typeof TtdRoute
+  '/blogs/$slug': typeof BlogsSlugRoute
   '/transport/$slug': typeof TransportSlugRoute
+  '/blogs/': typeof BlogsIndexRoute
   '/transport/': typeof TransportIndexRoute
   '/transport/$slug/stop/$stopId': typeof TransportSlugStopStopIdRoute
 }
@@ -121,9 +142,12 @@ export interface FileRoutesByTo {
   '/journey': typeof JourneyRoute
   '/map': typeof MapRoute
   '/privacy': typeof PrivacyRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/terms': typeof TermsRoute
   '/ttd': typeof TtdRoute
+  '/blogs/$slug': typeof BlogsSlugRoute
   '/transport/$slug': typeof TransportSlugRoute
+  '/blogs': typeof BlogsIndexRoute
   '/transport': typeof TransportIndexRoute
   '/transport/$slug/stop/$stopId': typeof TransportSlugStopStopIdRoute
 }
@@ -138,9 +162,12 @@ export interface FileRoutesById {
   '/journey': typeof JourneyRoute
   '/map': typeof MapRoute
   '/privacy': typeof PrivacyRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/terms': typeof TermsRoute
   '/ttd': typeof TtdRoute
+  '/blogs/$slug': typeof BlogsSlugRoute
   '/transport/$slug': typeof TransportSlugRoute
+  '/blogs/': typeof BlogsIndexRoute
   '/transport/': typeof TransportIndexRoute
   '/transport/$slug_/stop/$stopId': typeof TransportSlugStopStopIdRoute
 }
@@ -156,9 +183,12 @@ export interface FileRouteTypes {
     | '/journey'
     | '/map'
     | '/privacy'
+    | '/sitemap.xml'
     | '/terms'
     | '/ttd'
+    | '/blogs/$slug'
     | '/transport/$slug'
+    | '/blogs/'
     | '/transport/'
     | '/transport/$slug/stop/$stopId'
   fileRoutesByTo: FileRoutesByTo
@@ -172,9 +202,12 @@ export interface FileRouteTypes {
     | '/journey'
     | '/map'
     | '/privacy'
+    | '/sitemap.xml'
     | '/terms'
     | '/ttd'
+    | '/blogs/$slug'
     | '/transport/$slug'
+    | '/blogs'
     | '/transport'
     | '/transport/$slug/stop/$stopId'
   id:
@@ -188,9 +221,12 @@ export interface FileRouteTypes {
     | '/journey'
     | '/map'
     | '/privacy'
+    | '/sitemap.xml'
     | '/terms'
     | '/ttd'
+    | '/blogs/$slug'
     | '/transport/$slug'
+    | '/blogs/'
     | '/transport/'
     | '/transport/$slug_/stop/$stopId'
   fileRoutesById: FileRoutesById
@@ -205,9 +241,12 @@ export interface RootRouteChildren {
   JourneyRoute: typeof JourneyRoute
   MapRoute: typeof MapRoute
   PrivacyRoute: typeof PrivacyRoute
+  SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   TermsRoute: typeof TermsRoute
   TtdRoute: typeof TtdRoute
+  BlogsSlugRoute: typeof BlogsSlugRoute
   TransportSlugRoute: typeof TransportSlugRoute
+  BlogsIndexRoute: typeof BlogsIndexRoute
   TransportIndexRoute: typeof TransportIndexRoute
   TransportSlugStopStopIdRoute: typeof TransportSlugStopStopIdRoute
 }
@@ -277,6 +316,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PrivacyRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/sitemap.xml': {
+      id: '/sitemap.xml'
+      path: '/sitemap.xml'
+      fullPath: '/sitemap.xml'
+      preLoaderRoute: typeof SitemapDotxmlRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/terms': {
       id: '/terms'
       path: '/terms'
@@ -289,6 +335,20 @@ declare module '@tanstack/react-router' {
       path: '/ttd'
       fullPath: '/ttd'
       preLoaderRoute: typeof TtdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/blogs/': {
+      id: '/blogs/'
+      path: '/blogs'
+      fullPath: '/blogs/'
+      preLoaderRoute: typeof BlogsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/blogs/$slug': {
+      id: '/blogs/$slug'
+      path: '/blogs/$slug'
+      fullPath: '/blogs/$slug'
+      preLoaderRoute: typeof BlogsSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/transport/': {
@@ -325,9 +385,12 @@ const rootRouteChildren: RootRouteChildren = {
   JourneyRoute: JourneyRoute,
   MapRoute: MapRoute,
   PrivacyRoute: PrivacyRoute,
+  SitemapDotxmlRoute: SitemapDotxmlRoute,
   TermsRoute: TermsRoute,
   TtdRoute: TtdRoute,
+  BlogsSlugRoute: BlogsSlugRoute,
   TransportSlugRoute: TransportSlugRoute,
+  BlogsIndexRoute: BlogsIndexRoute,
   TransportIndexRoute: TransportIndexRoute,
   TransportSlugStopStopIdRoute: TransportSlugStopStopIdRoute,
 }

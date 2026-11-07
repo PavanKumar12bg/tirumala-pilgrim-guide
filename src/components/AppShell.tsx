@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { Home, Map as MapIcon, CalendarDays, Bus } from "lucide-react";
+import { Home, Map as MapIcon, CalendarDays, Bus, BookOpen } from "lucide-react";
 import { useEffect, useRef, type ReactNode } from "react";
 import { useI18n } from "@/lib/i18n";
 import { LanguageSwitcher } from "./LanguageSwitcher";
@@ -20,6 +20,7 @@ export function TopBar() {
         <div className="flex items-center gap-3">
           <Link to="/transport" className="hidden min-h-11 items-center gap-2 text-sm md:flex"><Bus className="size-4" />{t("transportTitle")}</Link>
           <Link to="/journey" className="hidden min-h-11 items-center gap-2 text-sm md:flex"><CalendarDays className="size-4" />{t("journey")}</Link>
+          <Link to="/blogs" className="hidden min-h-11 items-center gap-2 text-sm md:flex"><BookOpen className="size-4" />{t("blogs")}</Link>
           <LanguageSwitcher />
         </div>
       </div>
@@ -59,6 +60,10 @@ export function BottomNav() {
         <Link to="/journey" className={item} activeProps={{ className: "border-primary text-primary" }}>
           <CalendarDays className="size-5" aria-hidden />
           {t("journey")}
+        </Link>
+        <Link to="/blogs" className={item} activeProps={{ className: "border-primary text-primary" }}>
+          <BookOpen className="size-5" aria-hidden />
+          {t("blogs")}
         </Link>
       </div>
     </nav>
