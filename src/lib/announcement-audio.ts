@@ -134,6 +134,7 @@ export function createAnnouncementAudio(deps: {
       }
       stop();
       clip = next;
+      resumePosition = 0;
       emit({ blocked: false, failed: false });
       if (!audio) return;
       if (!next) { audio.removeAttribute("src"); return; }

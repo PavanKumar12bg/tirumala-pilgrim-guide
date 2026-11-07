@@ -242,7 +242,7 @@ export function VoiceAgent() {
       case "nearbyAll": goMap({ action: "nearby" }); return say(t("agentDone"));
       case "stopNav": goMap({ action: "stop" }); return say(t("agentDone"));
       case "open": if (pathname !== intent.page) goTo(intent.page); return say(t("agentDone"));
-      case "language": setLang(intent.language); langRef.current = intent.language; say(DICTS[intent.language].agentDone); return;
+      case "language": setLang(intent.language); langRef.current = intent.language; pendingLanguageRef.current = intent.language; return;
       case "blogsLatest": case "blogSearch": {
         const all = await load(blogsQuery(), [] as Blog[]);
         if (!ctx.isCurrent()) return;
@@ -361,6 +361,7 @@ export function VoiceAgent() {
   };
   dispatchRef.current ??= createDispatcher({ gate: gateRef.current, cancelSpeech: () => { announcementAudio.setAgentActive(true); cancelSpeech(); }, speak: text => speakRef.current(text), handle: ctx => handleRef.current(ctx), onError: ctx => ctx.say(t("agentNotUnderstood")) });
   const speakRef = useRef(speak); speakRef.current = speak;
+  const pendingLanguageRef = useRef<Lang | null>(null);
   const handleRef = useRef(handle); handleRef.current = handle;
 
   const enable = () => {
@@ -431,6 +432,7 @@ export function VoiceAgent() {
     gateRef.current.invalidate();
     cancelSpeech();
     announcementAudio.setAgentActive(false);
+    if (pendingLanguageRef.current === lang) { pendingLanguageRef.current = null; speakRef.current(DICTS[lang].agentDone); return; }
     if (recRef.current) { stopRec(); startRec(); }
     else { settleIdle(); resumeSoon(); }
   }, [lang]); // eslint-disable-line react-hooks/exhaustive-deps
