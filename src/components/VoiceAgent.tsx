@@ -7,8 +7,9 @@ import { announcementsQuery, catKey, placesQuery, type Place } from "@/lib/place
 import { transportListQuery } from "@/lib/transport";
 import { knowledgeQuery } from "@/lib/knowledge";
 import { blogPlainText, blogQuery, blogsQuery, searchBlogs, type Blog } from "@/lib/blogs";
-import { selectSpeechVoice } from "@/lib/browser-speech";
-import { getPosition } from "@/lib/platform";
+import { createAgentSpeech } from "@/lib/agent-speech";
+import { announcementAudio } from "@/lib/announcement-audio";
+import { getPosition, nativeTextToSpeech } from "@/lib/platform";
 import { formatDistance, type LatLng } from "@/lib/geo";
 import { fill, findFreeFood, findKnowledge, findPlaces, hasCoords, localizedWithFlag, nameScore, nearestPlaces, parseIntent, type AgentIntent } from "@/lib/voice-agent";
 import { createCommandGate, createDispatcher, type CommandCtx } from "@/lib/agent-session";
@@ -66,6 +67,7 @@ export function VoiceAgent() {
   const speakingRef = useRef(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const utterRef = useRef(0);
+  const speechRef = useRef<ReturnType<typeof createAgentSpeech> | null>(null);
   const lastReplyRef = useRef("");
   const choicesRef = useRef<Place[]>([]);
   const blogChoicesRef = useRef<Blog[]>([]);
@@ -139,8 +141,8 @@ export function VoiceAgent() {
     utterRef.current++;
     const was = speakingRef.current;
     speakingRef.current = false;
-    try { window.speechSynthesis?.cancel(); } catch { /* ignore */ }
-    if (was) { gateRef.current.speechEnded(); window.dispatchEvent(new CustomEvent("tg-agent-speaking", { detail: false })); }
+    try { speechRef.current?.stop(); } catch { /* ignore */ }
+    if (was) gateRef.current.speechEnded();
   };
 
   const speak = useCallback((text: string) => {
@@ -149,30 +151,26 @@ export function VoiceAgent() {
     setReply(text);
     if (text) { lastReplyRef.current = text; log("agent", text); }
     setNote("");
-    const synth = typeof window !== "undefined" ? window.speechSynthesis : undefined;
     const done = () => {
       if (my !== utterRef.current) return; // Superseded by a newer reply or command.
       speakingRef.current = false;
       gateRef.current.speechEnded();
-      window.dispatchEvent(new CustomEvent("tg-agent-speaking", { detail: false }));
+      announcementAudio.setAgentActive(false);
       settleIdle();
       resumeSoon();
     };
-    if (!text || prefsRef.current.muted || !synth || typeof SpeechSynthesisUtterance !== "function") return done();
-    const voice = selectSpeechVoice(synth.getVoices(), langRef.current);
-    if (!voice) { setNote(t("agentNoVoice")); return done(); }
+    if (!text || prefsRef.current.muted) return done();
     stopRec(); // Never listen to our own voice.
     speakingRef.current = true;
     gateRef.current.speechStarted(text);
     setState("speaking");
-    window.dispatchEvent(new CustomEvent("tg-agent-speaking", { detail: true }));
-    const u = new SpeechSynthesisUtterance(text);
-    u.voice = voice; u.lang = voice.lang; u.rate = prefsRef.current.rate ?? 1;
-    let finished = false;
-    const finish = () => { if (finished) return; finished = true; clearTimeout(guard); done(); };
-    u.onend = finish; u.onerror = finish;
-    const guard = setTimeout(finish, Math.max(10_000, text.length * 150));
-    try { synth.resume(); synth.speak(u); } catch { finish(); }
+    announcementAudio.setAgentActive(true);
+    speechRef.current ??= createAgentSpeech({ synth: window.speechSynthesis, utterance: value => new SpeechSynthesisUtterance(value), native: nativeTextToSpeech() });
+    speechRef.current.speak(text, langRef.current, prefsRef.current.rate ?? 1, result => {
+      if (my !== utterRef.current) return;
+      if (result !== "done") setNote(t("agentNoVoice"));
+      done();
+    });
   }, [t, startRec]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const goTo = (to: string, opts: Record<string, unknown> = {}) => { agentNavRef.current = true; void navigate({ to, ...opts } as Parameters<typeof navigate>[0]); };
@@ -238,7 +236,7 @@ export function VoiceAgent() {
       case "nearbyAll": goMap({ action: "nearby" }); return say(t("agentDone"));
       case "stopNav": goMap({ action: "stop" }); return say(t("agentDone"));
       case "open": if (pathname !== intent.page) goTo(intent.page); return say(t("agentDone"));
-      case "language": setLang(intent.language); setReply(DICTS[intent.language].agentDone); return;
+      case "language": setLang(intent.language); langRef.current = intent.language; say(DICTS[intent.language].agentDone); return;
       case "blogsLatest": case "blogSearch": {
         const all = await load(blogsQuery(), [] as Blog[]);
         if (!ctx.isCurrent()) return;
@@ -327,10 +325,10 @@ export function VoiceAgent() {
       if (!intent) return;
       await run(intent, ctx);
     } finally {
-      if (ctx.isCurrent()) { settleIdle(); if (!speakingRef.current) resumeSoon(); }
+      if (ctx.isCurrent()) { settleIdle(); if (!speakingRef.current) { announcementAudio.setAgentActive(false); resumeSoon(); } }
     }
   };
-  dispatchRef.current ??= createDispatcher({ gate: gateRef.current, cancelSpeech: () => cancelSpeech(), speak: text => speakRef.current(text), handle: ctx => handleRef.current(ctx), onError: ctx => ctx.say(t("agentNotUnderstood")) });
+  dispatchRef.current ??= createDispatcher({ gate: gateRef.current, cancelSpeech: () => { announcementAudio.setAgentActive(true); cancelSpeech(); }, speak: text => speakRef.current(text), handle: ctx => handleRef.current(ctx), onError: ctx => ctx.say(t("agentNotUnderstood")) });
   const speakRef = useRef(speak); speakRef.current = speak;
   const handleRef = useRef(handle); handleRef.current = handle;
 
@@ -344,9 +342,9 @@ export function VoiceAgent() {
     speak(t("agentWelcome"));
     if (!speakingRef.current) startRec();
   };
-  const pause = () => { pausedRef.current = true; gateRef.current.invalidate(); stopRec(); cancelSpeech(); setState("paused"); };
+  const pause = () => { pausedRef.current = true; gateRef.current.invalidate(); stopRec(); cancelSpeech(); announcementAudio.setAgentActive(false); setState("paused"); };
   const resume = () => { if (!prefsRef.current.enabled || stateRef.current === "errors") return enable(); pausedRef.current = false; errorsRef.current = 0; setState("listening"); startRec(); };
-  const stopTalking = () => { gateRef.current.invalidate(); cancelSpeech(); settleIdle(); resumeSoon(); };
+  const stopTalking = () => { gateRef.current.invalidate(); cancelSpeech(); announcementAudio.setAgentActive(false); settleIdle(); resumeSoon(); };
 
   // Initial load: restore preferences; auto-start only when the microphone is already granted. Never auto-open the panel.
   useEffect(() => {
@@ -371,14 +369,14 @@ export function VoiceAgent() {
       }).catch(() => { /* permission API unsupported: wait for Enable */ });
     }
     // Hidden page: stop everything; visible again: listen only — never replay a previous reply.
-    const onVisibility = () => { if (document.visibilityState === "hidden") { gateRef.current.invalidate(); stopRec(); cancelSpeech(); } else startRec(); };
+    const onVisibility = () => { if (document.visibilityState === "hidden") { gateRef.current.invalidate(); stopRec(); cancelSpeech(); announcementAudio.setAgentActive(false); } else startRec(); };
     const onOpen = () => { setOpen(true); if (stateRef.current === "off") enable(); };
     const onKey = (e: KeyboardEvent) => { if (e.altKey && e.key.toLowerCase() === "v") { e.preventDefault(); if (pausedRef.current || stateRef.current === "off" || stateRef.current === "errors") resume(); else pause(); } };
     document.addEventListener("visibilitychange", onVisibility);
     window.addEventListener("tg-agent-open", onOpen);
     window.addEventListener("keydown", onKey);
     return () => {
-      stopRec(); cancelSpeech();
+      stopRec(); cancelSpeech(); announcementAudio.setAgentActive(false);
       status?.removeEventListener("change", onChange);
       document.removeEventListener("visibilitychange", onVisibility);
       window.removeEventListener("tg-agent-open", onOpen);
@@ -392,6 +390,7 @@ export function VoiceAgent() {
     if (stateRef.current === "init") return;
     gateRef.current.invalidate();
     choicesRef.current = [];
+    announcementAudio.setAgentActive(false);
     if (speakingRef.current) { cancelSpeech(); settleIdle(); resumeSoon(); }
   }, [pathname]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -400,6 +399,7 @@ export function VoiceAgent() {
     if (stateRef.current === "init") return;
     gateRef.current.invalidate();
     cancelSpeech();
+    announcementAudio.setAgentActive(false);
     if (recRef.current) { stopRec(); startRec(); }
     else { settleIdle(); resumeSoon(); }
   }, [lang]); // eslint-disable-line react-hooks/exhaustive-deps
