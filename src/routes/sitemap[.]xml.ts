@@ -10,8 +10,8 @@ export const Route = createFileRoute("/sitemap.xml")({
     handlers: {
       GET: async ({ request }) => {
         const origin = new URL(request.url).origin;
-        const url = process.env["SUPABASE_URL"] ?? import.meta.env.VITE_SUPABASE_URL;
-        const key = process.env["SUPABASE_PUBLISHABLE_KEY"] ?? import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+        const url = process.env["SUPABASE_URL"] ?? import.meta.env["VITE_SUPABASE_URL"];
+        const key = process.env["SUPABASE_PUBLISHABLE_KEY"] ?? import.meta.env["VITE_SUPABASE_PUBLISHABLE_KEY"];
         let blogs: { slug: string; updated_at: string }[] = [];
         if (url && key) {
           const client = createClient(url, key, {

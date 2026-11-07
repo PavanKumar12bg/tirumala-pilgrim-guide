@@ -4,7 +4,8 @@
  * Capacitor bridge on `window`). No Capacitor package is imported, so the web build is unaffected.
  */
 type Listener = { remove: () => Promise<void> | void };
-type Plugin = Record<string, ((...args: unknown[]) => Promise<unknown>) | undefined> & {
+type Fn = (...args: unknown[]) => Promise<unknown>;
+type Plugin = { getCurrentPosition?: Fn; exitApp?: Fn; setBackgroundColor?: Fn; setStyle?: Fn; hide?: Fn;
   addListener?: (event: string, cb: (e: unknown) => void) => Promise<Listener> | Listener;
 };
 type Bridge = { isNativePlatform?: () => boolean; getPlatform?: () => string; Plugins?: Record<string, Plugin | undefined> };

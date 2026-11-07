@@ -68,11 +68,11 @@ function BlogForm({ blog, onDone }: { blog: Blog | null; onDone: () => void }) {
   const refresh = () => qc.invalidateQueries({ queryKey: ["blogs"] });
 
   const pick = async (file: File) => {
-    if (!BLOG_IMAGE_TYPES.includes(file.type)) return toast.error("Choose a JPG, PNG, WebP or AVIF image");
-    if (file.size > BLOG_IMAGE_MAX_BYTES * 4) return toast.error("Image is larger than 20 MB");
+    if (!BLOG_IMAGE_TYPES.includes(file.type)) { toast.error("Choose a JPG, PNG, WebP or AVIF image"); return; }
+    if (file.size > BLOG_IMAGE_MAX_BYTES * 4) { toast.error("Image is larger than 20 MB"); return; }
     try {
       const out = await compressToWebp(file, 1600);
-      if (out.blob.size > BLOG_IMAGE_MAX_BYTES) return toast.error("Image is still over 5 MB after compression");
+      if (out.blob.size > BLOG_IMAGE_MAX_BYTES) { toast.error("Image is still over 5 MB after compression"); return; }
       if (image) URL.revokeObjectURL(image.url);
       setImage({ blob: out.blob, url: URL.createObjectURL(out.blob) });
     } catch { toast.error("Could not read this image"); }
@@ -80,9 +80,9 @@ function BlogForm({ blog, onDone }: { blog: Blog | null; onDone: () => void }) {
 
   const save = async (status: "draft" | "published") => {
     const s = slug.trim();
-    if (!title.trim()) return toast.error("Enter a title");
-    if (!isValidSlug(s)) return toast.error("Slug: lowercase letters, numbers and single hyphens only");
-    if (status === "published" && (!excerpt.trim() || (!image && !blog?.featured_image_path))) return toast.error("Publishing needs a short description and a featured image");
+    if (!title.trim()) { toast.error("Enter a title"); return; }
+    if (!isValidSlug(s)) { toast.error("Slug: lowercase letters, numbers and single hyphens only"); return; }
+    if (status === "published" && (!excerpt.trim() || (!image && !blog?.featured_image_path))) { toast.error("Publishing needs a short description and a featured image"); return; }
     setBusy(true);
     try {
       const row = {
@@ -124,7 +124,7 @@ function BlogForm({ blog, onDone }: { blog: Blog | null; onDone: () => void }) {
       if (data?.length) await supabase.storage.from(BLOG_BUCKET).remove(data.map(f => `${blog.id}/${f.name}`));
     }
     setBusy(false);
-    if (error) return toast.error(error.message);
+    if (error) { toast.error(error.message); return; }
     toast.success("Deleted");
     await refresh();
     onDone();
