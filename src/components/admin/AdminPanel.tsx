@@ -21,6 +21,7 @@ import { StatusHistory } from "./StatusHistory";
 import { TransportAdmin } from "./TransportAdmin";
 import { VoiceAnnouncementAdmin } from "./VoiceAnnouncementAdmin";
 import { KnowledgeAdmin } from "./KnowledgeAdmin";
+import { BlogsAdmin } from "./BlogsAdmin";
 
 const selectCls = "h-11 w-full rounded-md border border-input bg-card px-3 text-base";
 
@@ -39,6 +40,7 @@ export function AdminPanel() {
         <TabsTrigger value="review" className="min-h-10">{t("reviewTab")}</TabsTrigger>
         <TabsTrigger value="transport" className="min-h-10">{t("transportTitle")}</TabsTrigger>
         <TabsTrigger value="knowledge" className="min-h-10">Voice Q&amp;A</TabsTrigger>
+        <TabsTrigger value="blogs" className="min-h-10">Blogs</TabsTrigger>
       </TabsList>
       <TabsContent value="overview" className="mt-6">
         <h1 className="text-2xl">{t("admin")} · {t("appName")}</h1>
@@ -61,6 +63,7 @@ export function AdminPanel() {
       <TabsContent value="review" className="mt-4"><PlacesEditor mode="review" /></TabsContent>
       <TabsContent value="transport" className="mt-4"><TransportAdmin /></TabsContent>
       <TabsContent value="knowledge" className="mt-4"><KnowledgeAdmin /></TabsContent>
+      <TabsContent value="blogs" className="mt-4"><BlogsAdmin /></TabsContent>
     </Tabs>
   );
 }
@@ -341,6 +344,7 @@ function PlaceForm({ place, onDone, initialPhoto }: { place: Place | null; onDon
   const [review, setReview] = useState(place?.needs_review ?? false);
   const [pending, setPending] = useState<PreparedPhoto | null>(place ? initialPhoto ?? null : null);
   const [sort, setSort] = useState(String(place?.sort_order ?? 100));
+  const [aliases, setAliases] = useState((place?.aliases ?? []).join(", "));
   const [busy, setBusy] = useState(false);
   const [imgBusy, setImgBusy] = useState(false);
   const [imageSrc, setImageSrc] = useState(place?.imageSrc ?? null);
@@ -355,7 +359,7 @@ function PlaceForm({ place, onDone, initialPhoto }: { place: Place | null; onDon
     if (verified && latN == null) { toast.error("Cannot mark as verified without coordinates"); return; }
     if (latN != null && lngN != null && (!Number.isFinite(latN) || !Number.isFinite(lngN) || !isInsideTirumala(latN, lngN))) { toast.error("Coordinates must be numbers inside the Tirumala map area (latitude ≈ 13.6–13.75, longitude ≈ 79.31–79.47)"); return; }
     setBusy(true);
-    const row = { name, description: desc, category, lat: latN, lng: lngN, coords_verified: verified && latN != null, coords_source: latN == null ? null : latN === place?.lat && lngN === place?.lng ? place?.coords_source ?? "admin" : "admin", needs_review: review, visible, featured, sort_order: Number(sort) || 100 };
+    const row = { name, description: desc, category, lat: latN, lng: lngN, coords_verified: verified && latN != null, coords_source: latN == null ? null : latN === place?.lat && lngN === place?.lng ? place?.coords_source ?? "admin" : "admin", needs_review: review, visible, featured, sort_order: Number(sort) || 100, aliases: aliases.split(",").map(s => s.trim()).filter(Boolean).slice(0, 30) };
     const { error } = place
       ? await supabase.from("places").update(row).eq("id", place.id)
       : await supabase.from("places").insert({ ...row, slug: slugify(name.en || name.te || "") + "-" + Math.random().toString(36).slice(2, 6) });
@@ -494,6 +498,11 @@ function PlaceForm({ place, onDone, initialPhoto }: { place: Place | null; onDon
         <span>Featured</span>
         <Switch checked={featured} onCheckedChange={setFeatured} />
       </label>
+      <div className="space-y-1.5">
+        <Label htmlFor="aliases">Voice search names (comma separated)</Label>
+        <Input id="aliases" value={aliases} onChange={(e) => setAliases(e.target.value)} placeholder="అన్నసత్రం, annadanam, free food" className="h-11 text-base" />
+        <p className="text-xs text-muted-foreground">Other names visitors may say for this place. Public; used only to find it.</p>
+      </div>
       <div className="space-y-1.5">
         <Label htmlFor="sort">Sort order (lower first)</Label>
         <Input id="sort" type="number" value={sort} onChange={(e) => setSort(e.target.value)} className="h-11 text-base" />
