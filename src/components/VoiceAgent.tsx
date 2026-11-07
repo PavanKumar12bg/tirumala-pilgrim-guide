@@ -139,6 +139,7 @@ export function VoiceAgent() {
   const stopSpeaking = () => { window.speechSynthesis?.cancel(); };
 
   const goMap = (d: { slug?: string; category?: string; action?: string }) => {
+    if (window.innerWidth < 640) setOpen(false); // Reveal the map card on phones; the reply is still spoken.
     if (pathname === "/map") window.dispatchEvent(new CustomEvent("tg-agent-map", { detail: d }));
     else void navigate({ to: "/map", search: { place: d.slug, category: d.category, action: d.action } });
   };
@@ -352,7 +353,7 @@ export function VoiceAgent() {
             {reply ? <p aria-live="polite" className="rounded-md border-l-2 border-gold p-2 leading-relaxed">{reply}</p> : null}
             {note ? <p role="note" className="text-xs text-muted-foreground">{note}</p> : null}
             <div className="flex flex-wrap gap-2">
-              {supported && state !== "denied" ? (
+              {supported && state !== "denied" && state !== "off" ? (
                 isPaused ? <Button variant="secondary" className="min-h-11" onClick={resume} aria-keyshortcuts="Alt+V"><Play className="size-4" />{t("agentResume")}</Button>
                   : <Button variant="secondary" className="min-h-11" onClick={pause} aria-keyshortcuts="Alt+V"><Pause className="size-4" />{t("agentPause")}</Button>
               ) : null}
