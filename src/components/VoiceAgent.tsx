@@ -389,7 +389,7 @@ export function VoiceAgent() {
   const showEnable = (state === "off" || state === "errors") && supported;
 
   return (
-    <div data-voice-agent className="fixed left-3 z-[1250] print:hidden" style={{ bottom: "calc(var(--bottom-nav-height, 0px) + 0.75rem + env(safe-area-inset-bottom, 0px) * 0)" }}>
+    <div data-voice-agent className="fixed left-3 z-[1250] print:hidden" style={{ bottom: "calc(var(--bottom-nav-height, 0px) + 0.75rem)" }}>
       {open ? (
         <section role="dialog" aria-modal="false" aria-label={t("agentName")} className="absolute bottom-14 left-0 flex max-h-[34svh] w-[min(19rem,calc(100vw-1.5rem))] flex-col overflow-hidden rounded-xl bg-card text-sm text-card-foreground shadow-lift ring-1 ring-gold/50">
           <div className="flex items-center justify-between gap-2 border-b border-border px-3 py-1.5">
