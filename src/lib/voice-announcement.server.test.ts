@@ -3,9 +3,10 @@ const mocks = vi.hoisted(() => ({ speech: vi.fn(), response: vi.fn() }));
 vi.mock("@lovable.dev/ai-gateway", () => ({ generateSpeech: mocks.speech, generateResponse: mocks.response }));
 import { speak } from "./voice-announcement.server";
 import { VOICE_LANGS } from "./voice-announcement";
+import { testWav } from "./announcement-audio-fixture";
 beforeEach(() => vi.clearAllMocks());
 it.each(VOICE_LANGS)("accepts verified speech bytes for %s with the existing Google model", async (lang) => {
-  mocks.speech.mockResolvedValue({ contentType: "audio/wav", blob: async () => ({ size: 2048, arrayBuffer: async () => new ArrayBuffer(2048) }) });
+  mocks.speech.mockResolvedValue({ contentType: "audio/wav", blob: async () => ({ size: 2048, arrayBuffer: async () => testWav() }) });
   expect((await speak("Test announcement", lang)).bytes.byteLength).toBe(2048);
   expect(mocks.speech.mock.calls[0]?.[0]?.model).toBe("google/gemini-3.1-flash-tts-preview");
 });
@@ -17,4 +18,8 @@ it("propagates provider denial without switching models", async () => {
   mocks.speech.mockRejectedValue(new Error("Provider access denied"));
   await expect(speak("Test", "or")).rejects.toThrow("Provider access denied");
   expect(mocks.speech).toHaveBeenCalledTimes(1);
+});
+it("rejects fake audio bytes despite a valid MIME and size", async () => {
+  mocks.speech.mockResolvedValue({ contentType: "audio/wav", blob: async () => ({ size: 2048, arrayBuffer: async () => new ArrayBuffer(2048) }) });
+  await expect(speak("Test", "te")).rejects.toThrow("Invalid WAV audio");
 });
