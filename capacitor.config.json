@@ -1,0 +1,25 @@
+{
+  "appId": "org.tirumalaguide.app",
+  "appName": "Tirumala Guide",
+  "webDir": "dist/client",
+  "server": {
+    "androidScheme": "https"
+  },
+  "android": {
+    "allowMixedContent": false,
+    "backgroundColor": "#641E26"
+  },
+  "plugins": {
+    "SplashScreen": {
+      "launchShowDuration": 1500,
+      "launchAutoHide": true,
+      "backgroundColor": "#641E26",
+      "showSpinner": false
+    },
+    "StatusBar": {
+      "backgroundColor": "#641E26",
+      "style": "DARK",
+      "overlaysWebView": false
+    }
+  }
+}

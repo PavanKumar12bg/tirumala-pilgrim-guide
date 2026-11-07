@@ -15,6 +15,7 @@ import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { I18nProvider } from "../lib/i18n";
 import { Toaster } from "@/components/ui/sonner";
+import { initNativeShell } from "@/lib/platform";
 
 function NotFoundComponent() {
   return (
@@ -125,6 +126,13 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  const router = useRouter();
+  useEffect(() => initNativeShell({
+    statusBarColor: "#641E26",
+    // Android back: go back in app history; at Home let the app close.
+    onBack: () => { if (router.state.location.pathname === "/" || window.history.length <= 1) return false; router.history.back(); return true; },
+    onResume: () => void queryClient.invalidateQueries(),
+  }), [router, queryClient]);
 
   return (
     <QueryClientProvider client={queryClient}>
