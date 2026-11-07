@@ -17,12 +17,12 @@ export type AgentIntent =
 
 const rx = (s: string) => new RegExp(s, "iu");
 const CONTROL: [AgentIntent, RegExp][] = [
-  [{ kind: "stopSpeaking" }, rx("^(stop|quiet|silence|be quiet)$|stop speaking|stop talking|మాట్లాడటం ఆపు|ఆపు$|నిశ్శబ్ద|பேசுவதை நிறுத்து|நிறுத்து$|ಮಾತು ನಿಲ್ಲಿಸ|ನಿಲ್ಲಿಸು$|സംസാരം നിർത്ത|നിർത്തൂ?$|बोलना बंद|चुप|बंद करो$|କହିବା ବନ୍ଦ|ଚୁପ୍")],
   [{ kind: "stopNav" }, rx("stop\\s*(navigation|route)|నావిగేషన్.*(ఆపు|నిలిపి)|வழிகாட்ட.*நிறுத்த|ನ್ಯಾವಿಗೇಷನ್.*ನಿಲ್ಲಿ|നാവിഗേഷൻ.*നിർത്ത|नेविगेशन.*(रोको|बंद)|ନେଭିଗେସନ୍.*ବନ୍ଦ")],
+  [{ kind: "pause" }, rx("stop listening|pause|వినడం ఆపు|కేట్పதை நிறுத்து|கேட்பதை நிறுத்து|ಕೇಳುವುದನ್ನು ನಿಲ್ಲಿಸ|കേൾക്കൽ നിർത്ത|सुनना (बंद|रोको)|ଶୁଣିବା ବନ୍ଦ")],
+  [{ kind: "stopSpeaking" }, rx("^(stop|quiet|silence|be quiet)$|stop speaking|stop talking|మాట్లాడటం ఆపు|ఆపు$|నిశ్శబ్ద|பேசுவதை நிறுத்து|நிறுத்து$|ಮಾತು ನಿಲ್ಲಿಸ|ನಿಲ್ಲಿಸು$|സംസാരം നിർത്ത|നിർത്തൂ?$|बोलना बंद|चुप|बंद करो$|କହିବା ବନ୍ଦ|ଚୁପ୍")],
   [{ kind: "repeat" }, rx("repeat|say (that|it) again|once more|మళ్ళీ చెప్పు|మళ్లీ చెప్పు|மீண்டும் சொல்|ಮತ್ತೆ ಹೇಳ|വീണ്ടും പറയ|फिर से (बोलो|कहो)|दोहराओ|दोहराएँ|ପୁଣି କୁହ")],
   [{ kind: "slower" }, rx("slow(er)?|speak slowly|నెమ్మదిగా|మెల్లగా|மெதுவாக|ನಿಧಾನ|പതുക്കെ|धीरे|धीमा|ଧୀରେ")],
   [{ kind: "faster" }, rx("fast(er)?|speak quickly|వేగంగా|வேகமாக|ವೇಗವಾಗಿ|വേഗത്തിൽ|तेज़|तेज|ଶୀଘ୍ର")],
-  [{ kind: "pause" }, rx("stop listening|pause|వినడం ఆపు|కేట్పதை நிறுத்து|கேட்பதை நிறுத்து|ಕೇಳುವುದನ್ನು ನಿಲ್ಲಿಸ|കേൾക്കൽ നിർത്ത|सुनना (बंद|रोको)|ଶୁଣିବା ବନ୍ଦ")],
   [{ kind: "outside" }, rx("\\bbook|booking|reserve|reservation|\\bpay\\b|payment|buy ticket|బుక్|బుకింగ్|చెల్లింపు|முன்பதிவு|பணம் செலுத்து|ಬುಕ್|ಪಾವತಿ|ബുക്ക്|പണമടയ്|बुक|बुकिंग|भुगतान|ବୁକ୍|ଦେୟ")],
   [{ kind: "help" }, rx("^help$|what can you do|how to use|సహాయం|ఏం చేయగలవు|உதவி|ಸಹಾಯ|സഹായം|मदद|सहायता|ସାହାଯ୍ୟ")],
   [{ kind: "scrollDown" }, rx("scroll down|go down|^down$|కిందికి|క్రిందికి|கீழே|ಕೆಳಗೆ|താഴേക്ക്|नीचे|ତଳକୁ")],
