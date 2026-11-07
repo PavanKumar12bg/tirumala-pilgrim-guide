@@ -1,4 +1,5 @@
 # Tirumala Guide work
+- [ ] Complete dynamic multi-draft announcements, stale-only generation, stored-audio validation, scoped deletion and existing public-query updates; preserve publication and playback timing.
 - [x] Repair checked announcement writes, storage verification, hash-safe voices, per-language retries, deletion/cascade confirmation and retirement cleanup reporting. 77 tests passed; existing seven WAV objects verified and a fresh Google speech response decoded. Authenticated live generate/delete remains blocked below.
 - [ ] Verify Generate → seven uploads and published Delete through owner admin session: managed owner session mint could not obtain approval; owner must sign in in preview. Existing published announcement deliberately preserved; no live deletion claimed.
 - [x] Add one-button localized Allow recovery only after blocked announcement autoplay; preserve existing audio element, preferences, selected language, scheduler and admin settings. 46 focused tests passed and preview build OK; automated Chromium resumed real stored audio with one popup, saved On consent and no page errors. No Firefox or physical-phone manual checks.
