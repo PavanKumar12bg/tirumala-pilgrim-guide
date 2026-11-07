@@ -6,6 +6,7 @@
 type Listener = { remove: () => Promise<void> | void };
 type Fn = (...args: unknown[]) => Promise<unknown>;
 type Plugin = { getCurrentPosition?: Fn; exitApp?: Fn; setBackgroundColor?: Fn; setStyle?: Fn; hide?: Fn;
+  speak?: Fn; stop?: Fn; isLanguageSupported?: Fn;
   addListener?: (event: string, cb: (e: unknown) => void) => Promise<Listener> | Listener;
 };
 type Bridge = { isNativePlatform?: () => boolean; getPlatform?: () => string; Plugins?: Record<string, Plugin | undefined> };
@@ -14,6 +15,15 @@ const bridge = (): Bridge | undefined => (typeof window === "undefined" ? undefi
 export const isNativeApp = () => !!bridge()?.isNativePlatform?.();
 export const platformName = (): "android" | "ios" | "web" => (isNativeApp() ? ((bridge()?.getPlatform?.() as "android" | "ios") ?? "android") : "web");
 const plugin = (name: string): Plugin | undefined => (isNativeApp() ? bridge()?.Plugins?.[name] : undefined);
+export function nativeTextToSpeech() {
+  const p = plugin("TextToSpeech");
+  if (!p?.speak || !p.stop || !p.isLanguageSupported) return undefined;
+  return {
+    speak: (options: { text: string; lang: string; rate: number }) => p.speak?.(options) ?? Promise.reject(new Error("TTS unavailable")),
+    stop: () => p.stop?.() ?? Promise.resolve(),
+    isLanguageSupported: async (options: { lang: string }) => await p.isLanguageSupported?.(options) as { supported: boolean },
+  };
+}
 
 export type Capabilities = {
   native: boolean;

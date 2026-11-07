@@ -1,10 +1,12 @@
 import { VoiceAgent } from "@/components/VoiceAgent";
+import { BackgroundDarshanAudio } from "@/components/BackgroundDarshanAudio";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
   Outlet,
   Link,
   createRootRouteWithContext,
   useRouter,
+  useRouterState,
   HeadContent,
   Scripts,
   type ErrorComponentProps,
@@ -127,6 +129,7 @@ function RootShell({ children }: { children: ReactNode }) {
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   const router = useRouter();
+  const adminPage = useRouterState({ select: s => s.location.pathname.startsWith("/admin") });
   useEffect(() => initNativeShell({
     statusBarColor: "#641E26",
     // Android back: go back in app history; at Home let the app close.
@@ -139,6 +142,7 @@ function RootComponent() {
       {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
       <I18nProvider>
         <Outlet />
+        {!adminPage && <BackgroundDarshanAudio />}
         <VoiceAgent />
         <Toaster position="top-center" />
       </I18nProvider>

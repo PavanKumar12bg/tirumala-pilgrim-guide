@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
+import { VoiceTrainingAdmin } from "./VoiceTrainingAdmin";
 
 type Loc = Record<string, string | undefined>;
 type Entry = { id: string; question: Loc; answer: Loc; keywords: string[]; category: string; source_label: string | null; source_url: string | null; ttd_verified: boolean; status: string; sort_order: number; updated_at: string };
@@ -53,6 +54,7 @@ export function KnowledgeAdmin() {
   const langs = allLangs ? LANGS : LANGS.filter(l => l.primary);
   return (
     <div className="space-y-4">
+      <VoiceTrainingAdmin />
       <div className="flex items-center justify-between gap-2">
         <div>
           <h2 className="text-xl text-primary">Voice helper Q&amp;A</h2>

@@ -19,7 +19,7 @@ describe("temple / srivari synonyms", () => {
   for (const q of ["శ్రీవారి ఆలయం", "శ్రీవారి దేవాలయం", "బాలాజీ ఆలయం", "Srivari Temple", "Balaji Temple", "Main Temple"]) {
     it(q, () => {
       const i = parseIntent(q);
-      expect(i?.kind).toBe("info");
+      expect(i?.kind).toBe("navigate");
       expect(findPlaces((i as { query: string }).query, [vengamamba, temple]).match).toBe(temple);
     });
   }

@@ -105,8 +105,10 @@ export function parseIntent(raw: string): AgentIntent | null {
     if (rest.length > 1) return { kind: "blogSearch", query: rest };
     return { kind: "open", page: "/blogs" };
   }
-  if (FREE_FOOD.test(text)) return { kind: "freeFood" };
-  if (SYNONYM_GROUPS[0]!.re.test(text) && !NAV.test(text) && !rx("darshan|దర్శన|தரிசன|ದರ್ಶನ|ദർശന|दर्शन|ଦର୍ଶନ").test(text)) return { kind: "info", query: text };
+  // Specific entities win over broad food/category matching; never substitute another food centre.
+  if (rx("వెంగమాంబ|vengamamba|tarigonda|తరిగొండ").test(text)) return { kind: "navigate", query: text };
+  if (FREE_FOOD.test(text) || rx("భోజనం ఎక్కడ దొరుకుతుంది|ఫ్రీ ఫుడ్").test(text)) return { kind: "freeFood" };
+  if ((SYNONYM_GROUPS[0]?.re.test(text) || rx("^(గుడికి ఎలా వెళ్లాలి|i want to visit the temple)$").test(text)) && !rx("darshan|దర్శన|தரிசன|ದರ್ಶನ|ദർശന|दर्शन|ଦର୍ଶନ").test(text)) return { kind: "navigate", query: text === "గుడికి ఎలా వెళ్లాలి" || text === "i want to visit the temple" ? "main temple" : text };
   const cat = CATEGORY_WORDS.find(([, re]) => re.test(text))?.[0];
   if (cat && (NEAR_WORD.test(text) || text.split(" ").length <= 3)) return { kind: "nearest", category: cat };
   const nav = firstGroup(text.match(NAV)) ?? firstGroup(text.match(NAV_SUFFIX));
@@ -142,7 +144,8 @@ export function findPlaces(query: string, places: Place[]) {
   const scored = places.filter(p => p.visible)
     .map(p => {
       const names = [...Object.values(p.name), p.slug.replaceAll("-", " "), ...(p.aliases ?? [])];
-      const terms = expandQuery(query);
+      const specificFood = /వెంగమాంబ|vengamamba|tarigonda|తరిగొండ/iu.test(query);
+      const terms = specificFood ? [normalize(query), "vengamamba", "వెంగమాంబ", "tarigonda", "తరిగొండ"] : expandQuery(query);
       const direct = nameScore(query, names);
       const viaSyn = Math.max(0, ...terms.slice(1).map(t => nameScore(t, names) * 0.95));
       const descs = Object.values((p.description as Record<string, string | undefined> | null) ?? {});

@@ -18,6 +18,10 @@ export function createAnnouncementAudio(deps: {
   let active = false;
   let visible = true;
   let suspended = false;
+  let agentActive = false;
+  let resumeKey: string | null = null;
+  let resumePosition = 0;
+  let repeatDue = false;
   let generation = 0;
   let pending = false;
   let timer: ReturnType<typeof setTimeout> | undefined;
@@ -27,10 +31,12 @@ export function createAnnouncementAudio(deps: {
     subscribers.forEach(fn => fn());
   };
   const cancelTimer = () => { clearTimeout(timer); timer = undefined; };
-  const allowed = () => active && visible && !suspended && settings?.autoplay_enabled === true && state.preference !== "off";
+  const allowed = () => active && visible && !suspended && !agentActive && settings?.autoplay_enabled === true && state.preference !== "off";
   const stop = () => {
     generation++;
     pending = false;
+    resumeKey = null;
+    repeatDue = false;
     cancelTimer();
     audio?.pause();
     emit({ blocked: false });
@@ -68,10 +74,32 @@ export function createAnnouncementAudio(deps: {
     cancelTimer();
     const delay = repeatDelayMs(settings);
     if (!allowed() || delay == null) return;
-    timer = setTimeout(() => { timer = undefined; play(); }, delay);
+    timer = setTimeout(() => { timer = undefined; if (agentActive) repeatDue = true; else play(); }, delay);
   };
   const onError = () => { cancelTimer(); emit({ failed: true }); recover?.(); };
   return {
+    /** Central priority lock covers command processing as well as speech. Same element, same position. */
+    setAgentActive(value: boolean) {
+      if (agentActive === value) return;
+      agentActive = value;
+      if (value) {
+        if (audio && clip && (!audio.paused || pending)) {
+          resumeKey = clip.key;
+          resumePosition = Number.isFinite(audio.currentTime) ? audio.currentTime : 0;
+          generation++;
+          pending = false;
+          audio.pause();
+        }
+      } else {
+        const shouldResume = resumeKey === clip?.key || repeatDue;
+        if (resumeKey === clip?.key && audio) {
+          try { audio.currentTime = resumePosition; } catch { /* source cannot seek: retain browser position */ }
+        }
+        resumeKey = null;
+        repeatDue = false;
+        if (shouldResume && !state.blocked) play();
+      }
+    },
     subscribe(fn: () => void) { subscribers.add(fn); return () => { subscribers.delete(fn); }; },
     snapshot: () => state,
     serverSnapshot: () => initialState,
@@ -106,10 +134,12 @@ export function createAnnouncementAudio(deps: {
       }
       stop();
       clip = next;
+      resumePosition = 0;
       emit({ blocked: false, failed: false });
       if (!audio) return;
       if (!next) { audio.removeAttribute("src"); return; }
       audio.src = next.url;
+      if (agentActive) resumeKey = next.key;
       play();
     },
     setSettings(next: AudioSettings | null) {

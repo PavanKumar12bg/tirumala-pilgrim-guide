@@ -1,4 +1,5 @@
 # Tirumala Guide work
+- [ ] Correct voice output and central announcement priority/resume; add validated Google Sheets query sync, destination commands, tests and Android packaging guide. Do not deploy.
 - [x] Site-wide voice helper: orb, continuous browser listening, 7-language intents, nearest/navigate via existing map, admin Voice Q&A table; 176 tests pass. Real-device mic/voices and Google Sheets import not done.
 - [x] Complete dynamic multi-draft announcements, stale-only translation/audio reuse, stored-byte validation, scoped deletion and existing public-query updates; 91/91 tests passed, automatic typecheck/build OK, public Chromium pages returned 200 without page errors. No schema, environment or scheduler changes.
 - [x] Repair checked announcement writes, storage verification, hash-safe voices, per-language retries, deletion/cascade confirmation and retirement cleanup reporting. 77 tests passed; existing seven WAV objects verified and a fresh Google speech response decoded. Authenticated live generate/delete remains blocked below.

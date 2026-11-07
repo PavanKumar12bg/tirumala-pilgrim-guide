@@ -654,6 +654,27 @@ export type Database = {
         }
         Relationships: []
       }
+      voice_query_training: {
+        Row: {
+          active: boolean
+          intent_id: string
+          payload: Json
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          intent_id: string
+          payload: Json
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          intent_id?: string
+          payload?: Json
+          updated_at?: string
+        }
+        Relationships: []
+      }
       voice_settings: {
         Row: {
           autoplay_enabled: boolean
@@ -678,6 +699,33 @@ export type Database = {
         }
         Relationships: []
       }
+      voice_training_sync: {
+        Row: {
+          id: number
+          last_error: string | null
+          last_synced_at: string | null
+          row_count: number
+          sheet_range: string
+          spreadsheet_id: string | null
+        }
+        Insert: {
+          id?: number
+          last_error?: string | null
+          last_synced_at?: string | null
+          row_count?: number
+          sheet_range?: string
+          spreadsheet_id?: string | null
+        }
+        Update: {
+          id?: number
+          last_error?: string | null
+          last_synced_at?: string | null
+          row_count?: number
+          sheet_range?: string
+          spreadsheet_id?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -694,6 +742,7 @@ export type Database = {
         Returns: boolean
       }
       publish_voice_announcement: { Args: { _id: string }; Returns: boolean }
+      replace_voice_training: { Args: { _rows: Json }; Returns: number }
       transport_category_is_published: {
         Args: { _category_id: string }
         Returns: boolean
