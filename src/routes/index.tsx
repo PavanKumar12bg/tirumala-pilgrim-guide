@@ -1,12 +1,10 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
 import { MapPin, Mic, Hospital, Utensils, Building2, ChevronRight } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { PlacesGrid, StatusCards } from "@/components/HomeSections";
 import { useI18n } from "@/lib/i18n";
 import heroImage from "@/assets/venkateswara-swamy-hero.jpg";
 import { ReliableImage } from "@/components/ReliableImage";
-import { BackgroundDarshanAudio } from "@/components/BackgroundDarshanAudio";
 import { Button } from "@/components/ui/button";
 
 export const Route = createFileRoute("/")({
@@ -25,15 +23,8 @@ export const Route = createFileRoute("/")({
 
 function Index() {
   const { t } = useI18n();
-  const [voice, setVoice] = useState(false);
-  useEffect(() => {
-    const onSpeaking = (e: Event) => setVoice(!!(e as CustomEvent).detail);
-    window.addEventListener("tg-agent-speaking", onSpeaking);
-    return () => window.removeEventListener("tg-agent-speaking", onSpeaking);
-  }, []);
   return (
     <AppShell>
-      <BackgroundDarshanAudio suspended={voice} />
       <div className="mx-auto max-w-5xl space-y-3 px-3 py-3 sm:px-4">
         <section
           aria-label={t("appName")}

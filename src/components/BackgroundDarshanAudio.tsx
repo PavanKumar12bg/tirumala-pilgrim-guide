@@ -40,8 +40,7 @@ export function BackgroundDarshanAudio({ suspended = false }: { suspended?: bool
       const res = await fetch(signed.data.signedUrl);
       if (!res.ok) throw new Error("Audio temporarily unavailable");
       const url = URL.createObjectURL(await res.blob());
-      localClips.forEach(old => URL.revokeObjectURL(old));
-      localClips.clear();
+      // Keep a paused element's object URL alive while another language request finishes.
       localClips.set(key, url);
       return { key, url };
     },
