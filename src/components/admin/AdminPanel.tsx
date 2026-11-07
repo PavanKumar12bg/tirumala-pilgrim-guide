@@ -20,6 +20,7 @@ import { PhotoIdentifier, type PreparedPhoto } from "./PhotoIdentifier";
 import { StatusHistory } from "./StatusHistory";
 import { TransportAdmin } from "./TransportAdmin";
 import { VoiceAnnouncementAdmin } from "./VoiceAnnouncementAdmin";
+import { KnowledgeAdmin } from "./KnowledgeAdmin";
 
 const selectCls = "h-11 w-full rounded-md border border-input bg-card px-3 text-base";
 
@@ -37,6 +38,7 @@ export function AdminPanel() {
         <TabsTrigger value="places" className="min-h-10">{t("places")}</TabsTrigger>
         <TabsTrigger value="review" className="min-h-10">{t("reviewTab")}</TabsTrigger>
         <TabsTrigger value="transport" className="min-h-10">{t("transportTitle")}</TabsTrigger>
+        <TabsTrigger value="knowledge" className="min-h-10">Voice Q&amp;A</TabsTrigger>
       </TabsList>
       <TabsContent value="overview" className="mt-6">
         <h1 className="text-2xl">{t("admin")} · {t("appName")}</h1>
@@ -58,6 +60,7 @@ export function AdminPanel() {
       <TabsContent value="places" className="mt-4"><PlacesEditor mode="all" /></TabsContent>
       <TabsContent value="review" className="mt-4"><PlacesEditor mode="review" /></TabsContent>
       <TabsContent value="transport" className="mt-4"><TransportAdmin /></TabsContent>
+      <TabsContent value="knowledge" className="mt-4"><KnowledgeAdmin /></TabsContent>
     </Tabs>
   );
 }
