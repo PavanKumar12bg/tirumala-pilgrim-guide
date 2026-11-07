@@ -5,13 +5,15 @@ import { haversineMeters, type LatLng } from "./geo";
 import type { Place } from "./places";
 
 /** Deterministic, zero-cost intent engine for the site-wide voice helper. No AI calls. */
-export type AgentPage = "/" | "/map" | "/transport" | "/journey" | "/darshan" | "/emergency" | "/ttd" | "/about";
+export type AgentPage = "/" | "/map" | "/transport" | "/journey" | "/darshan" | "/emergency" | "/ttd" | "/about" | "/blogs";
 export type AgentIntent =
   | { kind: "stopSpeaking" | "repeat" | "slower" | "faster" | "pause" | "help" | "scrollDown" | "scrollUp" | "back" | "readPage" | "announcement" | "outside" | "locate" | "nearbyAll" | "stopNav" }
   | { kind: "open"; page: AgentPage }
   | { kind: "language"; language: Lang }
   | { kind: "nearest"; category: string }
   | { kind: "freeFood" }
+  | { kind: "blogsLatest" | "readBlog" }
+  | { kind: "blogSearch"; query: string }
   | { kind: "navigate"; query: string }
   | { kind: "info"; query: string }
   | { kind: "query"; text: string };
@@ -42,6 +44,7 @@ const PAGES: [AgentPage, RegExp][] = [
   ["/darshan", rx("darshan|waiting time|wait time|దర్శన|వేచి ఉండే|தரிசன|ದರ್ಶನ|ദർശന|दर्शन|ଦର୍ଶନ")],
   ["/emergency", rx("emergency|అత్యవసర|அவசர|ತುರ್ತು|അടിയന്തര|आपातकाल|आपात|ଜରୁରୀ")],
   ["/ttd", rx("ttd (links|website)|official (links|website)|టీటీడీ|తితిదే")],
+  ["/blogs", rx("blogs?|బ్లాగ్|బ్లాగులు|வலைப்பதிவு|ப்ளாக்|ಬ್ಲಾಗ್|ബ്ലോഗ്|ब्लॉग|ବ୍ଲଗ୍")],
   ["/about", rx("about (this|the) (site|website|app)|మా గురించి")],
 ];
 const OPEN_WORD = rx("open|ఓపెన్|తెరవు|తెరిచి|చేయి|చెయ్యి|వెళ్ళు|వెళ్లు|show|go to|take me|తెరువు|చూపించు|చూపు|తీసుకెళ్ళు|తీసుకెళ్లు|திற|காட்டு|ತೆರೆ|ತೋರಿಸು|തുറക്ക|കാണിക്ക|खोलो|दिखाओ|ले चलो|ଖୋଲ|ଦେଖାଅ");
@@ -71,17 +74,39 @@ export const FREE_FOOD = rx("అన్న ?సత్ర|అన్న ?సత్�
 /** Words in stored listings that denote free meals; only real listing text is matched. */
 const FREE_FOOD_DATA = rx("annaprasad|annadan|anna ?satram|free (food|meal)|అన్నప్రసాద|అన్నదాన|అన్న ?సత్ర|ఉచిత భోజన|அன்னப்பிரசாத|ಅನ್ನಪ್ರಸಾದ|അന്നപ്രസാദ|अन्नप्रसाद|ଅନ୍ନପ୍ରସାଦ");
 export function findFreeFood(places: Place[]) {
-  return places.filter(p => p.visible && [...Object.values(p.name ?? {}), ...Object.values((p.description as Record<string, string | undefined> | null) ?? {}), p.slug.replaceAll("-", " ")].some(v => !!v && FREE_FOOD_DATA.test(normalize(v))));
+  return places.filter(p => p.visible && [...Object.values(p.name ?? {}), ...Object.values((p.description as Record<string, string | undefined> | null) ?? {}), p.slug.replaceAll("-", " "), ...(p.aliases ?? [])].some(v => !!v && FREE_FOOD_DATA.test(normalize(v))));
 }
 export const normalize = (s: string) => s.normalize("NFC").replace(/[\u200b-\u200d\ufeff]/gu, "").toLowerCase().replace(/[.,!?।॥"“”'’]/gu, " ").replace(/\s+/gu, " ").trim();
+
+/** Spoken phrases that mean the same real place; expanded into search terms matched against actual listings only. */
+export const SYNONYM_GROUPS: { re: RegExp; terms: string[] }[] = [
+  { re: rx("శ్రీవారి|srivari|sri ?vari|balaji|బాలాజీ|main temple|ప్రధాన ఆలయ|venkateswara|వేంకటేశ్వర|వెంకటేశ్వర|ஏழுமலையான்|வெங்கடேச|ಶ್ರೀವಾರಿ|ವೆಂಕಟೇಶ್ವರ|ശ്രീവാരി|വെങ്കിടേശ്വര|श्रीवारी|बालाजी|वेंकटेश्वर|ଶ୍ରୀବାରି|ବାଲାଜୀ|ଭେଙ୍କଟେଶ୍ୱର"), terms: ["srivari", "venkateswara", "balaji", "శ్రీవారి", "వేంకటేశ్వర", "main temple", "sri venkateswara swamy"] },
+  { re: FREE_FOOD_RE(), terms: ["annaprasadam", "annadanam", "anna satram", "అన్నసత్రం", "అన్నప్రసాద", "అన్నదాన", "vengamamba", "వెంగమాంబ"] },
+  { re: rx("వెంగమాంబ|vengamamba|tarigonda|తరిగొండ|మాతృశ్రీ"), terms: ["vengamamba", "వెంగమాంబ", "tarigonda", "తరిగొండ"] },
+];
+function FREE_FOOD_RE() { return rx("అన్న ?సత్ర|అన్న ?దాన|ఉచిత ?(అన్న|భోజన)|free ?(food|meals?)|food distribution|anna ?(satram|danam|prasad)"); }
+export const expandQuery = (q: string) => { const n = normalize(q); return [n, ...SYNONYM_GROUPS.filter(g => g.re.test(n)).flatMap(g => g.terms)]; };
+
+const BLOG_WORD = rx("blogs?|articles?|బ్లాగ్|బ్లాగులు|వ్యాసా?ల?|வலைப்பதிவு|ப்ளாக்|ಬ್ಲಾಗ್|ബ്ലോഗ്|ब्लॉग|लेख|ବ୍ଲଗ୍");
+const LATEST_WORD = rx("latest|new|recent|తాజా|కొత్త|சமீபத்திய|புதிய|ಇತ್ತೀಚಿನ|ಹೊಸ|പുതിയ|नए|नया|ताज़ा|ନୂଆ");
+const READ_WORD = rx("read|చదువు|చదివి|படி|ಓದು|വായിക്ക|पढ़|ପଢ");
+const BLOG_FILLER = rx("\\b(show|find|search|open|about|on|for|me|the|a|blogs?|articles?)\\b|బ్లాగ్\\S*|బ్లాగులు|గురించి|వెతుకు|చూపించు|చూపు|ఓపెన్|చేయి|ब्लॉग|के बारे में|खोजो|दिखाओ|வலைப்பதிவு\\S*|பற்றி|ಬ್ಲಾಗ್\\S*|ಬಗ್ಗೆ|ബ്ലോഗ്\\S*|കുറിച്ച്|ବ୍ଲଗ୍\\S*|ବିଷୟରେ");
 
 export function parseIntent(raw: string): AgentIntent | null {
   const text = normalize(raw);
   if (!text) return null;
   const lang = interpretCommand(text);
   if (lang?.kind === "language") return { kind: "language", language: lang.language };
+  if (READ_WORD.test(text) && rx("this blog|ఈ బ్లాగ్|blog").test(text)) return { kind: "readBlog" };
   for (const [intent, re] of CONTROL) if (re.test(text)) return intent;
+  if (BLOG_WORD.test(text)) {
+    if (LATEST_WORD.test(text)) return { kind: "blogsLatest" };
+    const rest = text.replace(new RegExp(BLOG_FILLER.source, "giu"), " ").replace(/\s+/g, " ").trim();
+    if (rest.length > 1) return { kind: "blogSearch", query: rest };
+    return { kind: "open", page: "/blogs" };
+  }
   if (FREE_FOOD.test(text)) return { kind: "freeFood" };
+  if (SYNONYM_GROUPS[0]!.re.test(text) && !NAV.test(text)) return { kind: "info", query: text };
   const cat = CATEGORY_WORDS.find(([, re]) => re.test(text))?.[0];
   if (cat && (NEAR_WORD.test(text) || text.split(" ").length <= 3)) return { kind: "nearest", category: cat };
   const nav = firstGroup(text.match(NAV)) ?? firstGroup(text.match(NAV_SUFFIX));
@@ -115,7 +140,15 @@ export function nameScore(query: string, names: (string | undefined)[]) {
 
 export function findPlaces(query: string, places: Place[]) {
   const scored = places.filter(p => p.visible)
-    .map(p => ({ place: p, score: nameScore(query, [...Object.values(p.name), p.slug.replaceAll("-", " ")]) }))
+    .map(p => {
+      const names = [...Object.values(p.name), p.slug.replaceAll("-", " "), ...(p.aliases ?? [])];
+      const terms = expandQuery(query);
+      const direct = nameScore(query, names);
+      const viaSyn = Math.max(0, ...terms.slice(1).map(t => nameScore(t, names) * 0.95));
+      const descs = Object.values((p.description as Record<string, string | undefined> | null) ?? {});
+      const viaDesc = terms.some(t => t.length > 3 && descs.some(d => d && normalize(d).includes(t))) ? 0.55 : 0;
+      return { place: p, score: Math.max(direct, viaSyn, viaDesc) };
+    })
     .filter(x => x.score >= 0.5)
     .sort((a, b) => b.score - a.score);
   const top = scored[0];
