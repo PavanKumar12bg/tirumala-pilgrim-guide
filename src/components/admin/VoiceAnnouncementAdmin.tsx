@@ -9,26 +9,25 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
-import { AUDIO_BUCKET, LANG_NAMES, MAX_SOURCE_CHARS, REPEAT_CHOICES, VOICE_LANGS, type VoiceLang } from "@/lib/voice-announcement";
+import { AUDIO_BUCKET, LANG_NAMES, MAX_SOURCE_CHARS, REPEAT_CHOICES, VOICE_LANGS, textHash, type VoiceLang } from "@/lib/voice-announcement";
 import { createAndTranslate, deleteAnnouncement, generateVoice, publishAnnouncement } from "@/lib/voice-announcement.functions";
 
 type Ann = { id: string; source_text: string; source_lang: string; status: string; published_at: string | null; updated_at: string };
 type LangRow = { lang: VoiceLang; text: string | null; text_status: string; audio_status: string; audio_path: string | null; audio_hash: string | null; text_hash: string | null; error: string | null };
 
 const listQuery = { queryKey: ["admin_voice_ann"], queryFn: async () => {
-  const { data: anns, error: announcementError } = await supabase.from("voice_announcements").select("id, source_text, source_lang, status, published_at, updated_at").in("status", ["draft", "published"]);
+  const { data: anns, error: announcementError } = await supabase.from("voice_announcements").select("id, source_text, source_lang, status, published_at, updated_at").in("status", ["draft", "published", "retired"]).order("updated_at", { ascending: false });
   if (announcementError) throw announcementError;
   const ids = (anns ?? []).map((a) => a.id);
   const { data: langs, error: languageError } = ids.length ? await supabase.from("voice_announcement_langs").select("*").in("announcement_id", ids) : { data: [], error: null };
   if (languageError) throw languageError;
   const by = (id: string) => (langs ?? []).filter((l) => l.announcement_id === id) as unknown as LangRow[];
-  const draft = (anns ?? []).find((a) => a.status === "draft") as Ann | undefined;
   const live = (anns ?? []).find((a) => a.status === "published") as Ann | undefined;
-  return { draft: draft ? { ...draft, langs: by(draft.id) } : null, live: live ? { ...live, langs: by(live.id) } : null };
+  return { drafts: (anns ?? []).filter((a) => a.status === "draft").map((a) => ({ ...a, langs: by(a.id) })), retired: (anns ?? []).filter((a) => a.status === "retired").map((a) => ({ ...a, langs: by(a.id) })), live: live ? { ...live, langs: by(live.id) } : null };
 } };
 
 const fmt = (s: string | null) => (s ? new Date(s).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short", timeZone: "Asia/Kolkata" }) + " IST" : "—");
-const ready = (l: LangRow) => l.text_status === "ready" && l.audio_status === "ready" && !!l.audio_path && l.audio_hash === l.text_hash;
+const ready = (l: LangRow) => !!l.text && l.text_hash === textHash(l.text) && l.text_status === "ready" && l.audio_status === "ready" && !!l.audio_path && l.audio_hash === l.text_hash;
 
 export function VoiceAnnouncementAdmin() {
   const qc = useQueryClient();
@@ -39,6 +38,7 @@ export function VoiceAnnouncementAdmin() {
   const publish = useServerFn(publishAnnouncement);
   const remove = useServerFn(deleteAnnouncement);
   const [text, setText] = useState("");
+  const [draftId, setDraftId] = useState<string | undefined>();
   const [srcLang, setSrcLang] = useState<VoiceLang>("te");
   const [busy, setBusy] = useState<string | null>(null);
   const preview = useRef<HTMLAudioElement | null>(null);
@@ -65,7 +65,7 @@ export function VoiceAnnouncementAdmin() {
   const generate = async (draftId?: string, retryLang?: VoiceLang) => {
     setBusy("translate");
     try {
-      const savedDraft = q.data?.draft;
+      const savedDraft = q.data?.drafts.find((a) => a.id === draftId);
       const r = await translate({ data: {
         text: retryLang && savedDraft ? savedDraft.source_text : text,
         sourceLang: retryLang && savedDraft ? savedDraft.source_lang : srcLang,
@@ -74,9 +74,10 @@ export function VoiceAnnouncementAdmin() {
       if (!r.ok) toast.error(r.error);
       await refresh();
       if (!r.id) return;
+      setDraftId(r.id);
       const { data: rows, error } = await supabase.from("voice_announcement_langs").select("lang,text_status,audio_status,audio_hash,text_hash,audio_path").eq("announcement_id", r.id);
       if (error) throw error;
-      await runVoices(r.id, (rows ?? []).filter((x) => x.text_status === "ready" && (!retryLang || x.lang === retryLang) && !(x.audio_status === "ready" && x.audio_path && x.audio_hash === x.text_hash)).map((x) => x.lang as VoiceLang));
+      await runVoices(r.id, (rows ?? []).filter((x) => x.text_status === "ready" && (!retryLang || x.lang === retryLang)).map((x) => x.lang as VoiceLang));
     } catch (e) { toast.error(errorText(e)); }
     finally { setBusy(null); await refresh(); }
   };
@@ -88,6 +89,7 @@ export function VoiceAnnouncementAdmin() {
       const r = await remove({ data: { id } });
       if (r.ok) { toast.success("Deleted"); setCleanupId(null); }
       else { toast.error(r.error); if (r.deleted) setCleanupId(id); }
+      if (r.ok || (!r.ok && r.deleted)) { if (id === draftId) { setDraftId(undefined); setText(""); } }
     } catch (e) { toast.error(errorText(e)); }
     finally { setBusy(null); await refresh(); }
   };
@@ -97,7 +99,7 @@ export function VoiceAnnouncementAdmin() {
     try {
       const r = await publish({ data: { id } });
       if (r.ok) {
-        toast.success("Published to Home page"); setText("");
+        toast.success("Published to Home page"); setText(""); setDraftId(undefined);
         if (r.cleanupError) toast.error(`Published; cleanup incomplete: ${r.cleanupError}`);
       } else toast.error(r.error);
     } catch (e) { toast.error(errorText(e)); }
@@ -128,9 +130,9 @@ export function VoiceAnnouncementAdmin() {
     if (error) toast.error("Could not save settings"); else { toast.success("Saved"); void qc.invalidateQueries({ queryKey: ["voice_settings"] }); }
   };
 
-  const draft = q.data?.draft;
+  const draft = q.data?.drafts.find((a) => a.id === draftId);
   const live = q.data?.live;
-  const allReady = !!draft && draft.langs.length === 7 && draft.langs.every(ready);
+  const allReady = !!draft && VOICE_LANGS.every((lang) => { const row = draft.langs.find((l) => l.lang === lang); return !!row && ready(row); }) && text.trim() === draft.source_text && srcLang === draft.source_lang;
 
   const Table = ({ a, editable }: { a: Ann & { langs: LangRow[] }; editable: boolean }) => (
     <ul className="mt-3 divide-y rounded-lg border">
@@ -144,7 +146,7 @@ export function VoiceAnnouncementAdmin() {
             <div className="min-w-0 flex-1 text-sm" lang={lang}>{l?.text ?? "—"}{l?.error && <p className="mt-1 text-xs text-destructive">{l.error}</p>}</div>
             <div className="flex gap-2">
               <Button size="sm" variant="outline" className="min-h-10" disabled={!l || !ready(l)} onClick={() => void play(l?.audio_path ?? null)} aria-label={`Play ${LANG_NAMES[lang]}`} aria-pressed={!!l?.audio_path && previewPath === l.audio_path}><Play className="size-4" /></Button>
-              {editable && (st === "failed" || st === "waiting") && <Button size="sm" variant="outline" className="min-h-10" disabled={!!busy} onClick={() => l?.text_status === "failed" ? void generate(a.id, lang) : void runVoices(a.id, [lang])}><RefreshCw className="size-4" />Retry</Button>}
+              {editable && (st === "failed" || st === "waiting") && <Button size="sm" variant="outline" className="min-h-10" disabled={!!busy} onClick={() => l?.text_status !== "ready" ? void generate(a.id, lang) : void runVoices(a.id, [lang])}><RefreshCw className="size-4" />Retry</Button>}
             </div>
           </li>
         );
@@ -163,7 +165,7 @@ export function VoiceAnnouncementAdmin() {
           <p className="mt-2 whitespace-pre-wrap">{live.source_text}</p>
           <Table a={live} editable={false} />
           <div className="mt-3 flex flex-wrap gap-2">
-            <Button variant="outline" className="min-h-11" onClick={() => { setText(live.source_text); setSrcLang(live.source_lang as VoiceLang); }}>Edit as new announcement</Button>
+            <Button variant="outline" className="min-h-11" disabled={!!busy} onClick={() => { setDraftId(undefined); setText(live.source_text); setSrcLang(live.source_lang as VoiceLang); }}>Edit as new announcement</Button>
             <Button variant="destructive" className="min-h-11" disabled={!!busy} onClick={async () => { if (!confirm("Remove this announcement from the Home page?")) return; await removeOne(live.id); }}><Trash2 className="size-4" />Delete</Button>
           </div>
         </> : <p className="mt-1 text-sm text-muted-foreground">No announcement is live.</p>}
@@ -171,16 +173,23 @@ export function VoiceAnnouncementAdmin() {
 
       <section className="rounded-xl border bg-card p-4">
         <h2 className="text-lg font-semibold">New announcement</h2>
+        <div className="mt-3 flex flex-wrap gap-2">
+          <Button variant="outline" disabled={!!busy} onClick={() => { setDraftId(undefined); setText(""); }}>New announcement</Button>
+          {!!q.data?.drafts.length && <select aria-label="Select draft announcement" className="h-11 min-w-0 max-w-full rounded-md border border-input bg-card px-3" disabled={!!busy} value={draftId ?? ""} onChange={(event) => { const selected = q.data?.drafts.find((a) => a.id === event.target.value); setDraftId(selected?.id); setText(selected?.source_text ?? ""); if (selected) setSrcLang(selected.source_lang as VoiceLang); }}>
+            <option value="">New announcement</option>
+            {q.data.drafts.map((a) => <option key={a.id} value={a.id}>{a.source_text.slice(0, 70)}</option>)}
+          </select>}
+        </div>
         <p className="text-sm text-muted-foreground">Enter text → Generate 7 languages and voices → check → Publish. The current one stays live until you publish.</p>
         <div className="mt-3 grid gap-2">
           <Label htmlFor="ann-lang">Language you are typing in</Label>
-          <select id="ann-lang" className="h-11 rounded-md border border-input bg-card px-3" value={srcLang} onChange={(e) => setSrcLang(e.target.value as VoiceLang)}>
+          <select id="ann-lang" disabled={!!busy} className="h-11 rounded-md border border-input bg-card px-3" value={srcLang} onChange={(e) => setSrcLang(e.target.value as VoiceLang)}>
             {VOICE_LANGS.map((l) => <option key={l} value={l}>{LANG_NAMES[l]}</option>)}
           </select>
           <Label htmlFor="ann-text">Announcement</Label>
-          <Textarea id="ann-text" rows={4} maxLength={MAX_SOURCE_CHARS} value={text} onChange={(e) => setText(e.target.value)} placeholder="Today's darshan waiting time is about 6 hours. 7 compartments are full." />
+          <Textarea id="ann-text" disabled={!!busy} rows={4} maxLength={MAX_SOURCE_CHARS} value={text} onChange={(e) => setText(e.target.value)} placeholder="Today's darshan waiting time is about 6 hours. 7 compartments are full." />
           <p className="text-xs text-muted-foreground">{text.length}/{MAX_SOURCE_CHARS}. Write numbers as digits (6, 7) so they can be checked.</p>
-          <Button className="min-h-12" disabled={!!busy || text.trim().length < 3} onClick={() => void generate(draft?.id)}>{busy ? <Loader2 className="size-4 animate-spin" /> : <RefreshCw className="size-4" />}{busy === "translate" ? "Translating…" : busy ? "Making voices…" : "Generate 7 languages and voices"}</Button>
+          <Button className="min-h-12" disabled={!!busy || text.trim().length < 3} onClick={() => void generate(draftId)}>{busy ? <Loader2 className="size-4 animate-spin" /> : <RefreshCw className="size-4" />}{busy === "translate" ? "Translating…" : busy ? "Making voices…" : "Generate 7 languages and voices"}</Button>
         </div>
         {draft && <>
           <h3 className="mt-5 font-semibold">Draft preview</h3>
@@ -193,6 +202,14 @@ export function VoiceAnnouncementAdmin() {
           {!allReady && <p className="mt-2 text-sm text-muted-foreground">Publish unlocks when all 7 languages show "ready".</p>}
         </>}
       </section>
+
+      {!!q.data?.retired.length && <section className="rounded-xl border bg-card p-4">
+        <h2 className="text-lg font-semibold">Previous announcements</h2>
+        <ul className="divide-y">{q.data.retired.map((a) => <li key={a.id} className="flex flex-wrap items-center justify-between gap-2 py-3">
+          <p className="min-w-0 flex-1 whitespace-pre-wrap text-sm">{a.source_text}</p>
+          <Button variant="destructive" disabled={!!busy} onClick={() => { if (confirm("Delete this previous announcement and its audio?")) void removeOne(a.id); }}><Trash2 className="size-4" />Delete</Button>
+        </li>)}</ul>
+      </section>}
 
       <section className="rounded-xl border bg-card p-4">
         <h2 className="text-lg font-semibold">Playback settings</h2>
