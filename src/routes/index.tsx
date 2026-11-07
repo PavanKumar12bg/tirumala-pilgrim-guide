@@ -1,5 +1,5 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
 import { MapPin, Mic, Hospital, Utensils, Building2, ChevronRight } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { PlacesGrid, StatusCards } from "@/components/HomeSections";
@@ -7,7 +7,6 @@ import { useI18n } from "@/lib/i18n";
 import heroImage from "@/assets/venkateswara-swamy-hero.jpg";
 import { ReliableImage } from "@/components/ReliableImage";
 import { BackgroundDarshanAudio } from "@/components/BackgroundDarshanAudio";
-import { VoiceAssistant } from "@/components/VoiceAssistant";
 import { Button } from "@/components/ui/button";
 
 export const Route = createFileRoute("/")({
@@ -25,9 +24,13 @@ export const Route = createFileRoute("/")({
 });
 
 function Index() {
-  const { t, setLang } = useI18n();
+  const { t } = useI18n();
   const [voice, setVoice] = useState(false);
-  const navigate = useNavigate();
+  useEffect(() => {
+    const onSpeaking = (e: Event) => setVoice(!!(e as CustomEvent).detail);
+    window.addEventListener("tg-agent-speaking", onSpeaking);
+    return () => window.removeEventListener("tg-agent-speaking", onSpeaking);
+  }, []);
   return (
     <AppShell>
       <BackgroundDarshanAudio suspended={voice} />
@@ -57,15 +60,11 @@ function Index() {
         <Link to="/darshan" className="flex min-h-11 items-center justify-between text-sm font-semibold text-primary">{t("darshanTitle")}<ChevronRight className="size-4" /></Link>
         <section aria-label={t("quickActions")} className="grid grid-cols-3 gap-2">
           <Button asChild className="h-auto min-h-16 flex-col gap-1 whitespace-normal px-2 text-xs"><Link to="/map"><MapPin className="size-5" />{t("map")}</Link></Button>
-          <Button variant="secondary" className="h-auto min-h-16 flex-col gap-1 whitespace-normal px-2 text-xs" onClick={() => setVoice(true)}><Mic className="size-5" />{t("voiceAssistant")}</Button>
+          <Button variant="secondary" className="h-auto min-h-16 flex-col gap-1 whitespace-normal px-2 text-xs" onClick={() => window.dispatchEvent(new CustomEvent("tg-agent-open"))}><Mic className="size-5" />{t("voiceAssistant")}</Button>
           {[{ category: "medical", icon: Hospital, label: "cat_medical" }, { category: "food", icon: Utensils, label: "cat_food" }, { category: "amenity", icon: Building2, label: "cat_amenity" }].map(action => <Button key={action.category} asChild variant="outline" className="h-auto min-h-14 flex-col gap-1 whitespace-normal px-2 text-xs"><Link to="/map" search={{ category: action.category }}><action.icon className="size-5" />{t(action.label as "cat_medical" | "cat_food" | "cat_amenity")}</Link></Button>)}
         </section>
         <PlacesGrid />
       </div>
-      <VoiceAssistant open={voice} onOpenChange={setVoice} onAction={action => {
-        if (action.kind === "language") { setLang(action.language); return; }
-        navigate({ to: "/map", search: { command: action.kind === "search" ? action.text : undefined, category: action.kind === "category" ? action.category : undefined, action: action.kind !== "search" && action.kind !== "category" ? action.kind : undefined } });
-      }} />
     </AppShell>
   );
 }

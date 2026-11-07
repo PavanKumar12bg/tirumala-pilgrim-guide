@@ -1,3 +1,4 @@
+import { VoiceAgent } from "@/components/VoiceAgent";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
   Outlet,
@@ -130,6 +131,7 @@ function RootComponent() {
       {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
       <I18nProvider>
         <Outlet />
+        <VoiceAgent />
         <Toaster position="top-center" />
       </I18nProvider>
     </QueryClientProvider>

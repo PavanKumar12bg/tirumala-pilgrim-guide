@@ -285,3 +285,22 @@ html:lang(or) {
 .transport-page dd { overflow-wrap: anywhere; }
 .map-experience button { letter-spacing: 0; }
 .map-experience button:focus-visible { outline-offset: -3px; }
+
+/* Voice helper: tasteful flowing ring; disabled for reduced motion or by the visitor. */
+@property --agent-angle { syntax: "<angle>"; inherits: false; initial-value: 0deg; }
+@keyframes agent-spin { to { --agent-angle: 360deg; } }
+.agent-glow {
+  position: fixed; inset: 0; z-index: 1240; pointer-events: none; padding: 3px; opacity: 0.75;
+  background: conic-gradient(from var(--agent-angle), var(--primary), var(--gold), var(--accent), var(--primary));
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor; mask-composite: exclude;
+  animation: agent-spin 6s linear infinite;
+}
+.agent-glow[data-state="speaking"] { opacity: 0.95; }
+.agent-orb-active::before {
+  content: ""; position: absolute; inset: -5px; border-radius: 9999px; z-index: -1;
+  background: conic-gradient(from var(--agent-angle), var(--primary), var(--gold), var(--accent), var(--primary));
+  animation: agent-spin 3s linear infinite;
+}
+.agent-glow-still { animation: none; }
+@media (prefers-reduced-motion: reduce) { .agent-glow, .agent-orb-active::before { animation: none; } }
