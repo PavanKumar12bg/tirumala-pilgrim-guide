@@ -38,6 +38,51 @@ export type Database = {
         }
         Relationships: []
       }
+      knowledge_entries: {
+        Row: {
+          answer: Json
+          category: string
+          created_at: string
+          id: string
+          keywords: string[]
+          question: Json
+          sort_order: number
+          source_label: string | null
+          source_url: string | null
+          status: string
+          ttd_verified: boolean
+          updated_at: string
+        }
+        Insert: {
+          answer?: Json
+          category?: string
+          created_at?: string
+          id?: string
+          keywords?: string[]
+          question?: Json
+          sort_order?: number
+          source_label?: string | null
+          source_url?: string | null
+          status?: string
+          ttd_verified?: boolean
+          updated_at?: string
+        }
+        Update: {
+          answer?: Json
+          category?: string
+          created_at?: string
+          id?: string
+          keywords?: string[]
+          question?: Json
+          sort_order?: number
+          source_label?: string | null
+          source_url?: string | null
+          status?: string
+          ttd_verified?: boolean
+          updated_at?: string
+        }
+        Relationships: []
+      }
       places: {
         Row: {
           category: string
