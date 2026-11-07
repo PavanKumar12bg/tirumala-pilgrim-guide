@@ -35,7 +35,7 @@ app without a new app release.
 6. Add to `android/app/src/main/AndroidManifest.xml`: `RECORD_AUDIO`, `ACCESS_FINE_LOCATION`,
    `ACCESS_COARSE_LOCATION`, `INTERNET`. Grant the WebView microphone request in `MainActivity`
    (Capacitor's BridgeWebChromeClient handles `onPermissionRequest` when RECORD_AUDIO is granted).
-7. Generate launcher icons/splash from `public/icons/icon-512.png` (Android Studio → Image Asset).
+7. Generate launcher icons/splash from `public/icons/tirumala-512.png` (Android Studio → Image Asset).
 8. `npx cap open android`, run on a real phone, test: microphone prompt, Telugu speech, GPS,
    back button, map routing, admin login.
 9. Optional later: `@capacitor-community/speech-recognition`, `@capacitor-community/text-to-speech`,
