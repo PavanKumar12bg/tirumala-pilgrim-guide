@@ -20,6 +20,8 @@ import { Route as MapRouteImport } from './routes/map'
 import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as TermsRouteImport } from './routes/terms'
 import { Route as TtdRouteImport } from './routes/ttd'
+import { Route as BlogsIndexRouteImport } from './routes/blogs.index'
+import { Route as BlogsSlugRouteImport } from './routes/blogs.$slug'
 import { Route as TransportIndexRouteImport } from './routes/transport.index'
 import { Route as TransportSlugRouteImport } from './routes/transport.$slug'
 import { Route as TransportSlugStopStopIdRouteImport } from './routes/transport.$slug_.stop.$stopId'
@@ -79,6 +81,16 @@ const TtdRoute = TtdRouteImport.update({
   path: '/ttd',
   getParentRoute: () => rootRouteImport,
 } as any)
+const BlogsIndexRoute = BlogsIndexRouteImport.update({
+  id: '/blogs/',
+  path: '/blogs/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BlogsSlugRoute = BlogsSlugRouteImport.update({
+  id: '/blogs/$slug',
+  path: '/blogs/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const TransportIndexRoute = TransportIndexRouteImport.update({
   id: '/transport/',
   path: '/transport/',
@@ -107,7 +119,9 @@ export interface FileRoutesByFullPath {
   '/privacy': typeof PrivacyRoute
   '/terms': typeof TermsRoute
   '/ttd': typeof TtdRoute
+  '/blogs/$slug': typeof BlogsSlugRoute
   '/transport/$slug': typeof TransportSlugRoute
+  '/blogs/': typeof BlogsIndexRoute
   '/transport/': typeof TransportIndexRoute
   '/transport/$slug/stop/$stopId': typeof TransportSlugStopStopIdRoute
 }
@@ -123,7 +137,9 @@ export interface FileRoutesByTo {
   '/privacy': typeof PrivacyRoute
   '/terms': typeof TermsRoute
   '/ttd': typeof TtdRoute
+  '/blogs/$slug': typeof BlogsSlugRoute
   '/transport/$slug': typeof TransportSlugRoute
+  '/blogs': typeof BlogsIndexRoute
   '/transport': typeof TransportIndexRoute
   '/transport/$slug/stop/$stopId': typeof TransportSlugStopStopIdRoute
 }
@@ -140,7 +156,9 @@ export interface FileRoutesById {
   '/privacy': typeof PrivacyRoute
   '/terms': typeof TermsRoute
   '/ttd': typeof TtdRoute
+  '/blogs/$slug': typeof BlogsSlugRoute
   '/transport/$slug': typeof TransportSlugRoute
+  '/blogs/': typeof BlogsIndexRoute
   '/transport/': typeof TransportIndexRoute
   '/transport/$slug_/stop/$stopId': typeof TransportSlugStopStopIdRoute
 }
@@ -158,7 +176,9 @@ export interface FileRouteTypes {
     | '/privacy'
     | '/terms'
     | '/ttd'
+    | '/blogs/$slug'
     | '/transport/$slug'
+    | '/blogs/'
     | '/transport/'
     | '/transport/$slug/stop/$stopId'
   fileRoutesByTo: FileRoutesByTo
@@ -174,7 +194,9 @@ export interface FileRouteTypes {
     | '/privacy'
     | '/terms'
     | '/ttd'
+    | '/blogs/$slug'
     | '/transport/$slug'
+    | '/blogs'
     | '/transport'
     | '/transport/$slug/stop/$stopId'
   id:
@@ -190,7 +212,9 @@ export interface FileRouteTypes {
     | '/privacy'
     | '/terms'
     | '/ttd'
+    | '/blogs/$slug'
     | '/transport/$slug'
+    | '/blogs/'
     | '/transport/'
     | '/transport/$slug_/stop/$stopId'
   fileRoutesById: FileRoutesById
@@ -207,7 +231,9 @@ export interface RootRouteChildren {
   PrivacyRoute: typeof PrivacyRoute
   TermsRoute: typeof TermsRoute
   TtdRoute: typeof TtdRoute
+  BlogsSlugRoute: typeof BlogsSlugRoute
   TransportSlugRoute: typeof TransportSlugRoute
+  BlogsIndexRoute: typeof BlogsIndexRoute
   TransportIndexRoute: typeof TransportIndexRoute
   TransportSlugStopStopIdRoute: typeof TransportSlugStopStopIdRoute
 }
@@ -291,6 +317,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TtdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/blogs/': {
+      id: '/blogs/'
+      path: '/blogs'
+      fullPath: '/blogs/'
+      preLoaderRoute: typeof BlogsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/blogs/$slug': {
+      id: '/blogs/$slug'
+      path: '/blogs/$slug'
+      fullPath: '/blogs/$slug'
+      preLoaderRoute: typeof BlogsSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/transport/': {
       id: '/transport/'
       path: '/transport'
@@ -327,7 +367,9 @@ const rootRouteChildren: RootRouteChildren = {
   PrivacyRoute: PrivacyRoute,
   TermsRoute: TermsRoute,
   TtdRoute: TtdRoute,
+  BlogsSlugRoute: BlogsSlugRoute,
   TransportSlugRoute: TransportSlugRoute,
+  BlogsIndexRoute: BlogsIndexRoute,
   TransportIndexRoute: TransportIndexRoute,
   TransportSlugStopStopIdRoute: TransportSlugStopStopIdRoute,
 }

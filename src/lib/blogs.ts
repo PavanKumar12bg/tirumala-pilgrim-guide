@@ -87,3 +87,5 @@ export const adminBlogsQuery = () => queryOptions({
     return attach((data ?? []) as unknown as Blog[]);
   },
 });
+
+export const blogDate = (iso: string | null, lang: string) => iso ? new Date(iso).toLocaleDateString(`${lang}-IN`, { day: "numeric", month: "short", year: "numeric", timeZone: "Asia/Kolkata" }) : "";

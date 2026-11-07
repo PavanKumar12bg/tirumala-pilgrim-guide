@@ -4,10 +4,9 @@ import { ArrowLeft, Link2, Share2 } from "lucide-react";
 import { toast } from "sonner";
 import { InfoPage } from "@/components/InfoPage";
 import { useI18n, type DictKey } from "@/lib/i18n";
-import { blogQuery } from "@/lib/blogs";
+import { blogDate, blogQuery } from "@/lib/blogs";
 import { ReliableImage } from "@/components/ReliableImage";
 import { Button } from "@/components/ui/button";
-import { blogDate } from "./blogs.index";
 
 export const Route = createFileRoute("/blogs/$slug")({
   loader: async ({ context, params }) => {
@@ -54,7 +53,7 @@ function Page() {
   const copy = async () => { try { await navigator.clipboard.writeText(url); toast.success(t("blogsCopied")); } catch { toast.error(url); } };
   return (
     <InfoPage title={b.title} className="max-w-3xl">
-      <article lang={b.lang} data-blog-article>
+      <div lang={b.lang} data-blog-article>
         <p className="text-xs text-muted-foreground"><span className="font-semibold text-gold">{t(`blogCat_${b.category}` as DictKey)}</span> · {blogDate(b.published_at, lang)}</p>
         {b.imageSrc && <ReliableImage src={b.imageSrc} alt="" fetchPriority="high" width={1200} height={675} className="mt-3 aspect-[16/9] w-full rounded-lg object-cover" />}
         <p className="mt-4 text-base font-medium leading-relaxed">{b.excerpt}</p>
@@ -65,7 +64,7 @@ function Page() {
             : <p key={i}>{c.text}</p>)}
         </div>
         {!!b.tags.length && <p className="mt-4 flex flex-wrap gap-2">{b.tags.map(tag => <span key={tag} className="rounded-full bg-secondary px-2 py-0.5 text-xs">#{tag}</span>)}</p>}
-      </article>
+      </div>
       <div className="mt-6 flex flex-wrap gap-2">
         <Button variant="outline" onClick={() => void share()}><Share2 className="size-4" />{t("blogsShare")}</Button>
         <Button variant="outline" onClick={() => void copy()}><Link2 className="size-4" />{t("blogsCopyLink")}</Button>

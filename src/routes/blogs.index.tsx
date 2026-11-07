@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import { Search } from "lucide-react";
 import { InfoPage } from "@/components/InfoPage";
 import { useI18n, type DictKey } from "@/lib/i18n";
-import { BLOG_CATEGORIES, blogsQuery, searchBlogs } from "@/lib/blogs";
+import { BLOG_CATEGORIES, blogDate, blogsQuery, searchBlogs } from "@/lib/blogs";
 import { ReliableImage } from "@/components/ReliableImage";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -33,8 +33,6 @@ function ErrorView() {
   const router = useRouter();
   return <InfoPage title={t("blogs")}><div className="flex items-center gap-3"><p role="alert" className="text-sm">{t("errorLoad")}</p><Button variant="outline" onClick={() => void router.invalidate()}>{t("retry")}</Button></div></InfoPage>;
 }
-
-export const blogDate = (iso: string | null, lang: string) => iso ? new Date(iso).toLocaleDateString(`${lang}-IN`, { day: "numeric", month: "short", year: "numeric" }) : "";
 
 function Page() {
   const { t, lang } = useI18n();
