@@ -11,6 +11,7 @@ export type AgentIntent =
   | { kind: "open"; page: AgentPage }
   | { kind: "language"; language: Lang }
   | { kind: "nearest"; category: string }
+  | { kind: "freeFood" }
   | { kind: "navigate"; query: string }
   | { kind: "info"; query: string }
   | { kind: "query"; text: string };
@@ -36,14 +37,14 @@ const CONTROL: [AgentIntent, RegExp][] = [
 const PAGES: [AgentPage, RegExp][] = [
   ["/", rx("^(go )?home( page)?$|go home|home page|హోమ్|ముఖపేజీ|முகப்பு|ಮುಖಪುಟ|ഹോം|होम|मुख्य पृष्ठ|ମୁଖ୍ୟ ପୃଷ୍ଠା")],
   ["/map", rx("open (the )?map|show (the )?map|^map$|మ్యాప్|పటం|வரைபட|ನಕ್ಷೆ|മാപ്പ്|नक्शा|मैप|ମାନଚିତ୍ର")],
-  ["/transport", rx("transport|bus|travel|రవాణా|బస్సు|బస్|போக்குவரத்து|பேருந்து|ಸಾರಿಗೆ|ಬಸ್|ഗതാഗതം|ബസ്|परिवहन|बस|ପରିବହନ|ବସ୍")],
+  ["/transport", rx("transport|bus|travel|ట్రాన్స్పోర్ట్|ట్రాన్స్ పోర్ట్|ట్రాన్స్‌పోర్ట్|రవాణా|బస్సు|బస్|போக்குவரத்து|பேருந்து|ಸಾರಿಗೆ|ಬಸ್|ഗതാഗതം|ബസ്|परिवहन|बस|ପରିବହନ|ବସ୍")],
   ["/journey", rx("journey|itinerary|plan(ner)?|ప్రయాణ ప్రణాళిక|ప్రణాళిక|பயணத் திட்ட|ಪ್ರಯಾಣ ಯೋಜನೆ|യാത്രാ പദ്ധതി|यात्रा योजना|ଯାତ୍ରା ଯୋଜନା")],
   ["/darshan", rx("darshan|waiting time|wait time|దర్శన|వేచి ఉండే|தரிசன|ದರ್ಶನ|ദർശന|दर्शन|ଦର୍ଶନ")],
   ["/emergency", rx("emergency|అత్యవసర|அவசர|ತುರ್ತು|അടിയന്തര|आपातकाल|आपात|ଜରୁରୀ")],
   ["/ttd", rx("ttd (links|website)|official (links|website)|టీటీడీ|తితిదే")],
   ["/about", rx("about (this|the) (site|website|app)|మా గురించి")],
 ];
-const OPEN_WORD = rx("open|show|go to|take me|తెరువు|చూపించు|చూపు|తీసుకెళ్ళు|తీసుకెళ్లు|திற|காட்டு|ತೆರೆ|ತೋರಿಸು|തുറക്ക|കാണിക്ക|खोलो|दिखाओ|ले चलो|ଖୋଲ|ଦେଖାଅ");
+const OPEN_WORD = rx("open|ఓపెన్|తెరవు|తెరిచి|చేయి|చెయ్యి|వెళ్ళు|వెళ్లు|show|go to|take me|తెరువు|చూపించు|చూపు|తీసుకెళ్ళు|తీసుకెళ్లు|திற|காட்டு|ತೆರೆ|ತೋರಿಸು|തുറക്ക|കാണിക്ക|खोलो|दिखाओ|ले चलो|ଖୋଲ|ଦେଖାଅ");
 
 /** Category synonyms. Only categories the data actually has will produce results. */
 export const CATEGORY_WORDS: [string, RegExp][] = [
@@ -62,10 +63,17 @@ export const CATEGORY_WORDS: [string, RegExp][] = [
 const NAV = rx("^(?:please )?(?:take me to|navigate to|directions? to|route to|way to|go to|show me|show|find|where is|where's)\\s+(.+?)(?:\\s+on (?:the )?map)?$");
 const NAV_SUFFIX = rx("^(.+?)\\s*(?:కి|కు|కీ)?\\s*(?:తీసుకెళ్ళు|తీసుకెళ్లు|దారి చూపు|దారి|ఎక్కడ ఉంది|ఎక్కడ|చూపించు)$|^(.+?)\\s*(?:க்கு|கு)?\\s*(?:வழி காட்டு|வழி|அழைத்துச் செல்|எங்கே)$|^(.+?)\\s*(?:ಗೆ|ಕ್ಕೆ)?\\s*(?:ದಾರಿ|ಕರೆದುಕೊಂಡು ಹೋಗು|ಎಲ್ಲಿದೆ)$|^(.+?)\\s*(?:ലേക്ക്)?\\s*(?:വഴി|കൊണ്ടുപോകൂ|എവിടെ)$|^(.+?)\\s*(?:तक|पर|का|की)?\\s*(?:ले चलो|ले जाओ|रास्ता|कहाँ है|कहां है)$|^(.+?)\\s*(?:କୁ)?\\s*(?:ବାଟ|ନେଇଯାଅ|କେଉଁଠି)$");
 const INFO = rx("^(?:tell me about|what is|what's|info(?:rmation)? (?:about|on)|details of)\\s+(.+)$|^(.+?)\\s*(?:గురించి(?: చెప్పు)?|వివరాలు)$|^(.+?)\\s*(?:பற்றி(?: சொல்)?)$|^(.+?)\\s*(?:ಬಗ್ಗೆ(?: ಹೇಳು)?)$|^(.+?)\\s*(?:നെക്കുറിച്ച്|കുറിച്ച്)(?: പറയൂ)?$|^(.+?)\\s*(?:के बारे में(?: बताओ)?)$|^(.+?)\\s*(?:ବିଷୟରେ(?: କୁହ)?)$");
-const NEAR_WORD = rx("near|closest|nearest|need|where|want|find|దగ్గర|సమీప|కావాలి|ఎక్కడ|அருகில்|அருகிலுள்ள|வேண்டும்|எங்கே|ಹತ್ತಿರ|ಬೇಕು|ಎಲ್ಲಿ|അടുത്ത|വേണം|എവിടെ|नज़दीक|नजदीक|पास|चाहिए|कहाँ|କହିଁ|ନିକଟ|ଦରକାର|କେଉଁଠି");
+const NEAR_WORD = rx("near|closest|nearest|need|where|want|find|దొరుకు|దగ్గర|సమీప|కావాలి|ఎక్కడ|அருகில்|அருகிலுள்ள|வேண்டும்|எங்கே|ಹತ್ತಿರ|ಬೇಕು|ಎಲ್ಲಿ|അടുത്ത|വേണം|എവിടെ|नज़दीक|नजदीक|पास|चाहिए|कहाँ|କହିଁ|ନିକଟ|ଦରକାର|କେଉଁଠି");
 
 const firstGroup = (m: RegExpMatchArray | null) => m?.slice(1).find(Boolean)?.trim();
-export const normalize = (s: string) => s.normalize("NFC").toLowerCase().replace(/[.,!?।॥"“”'’]/gu, " ").replace(/\s+/gu, " ").trim();
+/** Free meals / Annaprasadam: spoken variants (with or without spaces, Telugu and transliterated). */
+export const FREE_FOOD = rx("అన్న ?సత్ర|అన్న ?సత్త్ర|అన్న ?దాన|అన్న ?ప్రసాద|ఉచిత ?(అన్న|భోజన|ఆహార)|free ?(food|meals?|lunch|dinner|annadanam)|anna ?(satram|sathram|chatram|danam|dhanam|prasad)|annadhanam|అన్నదానం|அன்னதான|அன்னப்பிரசாத|இலவச உணவு|ಅನ್ನದಾನ|ಅನ್ನಪ್ರಸಾದ|ಉಚಿತ ಊಟ|അന്നദാന|അന്നപ്രസാദ|സൗജന്യ ഭക്ഷണ|अन्नदान|अन्नप्रसाद|मुफ्त भोजन|मुफ़्त भोजन|मुफ्त खाना|ଅନ୍ନଦାନ|ଅନ୍ନପ୍ରସାଦ|ମାଗଣା ଖାଦ୍ୟ");
+/** Words in stored listings that denote free meals; only real listing text is matched. */
+const FREE_FOOD_DATA = rx("annaprasad|annadan|anna ?satram|free (food|meal)|అన్నప్రసాద|అన్నదాన|అన్న ?సత్ర|ఉచిత భోజన|அன்னப்பிரசாத|ಅನ್ನಪ್ರಸಾದ|അന്നപ്രസാദ|अन्नप्रसाद|ଅନ୍ନପ୍ରସାଦ");
+export function findFreeFood(places: Place[]) {
+  return places.filter(p => p.visible && [...Object.values(p.name ?? {}), ...Object.values((p.description as Record<string, string | undefined> | null) ?? {}), p.slug.replaceAll("-", " ")].some(v => !!v && FREE_FOOD_DATA.test(normalize(v))));
+}
+export const normalize = (s: string) => s.normalize("NFC").replace(/[\u200b-\u200d\ufeff]/gu, "").toLowerCase().replace(/[.,!?।॥"“”'’]/gu, " ").replace(/\s+/gu, " ").trim();
 
 export function parseIntent(raw: string): AgentIntent | null {
   const text = normalize(raw);
@@ -73,6 +81,7 @@ export function parseIntent(raw: string): AgentIntent | null {
   const lang = interpretCommand(text);
   if (lang?.kind === "language") return { kind: "language", language: lang.language };
   for (const [intent, re] of CONTROL) if (re.test(text)) return intent;
+  if (FREE_FOOD.test(text)) return { kind: "freeFood" };
   const cat = CATEGORY_WORDS.find(([, re]) => re.test(text))?.[0];
   if (cat && (NEAR_WORD.test(text) || text.split(" ").length <= 3)) return { kind: "nearest", category: cat };
   const nav = firstGroup(text.match(NAV)) ?? firstGroup(text.match(NAV_SUFFIX));
