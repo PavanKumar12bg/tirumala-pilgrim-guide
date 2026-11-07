@@ -7,6 +7,9 @@ import { announcementAudio, type AudioSettings } from "@/lib/announcement-audio"
 import { AlertDialog, AlertDialogContent, AlertDialogTitle, AlertDialogDescription } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 
+/** Fully downloaded clip per announcement/language/audio version, reused across polls. */
+const localClips = new Map<string, string>();
+
 export function BackgroundDarshanAudio({ suspended = false }: { suspended?: boolean }) {
   const { lang, t } = useI18n();
   const sound = useSyncExternalStore(announcementAudio.subscribe, announcementAudio.snapshot, announcementAudio.serverSnapshot);
@@ -27,10 +30,20 @@ export function BackgroundDarshanAudio({ suspended = false }: { suspended?: bool
       const { data: l, error: languageError } = await supabase.from("voice_announcement_langs").select("audio_path, audio_hash").eq("announcement_id", a.id).eq("lang", lang).maybeSingle();
       if (languageError) throw languageError;
       if (!l?.audio_path) return null;
+      const key = clipKey(a.id, lang, l.audio_hash);
+      const cached = localClips.get(key);
+      if (cached) return { key, url: cached };
       const signed = await supabase.storage.from(AUDIO_BUCKET).createSignedUrl(l.audio_path, 60 * 60 * 6);
       if (signed.error) throw signed.error;
       if (!signed.data?.signedUrl) throw new Error("Audio temporarily unavailable");
-      return { key: clipKey(a.id, lang, l.audio_hash), url: signed.data.signedUrl };
+      // Download the whole clip first so slow mobile networks cannot stall or cut playback midway.
+      const res = await fetch(signed.data.signedUrl);
+      if (!res.ok) throw new Error("Audio temporarily unavailable");
+      const url = URL.createObjectURL(await res.blob());
+      localClips.forEach(old => URL.revokeObjectURL(old));
+      localClips.clear();
+      localClips.set(key, url);
+      return { key, url };
     },
   });
   const settings = useQuery({
