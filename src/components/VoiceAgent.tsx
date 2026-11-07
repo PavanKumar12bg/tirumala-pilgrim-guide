@@ -183,7 +183,6 @@ export function VoiceAgent() {
   };
 
   const getFix = (): Promise<LatLng | null> => getPosition();
-  });
 
   const describe = (p: Place, say: Say) => {
     const name = pickLocalized(p.name, langRef.current);
