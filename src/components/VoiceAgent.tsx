@@ -8,6 +8,7 @@ import { transportListQuery } from "@/lib/transport";
 import { knowledgeQuery } from "@/lib/knowledge";
 import { blogPlainText, blogQuery, blogsQuery, searchBlogs, type Blog } from "@/lib/blogs";
 import { selectSpeechVoice } from "@/lib/browser-speech";
+import { getPosition } from "@/lib/platform";
 import { formatDistance, type LatLng } from "@/lib/geo";
 import { fill, findFreeFood, findKnowledge, findPlaces, hasCoords, localizedWithFlag, nameScore, nearestPlaces, parseIntent, type AgentIntent } from "@/lib/voice-agent";
 import { createCommandGate, createDispatcher, type CommandCtx } from "@/lib/agent-session";
@@ -181,9 +182,7 @@ export function VoiceAgent() {
     else goTo("/map", { search: { place: d.slug, category: d.category, action: d.action } });
   };
 
-  const getFix = () => new Promise<LatLng | null>(resolve => {
-    if (!("geolocation" in navigator)) return resolve(null);
-    navigator.geolocation.getCurrentPosition(p => resolve([p.coords.latitude, p.coords.longitude]), () => resolve(null), { enableHighAccuracy: true, timeout: 12_000, maximumAge: 30_000 });
+  const getFix = (): Promise<LatLng | null> => getPosition();
   });
 
   const describe = (p: Place, say: Say) => {
