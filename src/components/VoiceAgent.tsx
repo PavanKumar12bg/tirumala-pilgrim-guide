@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate, useRouterState } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 import { Mic, MicOff, Pause, Play, Repeat, Send, Square, Volume2, VolumeX, Minus, Plus, X } from "lucide-react";
 import { DICTS, pickLocalized, useI18n, type Lang } from "@/lib/i18n";
 import { announcementsQuery, catKey, placesQuery, type Place } from "@/lib/places";
@@ -33,10 +33,11 @@ export function VoiceAgent() {
   const { t, lang, setLang } = useI18n();
   const navigate = useNavigate();
   const pathname = useRouterState({ select: s => s.location.pathname });
-  const places = useQuery(placesQuery());
-  const knowledge = useQuery(knowledgeQuery());
-  const transport = useQuery(transportListQuery());
-  const announcements = useQuery(announcementsQuery());
+  // Fetched on demand (not during hydration) so live published data is used without disturbing page rendering.
+  const qc = useQueryClient();
+  const load = async <T,>(opts: { queryKey: readonly unknown[]; queryFn?: unknown }, fallback: T): Promise<T> => {
+    try { return (await qc.fetchQuery({ ...(opts as object), staleTime: 60_000 } as Parameters<typeof qc.fetchQuery>[0])) as T; } catch { return fallback; }
+  };
 
   const [state, setStateRaw] = useState<State>("init");
   const [open, setOpen] = useState(false);
@@ -170,10 +171,10 @@ export function VoiceAgent() {
     speak(fill(t("agentChoose"), { list: options.map((p, i) => `${i + 1}. ${pickLocalized(p.name, langRef.current)}`).join(", ") }));
   };
 
-  const matchTransport = (q: string) => (transport.data ?? []).map(c => ({ c, s: nameScore(q, [...Object.values(c.title), c.slug.replaceAll("-", " ")]) })).filter(x => x.s >= 0.6).sort((a, b) => b.s - a.s)[0]?.c;
+  const matchTransport = async (q: string) => (await load(transportListQuery(), [] as { slug: string; title: Record<string, string | undefined> }[])).map(c => ({ c, s: nameScore(q, [...Object.values(c.title), c.slug.replaceAll("-", " ")]) })).filter(x => x.s >= 0.6).sort((a, b) => b.s - a.s)[0]?.c;
 
   const run = async (intent: AgentIntent, raw: string) => {
-    const list = places.data ?? [];
+    const list = await load(placesQuery(), [] as Place[]);
     switch (intent.kind) {
       case "stopSpeaking": stopSpeaking(); return;
       case "repeat": return speak(lastReplyRef.current || t("agentWelcome"));
@@ -195,7 +196,7 @@ export function VoiceAgent() {
         return speak(text || t("agentEmpty"));
       }
       case "announcement": {
-        const items = (announcements.data ?? []).filter(a => a.active).map(a => pickLocalized(a.text, langRef.current)).filter(Boolean);
+        const items = (await load(announcementsQuery(), [] as { active: boolean; text: unknown }[])).filter(a => a.active).map(a => pickLocalized(a.text, langRef.current)).filter(Boolean);
         return speak(items.length ? items.join(". ") : t("agentNoAnnouncement"));
       }
       case "outside": return speak(t("agentOutside"));
@@ -220,13 +221,13 @@ export function VoiceAgent() {
         const r = findPlaces(intent.query, list);
         if (r.match) return intent.kind === "navigate" ? openPlace(r.match) : describe(r.match);
         if (r.options.length) return offerChoices(r.options);
-        const tc = matchTransport(intent.query);
+        const tc = await matchTransport(intent.query);
         if (tc) { void navigate({ to: "/transport/$slug", params: { slug: tc.slug } }); return speak(fill(t("agentTransport"), { name: pickLocalized(tc.title, langRef.current) })); }
         if (intent.kind === "info") return run({ kind: "query", text: intent.query }, raw);
         return speak(fill(t("agentNoPlace"), { q: intent.query }));
       }
       case "query": {
-        const k = findKnowledge(intent.text, knowledge.data ?? []);
+        const k = findKnowledge(intent.text, await load(knowledgeQuery(), []));
         if (k) {
           const a = localizedWithFlag(k.answer, langRef.current);
           const extra = [a.fallback ? t("agentOtherLang") : "", k.source_label ? fill(t("agentSource"), { src: k.source_label }) : "", k.ttd_verified ? "" : t("agentUnverified")].filter(Boolean).join(" ");
@@ -235,7 +236,7 @@ export function VoiceAgent() {
         const r = findPlaces(intent.text, list);
         if (r.match) return describe(r.match);
         if (r.options.length) return offerChoices(r.options);
-        const tc = matchTransport(intent.text);
+        const tc = await matchTransport(intent.text);
         if (tc) { void navigate({ to: "/transport/$slug", params: { slug: tc.slug } }); return speak(fill(t("agentTransport"), { name: pickLocalized(tc.title, langRef.current) })); }
         return speak(t("agentNotUnderstood"));
       }
@@ -251,7 +252,7 @@ export function VoiceAgent() {
       choicesRef.current = [];
       const n = Number(clean.match(/\d+/)?.[0]);
       const pick = Number.isInteger(n) && options[n - 1] ? options[n - 1] : findPlaces(clean, options).match;
-      if (pick) return openPlace(pick);
+      if (pick) { openPlace(pick); return; }
     }
     const intent = parseIntent(clean);
     if (!intent) return;
