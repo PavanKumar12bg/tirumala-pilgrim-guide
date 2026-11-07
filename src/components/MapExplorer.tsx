@@ -10,7 +10,6 @@ import { pickLocalized, useI18n, type DictKey } from "@/lib/i18n";
 import { PlaceImage } from "./PlaceImage";
 import { ErrorBox } from "./HomeSections";
 import { cn } from "@/lib/utils";
-import { VoiceAssistant } from "./VoiceAssistant";
 import { Button } from "@/components/ui/button";
 import { interpretCommand, type VoiceAction } from "@/lib/voice-commands";
 
@@ -69,7 +68,6 @@ export default function MapExplorer({ initialSlug, initialCategory, initialComma
   const [searchOpen, setSearchOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
   const [dismissed, setDismissed] = useState<string | null>(null);
-  const [voiceOpen, setVoiceOpen] = useState(false);
   const [voiceMessage, setVoiceMessage] = useState("");
   const initialHandled = useRef(false);
 
@@ -337,6 +335,19 @@ export default function MapExplorer({ initialSlug, initialCategory, initialComma
       if (!places.some(p => Object.values(p.name).some(n => n?.toLowerCase().includes(action.text.toLowerCase())))) setVoiceMessage(t("voiceUnknown"));
     }
   };
+  // Site-wide voice helper drives the existing map through this event (no second map).
+  const agentRef = useRef<(d: { slug?: string; category?: string; action?: string }) => void>(() => {});
+  agentRef.current = d => {
+    if (d.category) { setCat(d.category); setPanel("none"); }
+    if (d.slug) { choose(d.slug); setCollapsed(false); }
+    if (d.action === "location" || d.action === "nearby" || d.action === "stop") executeVoice({ kind: d.action });
+    else if (d.action === "navigate" && d.slug) { const dest = places.find(p => p.slug === d.slug); if (dest) setVoiceMessage(`${pickLocalized(dest.name, lang)} · ${t("startNav")}`); }
+  };
+  useEffect(() => {
+    const onAgent = (e: Event) => agentRef.current((e as CustomEvent).detail ?? {});
+    window.addEventListener("tg-agent-map", onAgent);
+    return () => window.removeEventListener("tg-agent-map", onAgent);
+  }, []);
   useEffect(() => {
     if (!data || initialHandled.current) return;
     initialHandled.current = true;
@@ -504,9 +515,8 @@ export default function MapExplorer({ initialSlug, initialCategory, initialComma
         ) : null}
       </div>
       <div className="pointer-events-none absolute inset-y-0 right-3 z-[600] flex items-center">
-        <Button variant="secondary" size="icon" className="pointer-events-auto size-11 shrink-0 rounded-md shadow-lift" aria-label={t("voiceAssistant")} title={t("voiceAssistant")} onClick={() => setVoiceOpen(true)}><Mic className="size-5" /></Button>
+        <Button variant="secondary" size="icon" className="pointer-events-auto size-11 shrink-0 rounded-md shadow-lift" aria-label={t("voiceAssistant")} title={t("voiceAssistant")} onClick={() => window.dispatchEvent(new CustomEvent("tg-agent-open"))}><Mic className="size-5" /></Button>
       </div>
-      <VoiceAssistant open={voiceOpen} onOpenChange={setVoiceOpen} onAction={executeVoice} />
     </div>
   );
 }
