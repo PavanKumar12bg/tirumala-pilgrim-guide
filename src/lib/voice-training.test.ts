@@ -38,4 +38,8 @@ describe("natural destination commands", () => {
     const food = { ...temple, category: "food", name: { en: "Annaprasadam Bhavan" } };
     expect(findPlaces("Vengamamba Annasatram", [food]).match).toBeNull();
   });
+  it("does not confuse generic Swamy/name fragments with the main temple", () => {
+    const varaha = { ...temple, id: "different", slug: "varaha", name: { te: "శ్రీ ఆది వరాహస్వామి ఆలయం", en: "Sri Adi Varaha Swamy Temple" } };
+    expect(findPlaces("వెంకటేశ్వర స్వామి గుడికి దారి చూపించు", [temple, varaha]).match?.id).toBe(destination);
+  });
 });
