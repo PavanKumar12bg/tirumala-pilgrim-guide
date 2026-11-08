@@ -135,7 +135,13 @@ export function VoiceAgent() {
       timerRef.current = setTimeout(startRec, delay);
     };
     try { rec.start(); if (stateRef.current !== "listening" && stateRef.current !== "thinking") setState("permission"); }
-    catch { recRef.current = null; errorsRef.current++; }
+    catch {
+      recRef.current = null;
+      errorsRef.current++;
+      // A failed start() may never fire onend: schedule the same bounded retry so listening is not silently dead.
+      if (errorsRef.current < MAX_ERRORS) timerRef.current = setTimeout(startRec, Math.min(1000 * 2 ** errorsRef.current, 15_000));
+      else { pausedRef.current = true; setState("errors"); }
+    }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const resumeSoon = () => { clearTimeout(timerRef.current); timerRef.current = setTimeout(() => { if (shouldListen()) startRec(); }, RESUME_AFTER_SPEECH_MS); };
@@ -329,7 +335,7 @@ export function VoiceAgent() {
         if (pick) { await openPlace(pick, ctx.say, ctx); return; }
       }
       const intent = parseIntent(clean);
-      if (!intent) return;
+      if (!intent) { ctx.say(t("agentNotUnderstood")); return; } // Unknown phrase: one honest fallback, never silence.
       // Built-in control commands cannot be overridden by external training.
       if (["query", "info", "navigate", "freeFood", "nearest"].includes(intent.kind)) {
         const rows = await load(voiceTrainingQuery(), []);

@@ -103,9 +103,18 @@ export function createAnnouncementAudio(deps: {
     subscribe(fn: () => void) { subscribers.add(fn); return () => { subscribers.delete(fn); }; },
     snapshot: () => state,
     serverSnapshot: () => initialState,
+    currentUrl: () => audio?.getAttribute("src") ?? null,
     mount(onRecover: () => void) {
       active = true;
       recover = onRecover;
+      // Defensive: never leave a previous element audible. Any double-mount path
+      // (remount, hot reload, error boundary) must not produce overlapping tracks.
+      if (audio) {
+        audio.pause();
+        audio.removeEventListener("ended", onEnded);
+        audio.removeEventListener("error", onError);
+        audio.removeAttribute("src");
+      }
       audio = deps.audio();
       audio.preload = "auto";
       try {
