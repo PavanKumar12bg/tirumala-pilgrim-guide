@@ -67,12 +67,8 @@ Create `src/lib/eco/` validation/session/server/Google/query/eligibility/export 
 Add clean-eco-tirumala index/dashboard/activity/activities/card route files; unique metadata and private-page noindex. Authorized media endpoints check each file. Change only Home promo, Admin tab, translations, feature tokens and public sitemap entry; never generated clients or route tree.
 Add tables for participants, hashed sessions, durable outbox, review events, contribution snapshots, template/rule versions, cards/history, sync state and removal requests. All require explicit grants/RLS; no anonymous private access, auth-user foreign keys or existing-table changes. Capability ownership checks precede scoped server access; Admin uses authenticated RLS and public DTOs omit private fields.
 
-## Setup and environment
-- Reuse server-only Sheets credentials and `LOVABLE_API_KEY`.
-- Link Google Drive securely after plan approval; use the exact environment names returned by the connection, never invented credential placeholders.
-- Store spreadsheet ID/tab and Drive folder ID as Admin configuration, not secrets.
-- Sessions use opaque random capabilities with hashes; no extra signing-secret requirement if no encrypted cookie payload is used. Generate capabilities only inside server requests and never log them.
-- User supplies the two card branding photos; native review of seven-language safety/privacy wording remains a release prerequisite.
+## Setup
+Reuse existing server-only Sheets credentials and `LOVABLE_API_KEY`. Connect Drive after approval using its returned secret names. Spreadsheet/tab/folder IDs are Admin configuration. Hash opaque session capabilities generated inside requests; never log them. No additional signing secret is needed with this approach. Final card images and native review of seven-language safety/privacy text remain dependencies.
 
 ## Verification and delivery
 Test session isolation, email non-ownership, consent, image validation, retry/idempotency, review permissions, approved-only totals, eligibility/category/calendar-period rules, date bounds, unique cards, template history and revocation.
