@@ -145,7 +145,8 @@ export function createAnnouncementAudio(deps: {
     setSettings(next: AudioSettings | null) {
       const before = settings;
       settings = next;
-      if (!allowed()) { stop(); return; }
+      // Priority pauses must not discard the saved announcement position on settings polls.
+      if (!active || !visible || suspended || !next?.autoplay_enabled || state.preference === "off") { stop(); return; }
       if (timer && (before?.repeat_minutes !== next?.repeat_minutes || before?.repeat_enabled !== next?.repeat_enabled)) onEnded();
       if (!before?.autoplay_enabled && next?.autoplay_enabled) play();
     },

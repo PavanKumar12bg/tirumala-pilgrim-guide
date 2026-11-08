@@ -35,7 +35,7 @@ export function importTraining(values: string[][], visibleIds: Set<string>): Tra
     if (result.destinationType === "Page" && (!pages.some(p => p === result.route) || result.action !== "Open Page")) throw new Error(`Row ${index + 2}: invalid page action`);
     if (result.destinationType === "Listing" && !["Navigate", "Show Map", "Search"].includes(result.action)) throw new Error(`Row ${index + 2}: invalid listing action`);
     if (result.destinationType === "Category" && result.action !== "Search") throw new Error(`Row ${index + 2}: invalid category action`);
-    if (result.destinationType === "General Answer" && (result.action !== "Answer" || !Object.keys(responses).length)) throw new Error(`Row ${index + 2}: missing answer`);
+    if (result.destinationType === "General Answer" && (result.action !== "Answer" || ["te", "en", "hi", "ta", "kn", "ml", "or"].some(l => !responses[l]?.trim()))) throw new Error(`Row ${index + 2}: all seven answers are required`);
     return result;
   });
 }

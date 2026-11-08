@@ -42,12 +42,14 @@ export function createAgentSpeech(deps: { synth?: SpeechSynthesis | undefined; u
       const voice = selectSpeechVoice(synth.getVoices(), lang);
       if (!voice) return;
       clearTimeout(timer); cleanup?.(); cleanup = undefined;
-      current = deps.utterance(text);
-      current.voice = voice; current.lang = voice.lang; current.rate = rate;
-      current.onend = () => done("done");
-      current.onerror = () => done("failed");
-      timer = setTimeout(() => done("failed"), Math.max(15000, text.length * 200));
-      try { synth.resume(); synth.speak(current); } catch { done("failed"); }
+      try {
+        current = deps.utterance(text);
+        current.voice = voice; current.lang = voice.lang; current.rate = rate;
+        current.onend = () => done("done");
+        current.onerror = () => done("failed");
+        timer = setTimeout(() => done("failed"), Math.max(15000, text.length * 200));
+        synth.resume(); synth.speak(current);
+      } catch { done("failed"); }
     };
     synth.addEventListener("voiceschanged", start);
     cleanup = () => synth.removeEventListener("voiceschanged", start);

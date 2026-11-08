@@ -92,6 +92,13 @@
       "when": 1794078533985,
       "tag": "0012_voice_query_training",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1794097850716,
+      "tag": "0013_fix_voice_training_snapshot",
+      "breakpoints": true
     }
   ]
 }

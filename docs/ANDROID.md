@@ -38,5 +38,31 @@ app without a new app release.
 7. Generate launcher icons/splash from `public/icons/tirumala-512.png` (Android Studio → Image Asset).
 8. `npx cap open android`, run on a real phone, test: microphone prompt, Telugu speech, GPS,
    back button, map routing, admin login.
-9. Optional later: `@capacitor-community/speech-recognition`, `@capacitor-community/text-to-speech`,
-   `@capacitor/local-notifications`; `platform.ts` will pick them up automatically.
+9. Native TTS: install `@capacitor-community/text-to-speech` in the Android shell and run `npx cap sync android`.
+   The hosted site's bridge expects `Capacitor.Plugins.TextToSpeech` with `isLanguageSupported({lang})`,
+   `speak({text,lang,rate})` (promise must resolve after speech finishes), and `stop()`.
+   Plugin registration/global exposure varies by Capacitor version: verify this bridge in the real WebView;
+   if unavailable the website explicitly falls back to browser speech. Merely installing a package is not verification.
+   Download each required device voice and test all seven languages; missing voices show the text fallback.
+10. Native recognition is NOT added here. Browser WebView recognition may be absent. A native speech plugin
+    needs a separately implemented adapter to this site's finalized-result command lifecycle; do not claim it
+    activates automatically or listens in the background.
+
+## Foreground microphone service limits
+A native developer must implement any later screen-off listening separately, with explicit user start/stop,
+runtime `RECORD_AUDIO`, `FOREGROUND_SERVICE`, and (Android 14+) `FOREGROUND_SERVICE_MICROPHONE` plus
+`android:foregroundServiceType="microphone"`. Start while the activity is visible and permission granted.
+Android 12+ restricts starting foreground services from the background; Android 14+ enforces while-in-use
+microphone restrictions. Keep an ongoing notification and an obvious Stop action; comply with Play policy,
+battery/service limits and interruption handling. This repository does not implement that service.
+AccessibilityService does not grant microphone access and is not requested.
+
+## Optional query training
+Admin → Voice Q&A → Google Sheets query training → Sync Now imports the configured `Queries!A1:T1001`
+snapshot. The sheet is optional: existing published Q&A and built-in commands keep working without it.
+Use the downloadable CSV's exact 20 headers. Separate alternate phrases with `|`; use `Active` or `Inactive`.
+Listing destinations require a visible canonical place UUID; Page routes/actions are allow-listed. Category
+rows use a real place category (e.g. Food). General Answer requires `Action_Type=Answer` and `Response_Text`
+as JSON with nonempty `te,en,hi,ta,kn,ml,or` strings. No scripts or arbitrary routes execute. Bad imports
+leave the prior snapshot intact and report an admin error; missing rows become inactive on successful sync.
+Credentials stay server-only; no polling sync or AI calls. Only admin-approved source-verified answers belong here.

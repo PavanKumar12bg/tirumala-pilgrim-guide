@@ -42,6 +42,11 @@ export function BackgroundDarshanAudio({ suspended = false }: { suspended?: bool
       const url = URL.createObjectURL(await res.blob());
       // Keep a paused element's object URL alive while another language request finishes.
       localClips.set(key, url);
+      // Bound cached versions; the latest selected seven-language set stays reusable.
+      if (localClips.size > 14) {
+        const oldest = localClips.keys().next().value;
+        if (oldest && oldest !== key) { const oldUrl = localClips.get(oldest); localClips.delete(oldest); if (oldUrl) URL.revokeObjectURL(oldUrl); }
+      }
       return { key, url };
     },
   });

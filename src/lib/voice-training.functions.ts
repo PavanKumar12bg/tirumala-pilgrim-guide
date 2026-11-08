@@ -25,7 +25,8 @@ export const syncVoiceTraining = createServerFn({ method: "POST" })
       if (saveError) throw saveError;
       return { count };
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Synchronization failed";
+      const message = error instanceof Error ? error.message : typeof error === "object" && error !== null && "message" in error ? String(error.message) : "Synchronization failed";
+      console.error("Voice training sync failed:", message);
       await context.supabase.from("voice_training_sync").upsert({ id: 1, last_error: message });
       throw new Error(message);
     }
