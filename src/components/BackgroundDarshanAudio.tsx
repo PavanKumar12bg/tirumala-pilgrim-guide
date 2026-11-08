@@ -45,7 +45,8 @@ export function BackgroundDarshanAudio({ suspended = false }: { suspended?: bool
       // Bound cached versions; the latest selected seven-language set stays reusable.
       if (localClips.size > 14) {
         const oldest = localClips.keys().next().value;
-        if (oldest && oldest !== key) { const oldUrl = localClips.get(oldest); localClips.delete(oldest); if (oldUrl) URL.revokeObjectURL(oldUrl); }
+        // Never revoke the URL currently loaded in the player.
+        if (oldest && oldest !== key && localClips.get(oldest) !== announcementAudio.currentUrl()) { const oldUrl = localClips.get(oldest); localClips.delete(oldest); if (oldUrl) URL.revokeObjectURL(oldUrl); }
       }
       return { key, url };
     },
