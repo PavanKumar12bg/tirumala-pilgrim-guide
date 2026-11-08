@@ -1,0 +1,2 @@
+Intent_ID,Category,Canonical_Name,Primary_Query,Alternative_Queries,Telugu_Queries,English_Queries,Hindi_Queries,Tamil_Queries,Kannada_Queries,Malayalam_Queries,Odia_Queries,Destination_Type,Destination_ID,Destination_Route,Action_Type,Response_Text,Keywords,Status,Updated_At
+TRANSPORT_PAGE,Transport,Transport,Open transport,,ట్రాన్స్‌పోర్ట్ ఓపెన్ చేయి,,,,,,,Page,,/transport,Open Page,,,Active,

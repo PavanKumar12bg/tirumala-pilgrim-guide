@@ -23,7 +23,7 @@ export function VoiceTrainingAdmin() {
   const syncNow = async () => {
     setBusy(true); setError("");
     try {
-      const value = id || status.data?.spreadsheet_id || "";
+      const value = id || status.data?.spreadsheet_id || "1HTCCxPtC0pZPEt33qSu03lBNzWuiay0z2aYPL0lo68k";
       const spreadsheetId = value.match(/\/spreadsheets\/d\/([\w-]+)/)?.[1] ?? value;
       await sync({ data: { spreadsheetId, range: range || status.data?.sheet_range || "Queries!A1:T1001" } });
     } catch (e) { setError(e instanceof Error ? e.message : "Sync failed"); }
@@ -32,7 +32,7 @@ export function VoiceTrainingAdmin() {
   return <section className="space-y-2 border-b border-border pb-4">
     <h3 className="font-semibold text-primary">Google Sheets query training</h3>
     <div className="grid gap-2 sm:grid-cols-2">
-      <div><Label htmlFor="training-sheet">Spreadsheet URL or ID</Label><Input id="training-sheet" value={id || status.data?.spreadsheet_id || ""} onChange={e => setId(e.target.value)} /></div>
+      <div><Label htmlFor="training-sheet">Spreadsheet URL or ID</Label><Input id="training-sheet" value={id || status.data?.spreadsheet_id || "1HTCCxPtC0pZPEt33qSu03lBNzWuiay0z2aYPL0lo68k"} onChange={e => setId(e.target.value)} /></div>
       <div><Label htmlFor="training-range">Sheet range</Label><Input id="training-range" value={range || status.data?.sheet_range || "Queries!A1:T1001"} onChange={e => setRange(e.target.value)} /></div>
     </div>
     <div className="flex flex-wrap items-center gap-3"><Button disabled={busy} onClick={() => void syncNow()}><RefreshCw className="size-4" />{busy ? "Syncing…" : "Sync Now"}</Button><a className="text-sm text-primary underline" href="/voice-query-template.csv" download>Download template</a></div>
