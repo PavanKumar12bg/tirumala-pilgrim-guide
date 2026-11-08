@@ -5,13 +5,8 @@ Add the complete participation feature to this existing Tirumala Guide only. Pre
 
 Correct the earlier assumptions: **no password/OTP/email verification**, **Sheets activity records**, **private Drive photos**.
 
-## Existing features to reuse
-- File-based pages in `src/routes`, shared `AppShell`, existing buttons/forms and seven-language dictionaries in `src/lib/i18n.tsx`.
-- `src/components/admin/AdminPanel.tsx` tabs and existing admin role checks; server mutations use `requireSupabaseAuth` and `has_role`, not UI-only authorization.
-- Existing `src/start.ts` bearer attachment and CSRF protection.
-- `src/lib/image-compress.ts` for mobile image compression, with additional server validation.
-- Pavan's Google Sheets connection is already linked. No accessible Google Drive connection was listed; connect it during approved implementation.
-- No participant-registration feature exists to duplicate. Root audio and voice components need no changes.
+## Reuse
+Reuse existing routes/AppShell, UI components, seven-language i18n, AdminPanel tabs, `has_role`, authenticated server middleware, CSRF protection and `image-compress.ts`. Sheets is linked; Drive is not. No participant workflow exists. Root audio/voice remains unchanged.
 
 ## Pages and presentation
 - `/clean-eco-tirumala`: green/cream/gold branding, initiative, participation steps, rules, registration entry, leaderboard, card explanation and recent approved activities. Use unframed sections and restrained typography; all public interface copy in seven languages.
@@ -25,7 +20,7 @@ Collect full name, email, profile photo and required collection consent; public 
 
 Create a server-issued, unguessable participant session in an HttpOnly, Secure, SameSite cookie. Store a hash of its capability, expiry and revocation state. This proves possession of a registration session, **not ownership of an email address**. Do not create anonymous auth accounts or alter existing admin sign-in.
 
-Automatically assign a unique participant/display ID and record `email_verified=false`. Repeated registration in the same valid session returns that participant. A matching email in another browser never reveals the existing profile or creates a session for it; show a neutral recovery instruction without exposing whether that email exists. Use an explicit admin-assisted recovery process rather than impersonation by email. Warn that clearing cookies or switching devices loses automatic access and that shared-browser sessions must be ended.
+Automatically assign a unique participant/display ID and record `email_verified=false`. Reuse only the valid current-browser session. Email entry alone never exposes or opens an existing profile; return neutral recovery instructions. Clearing cookies/changing devices requires admin-assisted recovery; warn shared-browser users to end sessions.
 
 Offer participant requests to hide/remove public profile/photos. Consent withdrawal removes public access promptly; private record deletion and audit-retention handling are reported separately.
 
@@ -68,13 +63,9 @@ One reusable HTML/SVG template displays requested branding, participant photo/na
 Admin previews labeled sample data, edits localized template text/images/rules and publishes a version. Template changes do not silently alter issued snapshots; explicit regeneration creates a new historical version. Provide high-resolution PNG and actual PDF downloads via browser-compatible rendering/PDF tooling, not merely print-dialog instructions. Embed authorized images/fonts so exports match the preview.
 
 ## Technical scope
-Proposed new modules: `src/lib/eco/` schemas, session/server helpers, connector helpers, queries, contribution/eligibility logic and export helpers; `src/components/eco/` forms, activity views and master card; `src/components/admin/CleanEcoAdmin.tsx`.
-
-Add `clean-eco-tirumala` index/dashboard/activity/activities/card route files with unique metadata; private pages are noindex. Add per-file authorized media endpoints.
-
-Modify only Home, existing Admin tab wiring, translations, feature-specific semantic CSS tokens and sitemap for the public initiative page. Do not edit generated clients/route tree manually.
-
-New tables: participants, hashed sessions, submission outbox, review events, contribution snapshots, template/rule versions, cards/history, sync state and removal requests. Explicit grants/RLS on all; no anonymous private access or new auth-user foreign keys. Participant capability/ownership checks precede scoped server access; Admin uses existing authenticated RLS. Public DTOs exclude private fields. Existing tables remain unchanged.
+Create `src/lib/eco/` validation/session/server/Google/query/eligibility/export helpers, `src/components/eco/` forms and master card, and `src/components/admin/CleanEcoAdmin.tsx`.
+Add clean-eco-tirumala index/dashboard/activity/activities/card route files; unique metadata and private-page noindex. Authorized media endpoints check each file. Change only Home promo, Admin tab, translations, feature tokens and public sitemap entry; never generated clients or route tree.
+Add tables for participants, hashed sessions, durable outbox, review events, contribution snapshots, template/rule versions, cards/history, sync state and removal requests. All require explicit grants/RLS; no anonymous private access, auth-user foreign keys or existing-table changes. Capability ownership checks precede scoped server access; Admin uses authenticated RLS and public DTOs omit private fields.
 
 ## Setup and environment
 - Reuse server-only Sheets credentials and `LOVABLE_API_KEY`.
