@@ -3,7 +3,7 @@
 ## Scope and corrections to the earlier plan
 Add the complete participation feature to this existing Tirumala Guide only. Preserve maps, navigation, announcements, voice helper, existing authentication, data and security. No production deployment.
 
-The earlier plan incorrectly treated magic-link sign-in and database-owned activity records as confirmed decisions. This revision follows the latest request: **no password, OTP or required email verification**, with **Google Sheets as the activity record/reporting system** and **private Google Drive photos**.
+Correct the earlier assumptions: **no password/OTP/email verification**, **Sheets activity records**, **private Drive photos**.
 
 ## Existing features to reuse
 - File-based pages in `src/routes`, shared `AppShell`, existing buttons/forms and seven-language dictionaries in `src/lib/i18n.tsx`.
@@ -32,7 +32,7 @@ Offer participant requests to hide/remove public profile/photos. Consent withdra
 ## Activities and private images
 Support all six requested categories, description, date, area, required before/after photos and optional additional photos; mobile camera/file upload, preview and compression.
 
-Proposed documented limits: JPEG/PNG/WebP, at most 8 photos per activity, 10 MB per incoming image, compressed upload target at most 2 MB each. Reject invalid signatures/types, unreasonable dimensions and malformed data on the server; strip metadata during re-encoding and never trust filenames. Confirm these limits in tests.
+Validate signatures, dimensions and JPEG/PNG/WebP format server-side; strip metadata. Proposed limits: 8 photos/activity, 10 MB incoming and 2 MB compressed per image, covered by tests.
 
 Submission IDs and idempotency keys prevent accidental duplicate retries. Google Drive files remain private. Participant/admin photo access is authorized per file; public access requires approved activity, explicit display consent and a public-safe projection. Public endpoints must enforce these conditions themselves; knowing a Drive ID does not grant access.
 
@@ -41,11 +41,11 @@ Show Pending Review, Approved or Rejected with the admin reason. Pending/rejecte
 ## Sheets, durability and review consistency
 Use a dedicated spreadsheet/tab and private Drive folder in the owner's connected account, not participants' Google accounts. Do not reuse or overwrite voice-training tabs.
 
-Sheets columns include all 15 requested fields: participant ID/name/email; activity ID/category/description/date/location; before/after/additional photo references; submission status; admin review status/comments; submission timestamp. Add reconciliation/version and verified-quantity fields as needed. Store private references, not public-sharing links. Escape formula-like user content and write literal values safely.
+Sheets includes all 15 requested columns plus reconciliation/version and verified quantities. Photo references stay private; write user content literally to prevent formula injection.
 
 Sheets is not transactional, so a small Cloud safety layer is necessary for sessions, durable pending submissions, review versions, audit records, eligibility and card uniqueness. **Do not silently replace Sheets with a permanent duplicate activity table.** Pending payloads are retained in an outbox until acknowledged; verified review/contribution snapshots retain only fields needed to recalculate recognition safely. Read descriptive activity history from Sheets through a bounded cache.
 
-Use batched reads/writes, stable activity IDs rather than mutable row numbers, explicit Sync/Retry, bounded transient backoff and recorded provider errors. Never poll Sheets on every render. On outages preserve pending payloads and private staged images in a new private temporary Cloud bucket until Drive upload is confirmed. Cleanup is scoped and retryable. Processing resumes only after acknowledgement/read-back; Admin retry must not duplicate photos, rows, approvals or cards.
+Batch/cache Sheets reads, use stable IDs and bounded retries. Durable outbox plus private temporary Cloud image staging preserves failures until Drive/Sheets read-back. Admin Sync/Retry is idempotent; scoped cleanup is recoverable.
 
 Reviews originate in the website Admin panel. Out-of-band Sheet edits are flagged for reconciliation, never silently treated as authorized approvals. Serialize reviews per activity and use atomic local contribution/card recalculation; external Sheet updates remain explicit sync jobs.
 
@@ -70,14 +70,14 @@ Admin previews labeled sample data, edits localized template text/images/rules a
 ## Technical scope
 Proposed new modules: `src/lib/eco/` schemas, session/server helpers, connector helpers, queries, contribution/eligibility logic and export helpers; `src/components/eco/` forms, activity views and master card; `src/components/admin/CleanEcoAdmin.tsx`.
 
-New route files: `clean-eco-tirumala.index.tsx`, `clean-eco-tirumala.dashboard.tsx`, `clean-eco-tirumala.activity.tsx`, `clean-eco-tirumala.activities.tsx`, `clean-eco-tirumala.card.tsx`. Each content page gets its own metadata; private dashboard/card pages are noindex. Add authorized private-media HTTP routes only as needed.
+Add `clean-eco-tirumala` index/dashboard/activity/activities/card route files with unique metadata; private pages are noindex. Add per-file authorized media endpoints.
 
 Modify only Home, existing Admin tab wiring, translations, feature-specific semantic CSS tokens and sitemap for the public initiative page. Do not edit generated clients/route tree manually.
 
-Additive Cloud tables, finalized during implementation: `eco_participants`, `eco_sessions`, `eco_submission_outbox`, `eco_review_events`, `eco_contribution_snapshots`, `eco_template_versions`, `eco_eligibility_settings`, `eco_cards`, `eco_card_events`, `eco_sync_state` and removal-request records. No foreign keys to auth users except existing allowed role infrastructure. Every table gets explicit grants/RLS; no anonymous private-row access. Participant operations require verified capability plus server-side ownership checks before narrowly scoped privileged access. Admin operations use existing authenticated RLS; public projections exclude emails/session identifiers/private photos. No schema changes to existing feature tables.
+New tables: participants, hashed sessions, submission outbox, review events, contribution snapshots, template/rule versions, cards/history, sync state and removal requests. Explicit grants/RLS on all; no anonymous private access or new auth-user foreign keys. Participant capability/ownership checks precede scoped server access; Admin uses existing authenticated RLS. Public DTOs exclude private fields. Existing tables remain unchanged.
 
 ## Setup and environment
-- Existing Google Sheets credentials and `LOVABLE_API_KEY` remain server-only and unchanged.
+- Reuse server-only Sheets credentials and `LOVABLE_API_KEY`.
 - Link Google Drive securely after plan approval; use the exact environment names returned by the connection, never invented credential placeholders.
 - Store spreadsheet ID/tab and Drive folder ID as Admin configuration, not secrets.
 - Sessions use opaque random capabilities with hashes; no extra signing-secret requirement if no encrypted cookie payload is used. Generate capabilities only inside server requests and never log them.
@@ -86,7 +86,7 @@ Additive Cloud tables, finalized during implementation: `eco_participants`, `eco
 ## Verification and delivery
 Add focused tests for session isolation/email non-ownership, consent/public filtering, file validation, idempotency, sync failure/retry, review authorization, count/quantity corrections, category/period eligibility, date bounds, unique card IDs, historical versioning and revocation.
 
-Run existing relevant tests and new tests; inspect automatic typecheck/build results (do not manually run project builds). Verify real participant register → upload → owner Admin review → totals/leaderboard → eligible card → PNG/PDF downloads → revoke/recalculate, plus denied access from another session. Test phone widths including 360×527 and desktop; check Home, transport, map, announcements and voice regressions without altering their behavior.
+Run relevant/new tests and inspect automatic typecheck/build. Verify real registration → upload → owner Admin review → totals/leaderboard → card → PNG/PDF → revocation, plus cross-session denial. Check 360×527/desktop and existing Home/transport/map/audio/voice flows.
 
 Final report lists exact files/migrations, connector setup, required environment names, completed flows, actual test counts and blockers. Do not claim Google/owner-authenticated checks or physical-phone behavior passed unless exercised. No deployment.
 
