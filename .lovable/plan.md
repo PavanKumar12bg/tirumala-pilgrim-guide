@@ -1,60 +1,79 @@
-# Plan: Clean & Eco Tirumala Participation & Appreciation System
+# Clean & Eco Tirumala — implementation plan
 
-Additive feature in the existing Tirumala Guide. No new project, no production deploy, existing routes/design/RLS/admin untouched.
+## Scope and corrections to the earlier plan
+Add to the existing guide; preserve all features, authentication and security. No deployment.
 
-## Decisions confirmed
-- **Login:** email magic link (no password, no OTP code form). Uses existing Cloud auth; first magic link creates the account, participant profile auto-creates on first sign-in.
-- **Data:** Lovable Cloud database is the source of truth; Google Sheets receives a synced reporting copy via the existing Sheets connection.
-- **Photos:** stored in your Google Drive (private folder, server-side upload only); database stores Drive file IDs. Public pages show only approved photos through a server proxy so Drive files stay non-public.
-- **Card images:** your two uploaded images (Venkateswara photo + temple photo) become the Master Card Template branding. No TTD logo/authority anywhere.
+Correct the earlier assumptions: **no password/OTP/email verification**, **Sheets activity records**, **private Drive photos**.
 
-## Pages (public)
-1. `/clean-eco-tirumala` — hero (green/cream/gold), about, how to participate, rules, Participate Now, Top Contributors leaderboard, appreciation-card info, recent approved activities. 7-language copy via existing i18n.
-2. Homepage: small promo banner (title, short text, Participate Now, View Contributors) — not the full dashboard.
-3. `/clean-eco-tirumala/dashboard` — magic-link-gated participant dashboard: photo, name, Participant ID, email, activity counts, card status; buttons for new activity, my activities, my card, download.
-4. `/clean-eco-tirumala/card` — My Appreciation Card with honest statuses (Not Yet Eligible / Under Review / Generated / Revoked) and PNG + PDF downloads when generated.
+## Reuse
+Reuse existing routes/AppShell, UI components, seven-language i18n, AdminPanel tabs, `has_role`, authenticated server middleware, CSRF protection and `image-compress.ts`. Sheets is linked; Drive is not. No participant workflow exists. Root audio/voice remains unchanged.
 
-## Registration & sessions
-- Participate form: full name, email, profile photo, privacy consent checkbox (required).
-- Magic link sign-in; participant profile links to the auth account, so nobody can open another's profile by typing an email. Duplicate emails map to one account; one participant per account.
-- Participant ID auto-generated (e.g. `TG-CET-P-000123`).
+## Pages and presentation
+- `/clean-eco-tirumala`: green/cream/gold branding, initiative, participation steps, rules, registration entry, leaderboard, card explanation and recent approved activities. Use unframed sections and restrained typography; all public interface copy in seven languages.
+- Add only a compact Home promotion with Participate Now and View Contributors. Leave bottom navigation unchanged.
+- Separate participant pages for dashboard, new activity, activity history and My Appreciation Card. They use the existing shell and show a registration/resume state when no valid participant session exists.
+- Dashboard shows photo, name, ID, private unverified email, submitted/approved/pending/rejected totals and card status.
+- Participation guidance must not authorize planting or handling hazardous waste: follow local rules, obtain required permission and avoid restricted areas.
 
-## Activities
-- Categories: Plastic Waste Collection, General Cleaning, Waste into Dustbins, Tree Plantation, Environmental Protection, Other.
-- Form: category, description, date, location, before photo, after photo, optional extra photos; mobile camera capture + upload, preview, client-side compression, size/format validation.
-- Statuses: Pending / Approved / Rejected (with admin reason). Only approved counts.
+## Registration and privacy
+Collect full name, email, profile photo and required collection consent; public display consent is separate and optional.
 
-## Database (additive, RLS on every table, admin via existing `has_role`)
-- `eco_participants` (account link, name, email, photo Drive ID, public-display consent, hidden-from-leaderboard flag)
-- `eco_activities` (participant, category, description, date, location, photo Drive IDs, status, admin comment, verified quantities: plastic kg, saplings, verified_by/at)
-- `eco_activity_reviews` (audit history of every approve/reject/revoke/quantity change)
-- `eco_card_settings` (single row: eligibility rules — min approved count, required categories, min period — plus template text)
-- `eco_cards` (unique card number `TG-CET-2026-000001` via sequence, participant, start/end dates from first/latest approved activity, snapshot of totals, status, generation history)
-- `eco_sheet_sync` (sync status/errors for retry)
+Create a server-issued, unguessable participant session in an HttpOnly, Secure, SameSite cookie. Store a hash of its capability, expiry and revocation state. This proves possession of a registration session, **not ownership of an email address**. Do not create anonymous auth accounts or alter existing admin sign-in.
 
-## Google integration (server-side only)
-- New server functions: upload validated photos to a Drive folder (existing google_drive connector), append/update activity rows in a new "Clean & Eco Tirumala" sheet (existing google_sheets connection) with the 15 columns you listed.
-- Sync failure never loses a submission: record stays in database with sync-pending status; Admin gets Sync/Retry. Emails never appear on public pages.
-- Requires linking the Google Drive connector to the project (one connect card during build).
+Automatically assign a unique participant/display ID and record `email_verified=false`. Reuse only the valid current-browser session. Email entry alone never exposes or opens an existing profile; return neutral recovery instructions. Clearing cookies/changing devices requires admin-assisted recovery; warn shared-browser users to end sessions.
 
-## Admin (new tab in existing Admin panel)
-- Participants list, activities queue with before/after photo inspection, approve/reject with comments, correct verified quantities, revoke approvals, hide from leaderboard, per-participant history.
-- Card settings: eligibility rules, template text, branding image swap, sample preview, publish template (historical cards unchanged unless explicitly regenerated).
+Offer participant requests to hide/remove public profile/photos. Consent withdrawal removes public access promptly; private record deletion and audit-retention handling are reported separately.
 
-## Appreciation card
-- One reusable HTML/SVG master template (green/cream/gold, leaf motifs, your two photos, Tirumala Guide branding, "independent appreciation card — not an official document" note).
-- Auto-fill: photo, name, Participant ID, start/end dates (first/latest approved activity), approved activity count, verified plastic/saplings, approved photo count, achievement level.
-- Auto-generates when eligibility rules pass (recalculated on every approve/revoke); unique sequential card number; PNG via canvas export and PDF via print-to-PDF stylesheet.
+## Activities and private images
+Support all six requested categories, description, date, area, required before/after photos and optional additional photos; mobile camera/file upload, preview and compression.
 
-## Leaderboard
-- Public: photo (only with consent), name, safe display ID, approved activities, verified plastic, verified saplings, total contributions, achievement level. Sorted by approved/verified records only; admin-hidden participants excluded.
+Validate signatures, dimensions and JPEG/PNG/WebP format server-side; strip metadata. Proposed limits: 8 photos/activity, 10 MB incoming and 2 MB compressed per image, covered by tests.
 
-## Testing
-- Unit tests: eligibility rules, card number uniqueness, date logic, verified-quantity counting, status transitions, leaderboard filtering.
-- Browser checks (mobile + desktop): full flow register → submit → admin approve → leaderboard → card → downloads; revoke recalculation; magic-link flow; existing pages unaffected.
-- Drive/Sheets verified with real calls through the existing connections.
+Submission IDs and idempotency keys prevent accidental duplicate retries. Google Drive files remain private. Participant/admin photo access is authorized per file; public access requires approved activity, explicit display consent and a public-safe projection. Public endpoints must enforce these conditions themselves; knowing a Drive ID does not grant access.
 
-## Limits to state honestly
-- Magic-link emails use Lovable's default sender until an email domain is set up.
-- Drive photos load through the app server, slightly slower than direct storage.
-- No background/offline support.
+Show Pending Review, Approved or Rejected with the admin reason. Pending/rejected activities never count. A failed external upload/write must produce a visible recoverable state, not success.
+
+## Sheets, durability and review consistency
+Use a dedicated spreadsheet/tab and private Drive folder in the owner's connected account, not participants' Google accounts. Do not reuse or overwrite voice-training tabs.
+
+Sheets includes all 15 requested columns plus reconciliation/version and verified quantities. Photo references stay private; write user content literally to prevent formula injection.
+
+Sheets is not transactional, so a small Cloud safety layer is necessary for sessions, durable pending submissions, review versions, audit records, eligibility and card uniqueness. **Do not silently replace Sheets with a permanent duplicate activity table.** Pending payloads are retained in an outbox until acknowledged; verified review/contribution snapshots retain only fields needed to recalculate recognition safely. Read descriptive activity history from Sheets through a bounded cache.
+
+Batch/cache Sheets reads, use stable IDs and bounded retries. Durable outbox plus private temporary Cloud image staging preserves failures until Drive/Sheets read-back. Admin Sync/Retry is idempotent; scoped cleanup is recoverable.
+
+Reviews originate in the website Admin panel. Out-of-band Sheet edits are flagged for reconciliation, never silently treated as authorized approvals. Serialize reviews per activity and use atomic local contribution/card recalculation; external Sheet updates remain explicit sync jobs.
+
+## Admin, contributions and leaderboard
+Add a Clean & Eco tab: participants, activity queue with before/after comparison, date/location inspection, approve/reject/comments, verified plastic weight and sapling counts, correction/revocation, contribution history, public hiding, removal requests and sync retry.
+
+Record actor, timestamp, prior/new values and reason for every review or correction. Require an authorized admin for confirmed quantities; user claims are separate and unverified.
+
+Leaderboard includes only opted-in, non-hidden participants with approved contributions. Show safe ID/name/photo, approved cleaning count, verified plastic/saplings, approved activity total and achievement level. Default ordering is approved activity count, with stable ID tie-breaks; photos never affect rank. Achievement thresholds are admin-configurable rather than fabricated weights combining kilograms and saplings.
+
+## Eligibility and one master appreciation card
+Admin configures minimum approved activity count, required categories, optional minimum period and structured recognition conditions; no executable expressions. Publish explicit rules before issuing cards rather than assuming a single approval qualifies.
+
+Recalculate on approval, rejection, revocation, quantity correction and explicit rules reevaluation. Start/end dates come from first/latest approved **activity dates**, not submission dates or fixed validity. Period is calendar-day span; include this definition in Admin settings. Count photos only from approved records.
+
+Allocate unique card numbers such as `TG-CET-2026-000001` atomically with a uniqueness constraint. Store issued snapshots, rule/template versions and append-only generation/status history. When eligibility is lost, mark current card revoked/under review and disable current issued downloads; preserve history. A downloaded file cannot be remotely recalled.
+
+One reusable HTML/SVG template displays requested branding, participant photo/name/ID, card number, dates, approved cleaning/photos, verified quantities when present and achievement level. Clearly state independent Tirumala Guide appreciation, not an official identity/travel document. Two supplied devotional photos are pending: use clearly labeled placeholders and block final template publication until approved images are supplied.
+
+Admin previews labeled sample data, edits localized template text/images/rules and publishes a version. Template changes do not silently alter issued snapshots; explicit regeneration creates a new historical version. Provide high-resolution PNG and actual PDF downloads via browser-compatible rendering/PDF tooling, not merely print-dialog instructions. Embed authorized images/fonts so exports match the preview.
+
+## Technical scope
+Create `src/lib/eco/` validation/session/server/Google/query/eligibility/export helpers, `src/components/eco/` forms and master card, and `src/components/admin/CleanEcoAdmin.tsx`.
+Add clean-eco-tirumala index/dashboard/activity/activities/card route files; unique metadata and private-page noindex. Authorized media endpoints check each file. Change only Home promo, Admin tab, translations, feature tokens and public sitemap entry; never generated clients or route tree.
+Add tables for participants, hashed sessions, durable outbox, review events, contribution snapshots, template/rule versions, cards/history, sync state and removal requests. All require explicit grants/RLS; no anonymous private access, auth-user foreign keys or existing-table changes. Capability ownership checks precede scoped server access; Admin uses authenticated RLS and public DTOs omit private fields.
+
+## Setup
+Reuse existing server-only Sheets credentials and `LOVABLE_API_KEY`. Connect Drive after approval using its returned secret names. Spreadsheet/tab/folder IDs are Admin configuration. Hash opaque session capabilities generated inside requests; never log them. No additional signing secret is needed with this approach. Final card images and native review of seven-language safety/privacy text remain dependencies.
+
+## Verification and delivery
+Test session isolation, email non-ownership, consent, image validation, retry/idempotency, review permissions, approved-only totals, eligibility/category/calendar-period rules, date bounds, unique cards, template history and revocation.
+Run relevant/new tests and inspect automatic typecheck/build. Exercise real registration → photo upload → owner Admin approval/rejection → leaderboard → eligible card → PNG/PDF downloads → revoke/recalculate; test another session cannot access private records. Check 360×527/desktop and existing Home/transport/map/announcements/voice.
+Report exact files/migrations, integrations/environment names, actual tests and blockers. Unavailable Google, owner or physical-device checks are unverified. No deployment.
+
+## Approval boundary
+Planning only; await approval before implementation. Drive authorization, folder/spreadsheet choice, owner Admin access and final images are dependencies. Never simulate unavailable integrations.
