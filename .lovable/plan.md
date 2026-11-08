@@ -1,7 +1,7 @@
 # Clean & Eco Tirumala — implementation plan
 
 ## Scope and corrections to the earlier plan
-Add the complete participation feature to this existing Tirumala Guide only. Preserve maps, navigation, announcements, voice helper, existing authentication, data and security. No production deployment.
+Add to the existing guide; preserve all features, authentication and security. No deployment.
 
 Correct the earlier assumptions: **no password/OTP/email verification**, **Sheets activity records**, **private Drive photos**.
 
