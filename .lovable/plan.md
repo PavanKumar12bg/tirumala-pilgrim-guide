@@ -1,70 +1,60 @@
-# Tirumala Guide — Read-only Product Audit
+# Plan: Clean & Eco Tirumala Participation & Appreciation System
 
-No changes proposed. This document is the audit itself; approving it changes nothing. Counts are live data from the database as of this audit.
+Additive feature in the existing Tirumala Guide. No new project, no production deploy, existing routes/design/RLS/admin untouched.
 
-## 1. Existing user-facing features by pilgrim journey stage
+## Decisions confirmed
+- **Login:** email magic link (no password, no OTP code form). Uses existing Cloud auth; first magic link creates the account, participant profile auto-creates on first sign-in.
+- **Data:** Lovable Cloud database is the source of truth; Google Sheets receives a synced reporting copy via the existing Sheets connection.
+- **Photos:** stored in your Google Drive (private folder, server-side upload only); database stores Drive file IDs. Public pages show only approved photos through a server proxy so Drive files stay non-public.
+- **Card images:** your two uploaded images (Venkateswara photo + temple photo) become the Master Card Template branding. No TTD logo/authority anywhere.
 
-### Before the trip (planning)
-- **Darshan information** — `/darshan` (`routes/darshan.tsx`, `StatusCards` in `HomeSections.tsx`). Shows TTD's daily wait range and number of full queue compartments, with the report date and a source link (`ttd-report.server.ts`, cached TTD News fetch). Admin-entered figures are labeled (`darshan-display.ts`). There is no live crowd feed.
-- **Wait-increase alert** — compares one daily report with the previous one and alerts when the wait goes up by more than an hour (`ttd-report.ts`). It is not live.
-- **Trip & Transport** — `/transport`, `/transport/$slug`, `/transport/$slug/stop/$stopId` (`TransportViews.tsx`). Uses five fixed templates (package, route guide, bus routes, pickup, help info). 4 categories are published and 1 is a draft. Free-bus and footpath info links to sources and states there is no live bus data.
-- **Journey planner** — `/journey` (`journey.ts`). A multi-day itinerary saved on the device, with start time, planned and actual arrival times typed in by hand, and visited places.
-- **Official TTD links** — `/ttd`, plus `TirumalaInfoLink`.
-- **Languages** — 7 languages (`i18n.tsx`, `LanguageSwitcher`), each script with its own font.
-- **Phone home-screen install** — install manifest only. Nothing works offline.
+## Pages (public)
+1. `/clean-eco-tirumala` — hero (green/cream/gold), about, how to participate, rules, Participate Now, Top Contributors leaderboard, appreciation-card info, recent approved activities. 7-language copy via existing i18n.
+2. Homepage: small promo banner (title, short text, Participate Now, View Contributors) — not the full dashboard.
+3. `/clean-eco-tirumala/dashboard` — magic-link-gated participant dashboard: photo, name, Participant ID, email, activity counts, card status; buttons for new activity, my activities, my card, download.
+4. `/clean-eco-tirumala/card` — My Appreciation Card with honest statuses (Not Yet Eligible / Under Review / Generated / Revoked) and PNG + PDF downloads when generated.
 
-### On the hill (navigation and amenities)
-- **Home** — `/`: full-width deity photo, darshan status cards, three quick buttons (Map, Voice, Medical/Food/Amenities shortcuts that open the map), and a list of places (`PlacesGrid`).
-- **Map** — `/map` (`MapExplorer.tsx`). Leaflet/OSM map with GPS, nearby search, category filters, marker grouping and map layers built from GeoJSON. Real walking routes come from OSRM, with re-routing, off-route detection and arrival detection. Only places with verified coordinates get a pin.
-- **Place data** (visible places / with verified pins): hotel 28/28, amenity 14/14, other 6/6, temple 5/4, landmark 4/4, office 3/2, food 2/2, transport 1/0, **medical 0**.
-- **Voice assistant** — `VoiceAssistant.tsx`, `voice-commands.ts`. Spoken commands for categories, location, nearby, temple, map, navigate, stop and language switch, with an editable text fallback. It uses the device's speech support.
-- **Announcement ticker** — `AnnouncementTicker` in the header on every page. 1 announcement is active.
-- **Background voice announcement** — `BackgroundDarshanAudio`. Plays the announcement in the selected language, repeats on the admin's timing, has a one-button Allow prompt when the browser blocks sound, and a sound on/off choice in the language menu. 1 published voice announcement, 1 draft.
+## Registration & sessions
+- Participate form: full name, email, profile photo, privacy consent checkbox (required).
+- Magic link sign-in; participant profile links to the auth account, so nobody can open another's profile by typing an email. Duplicate emails map to one account; one participant per account.
+- Participant ID auto-generated (e.g. `TG-CET-P-000123`).
 
-### Emergency
-- **Emergency page** — `/emergency`. A read-only list of medical places, linked from the footer only. **There are currently no medical places, so the page shows the empty/pending notice.**
+## Activities
+- Categories: Plastic Waste Collection, General Cleaning, Waste into Dustbins, Tree Plantation, Environmental Protection, Other.
+- Form: category, description, date, location, before photo, after photo, optional extra photos; mobile camera capture + upload, preview, client-side compression, size/format validation.
+- Statuses: Pending / Approved / Rejected (with admin reason). Only approved counts.
 
-### Trust and legal
-- About, Contact, Privacy, Terms pages (`InfoPage`), cookie notice (`CookieNotice`), and footer links in `AppShell`.
+## Database (additive, RLS on every table, admin via existing `has_role`)
+- `eco_participants` (account link, name, email, photo Drive ID, public-display consent, hidden-from-leaderboard flag)
+- `eco_activities` (participant, category, description, date, location, photo Drive IDs, status, admin comment, verified quantities: plastic kg, saplings, verified_by/at)
+- `eco_activity_reviews` (audit history of every approve/reject/revoke/quantity change)
+- `eco_card_settings` (single row: eligibility rules — min approved count, required categories, min period — plus template text)
+- `eco_cards` (unique card number `TG-CET-2026-000001` via sequence, participant, start/end dates from first/latest approved activity, snapshot of totals, status, generation history)
+- `eco_sheet_sync` (sync status/errors for retry)
 
-## 2. Partially built or placeholder
-- **Emergency** — the page structure exists, but there is no data and no verified emergency phone numbers (blocked on purpose).
-- **Senior assistance listing** — not published; waiting on verification.
-- **Transport providers** — 2 exist; public visibility depends on approval and live offers. The provider network is mostly empty.
-- **Crowd level** — the `crowd_level` column and admin field exist, but there is no automated source. Only daily TTD reports are used.
-- **Pilgrim count from TTD reports** — not extracted.
-- **New-report email alerts** — mentioned only. They need an owned sending domain.
-- **AdSense** — only the cookie notice exists. There is no publisher ID or custom domain.
-- **Verification metadata** (source, last/next review, responsible admin) — only transport has `last_verified_on` and sources. Places and announcements have none, and review intervals are not enforced anywhere.
-- **Native review of safety text** — not done for the 5 extra languages.
-- **Darshan page** — shows only the report and links. There is no step-by-step darshan guide.
+## Google integration (server-side only)
+- New server functions: upload validated photos to a Drive folder (existing google_drive connector), append/update activity rows in a new "Clean & Eco Tirumala" sheet (existing google_sheets connection) with the 15 columns you listed.
+- Sync failure never loses a submission: record stays in database with sync-pending status; Admin gets Sync/Retry. Emails never appear on public pages.
+- Requires linking the Google Drive connector to the project (one connect card during build).
 
-## 3. Admin capabilities — `/admin` (`AdminPanel.tsx`; roles enforced by database security rules)
-- First-admin claim (`claim_first_admin`) and admin-only access.
-- **Overview** tab: summary counts.
-- **Status**: manual darshan override (auto or manual mode, wait range, compartments), status editor, and daily history with trends (`StatusHistory`, `status_history` trigger).
-- **Ticker**: add, edit, reorder and turn off multilingual ticker items.
-- **Voice announcement** (`VoiceAnnouncementAdmin`): several drafts, AI translation into 7 languages and voice per language, status/error/retry per language, preview, all-or-nothing publish, scoped delete with cleanup report, and autoplay/repeat settings.
-- **Places / Review**: create and edit places, show/hide, feature, order, check coordinates, review queue for OSM imports, compressed WebP photo upload into private storage, and AI photo identification that only suggests (`PhotoIdentifier`).
-- **Transport** (`TransportAdmin`): categories by template, items, providers, offers, and private fields (commission, notes, private phone) visible to admins only.
+## Admin (new tab in existing Admin panel)
+- Participants list, activities queue with before/after photo inspection, approve/reject with comments, correct verified quantities, revoke approvals, hide from leaderboard, per-participant history.
+- Card settings: eligibility rules, template text, branding image swap, sample preview, publish template (historical cards unchanged unless explicitly regenerated).
 
-## 4. Clearly absent (not in code)
-- Step-by-step first-time pilgrim guide and darshan procedure guide (Phase 1).
-- Senior and disabled-pilgrim guide (Phase 2).
-- Return-trip planner (Phase 3, beyond what transport covers).
-- Verified emergency contacts center (Phase 4 content).
-- A dedicated nearby-facilities page (the map's nearby search covers part of this).
-- Wrong-information reporting by visitors (Phase 6). No such table or form exists.
-- Offline mode / service worker (Phase 7, deferred on purpose).
-- Document checklist (kept separate; not built).
-- Booking: seva, darshan tickets, accommodation, donations. Only links to TTD.
-- Festival/event calendar and educational/history content.
-- Pilgrim accounts, favorites synced across devices, push notifications, and email or SMS sending.
-- Live crowd data, live bus tracking, and fares not tied to a source (intentionally excluded).
-- Lost & found, a lost-person helper, and a weather or ghat-road status feed.
-- Usage analytics shown in admin.
+## Appreciation card
+- One reusable HTML/SVG master template (green/cream/gold, leaf motifs, your two photos, Tirumala Guide branding, "independent appreciation card — not an official document" note).
+- Auto-fill: photo, name, Participant ID, start/end dates (first/latest approved activity), approved activity count, verified plastic/saplings, approved photo count, achievement level.
+- Auto-generates when eligibility rules pass (recalculated on every approve/revoke); unique sequential card number; PNG via canvas export and PDF via print-to-PDF stylesheet.
 
-## Pending blockers (from the roadmap)
-- Live admin Generate → Publish → Delete check needs the owner signed in.
-- Production host (Vercel) settings are unverified.
-- Advanced admin security work is blocked on a domain and an owner decision.
+## Leaderboard
+- Public: photo (only with consent), name, safe display ID, approved activities, verified plastic, verified saplings, total contributions, achievement level. Sorted by approved/verified records only; admin-hidden participants excluded.
+
+## Testing
+- Unit tests: eligibility rules, card number uniqueness, date logic, verified-quantity counting, status transitions, leaderboard filtering.
+- Browser checks (mobile + desktop): full flow register → submit → admin approve → leaderboard → card → downloads; revoke recalculation; magic-link flow; existing pages unaffected.
+- Drive/Sheets verified with real calls through the existing connections.
+
+## Limits to state honestly
+- Magic-link emails use Lovable's default sender until an email domain is set up.
+- Drive photos load through the app server, slightly slower than direct storage.
+- No background/offline support.
