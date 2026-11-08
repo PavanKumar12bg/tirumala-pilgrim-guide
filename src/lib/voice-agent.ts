@@ -147,11 +147,11 @@ export function findPlaces(query: string, places: Place[]) {
       const specificFood = /వెంగమాంబ|vengamamba|tarigonda|తరిగొండ/iu.test(query);
       const terms = specificFood ? [normalize(query), "vengamamba", "వెంగమాంబ", "tarigonda", "తరిగొండ"] : expandQuery(query);
       const direct = nameScore(query, names);
-      const viaSyn = Math.max(0, ...terms.slice(1).map(t => nameScore(t, names) * 0.95));
+      const viaSyn = Math.max(0, ...terms.slice(1).map(t => names.some(n => n && normalize(n).includes(t)) ? 0.85 * 0.95 : 0));
       const descs = Object.values((p.description as Record<string, string | undefined> | null) ?? {});
       const viaDesc = terms.some(t => t.length > 3 && descs.some(d => d && normalize(d).includes(t))) ? 0.55 : 0;
       // "Srivari / Balaji temple" means the temple, not guest houses that share the name.
-      const templeBoost = p.category === "temple" && SYNONYM_GROUPS[0]!.re.test(normalize(query)) ? 0.1 : 0;
+      const templeBoost = p.category === "temple" && SYNONYM_GROUPS[0]?.re.test(normalize(query)) ? 0.1 : 0;
       return { place: p, score: Math.min(1, Math.max(direct, viaSyn, viaDesc) + (Math.max(direct, viaSyn, viaDesc) >= 0.5 ? templeBoost : 0)) };
     })
     .filter(x => x.score >= 0.5)

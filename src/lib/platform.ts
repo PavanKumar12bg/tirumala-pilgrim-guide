@@ -41,8 +41,8 @@ export function getCapabilities(): Capabilities {
   const native = isNativeApp();
   return {
     native,
-    speechRecognition: plugin("SpeechRecognition") ? "native" : w && (w["SpeechRecognition"] || w["webkitSpeechRecognition"]) ? "browser" : "none",
-    textToSpeech: plugin("TextToSpeech") ? "native" : w && "speechSynthesis" in w ? "browser" : "none",
+    speechRecognition: w && (w["SpeechRecognition"] || w["webkitSpeechRecognition"]) ? "browser" : "none",
+    textToSpeech: nativeTextToSpeech() ? "native" : w && "speechSynthesis" in w ? "browser" : "none",
     geolocation: plugin("Geolocation") ? "native" : typeof navigator !== "undefined" && "geolocation" in navigator ? "browser" : "none",
     notifications: plugin("LocalNotifications") ? "native" : w && "Notification" in w ? "browser" : "none",
     backgroundListening: false,

@@ -27,7 +27,7 @@ describe("background announcement lifecycle", () => {
     const { owner, audio } = setup(); owner.setClip({ key: "a:te", url: "a.wav" }); await vi.advanceTimersByTimeAsync(0);
     audio.currentTime = 24; owner.setAgentActive(true);
     expect(audio.paused).toBe(true); expect(audio.play).toHaveBeenCalledTimes(1);
-    owner.setAgentActive(true); owner.setAgentActive(false); await vi.advanceTimersByTimeAsync(0);
+    owner.setAgentActive(true); owner.setSettings(settings); owner.setAgentActive(false); await vi.advanceTimersByTimeAsync(0);
     expect(audio.currentTime).toBe(24); expect(audio.play).toHaveBeenCalledTimes(2);
   });
   it.each(["off", "deleted", "disabled"])("does not resume announcement after %s during agent response", async action => {
