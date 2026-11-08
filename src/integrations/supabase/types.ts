@@ -98,6 +98,381 @@ export type Database = {
         }
         Relationships: []
       }
+      eco_card_events: {
+        Row: {
+          actor_id: string | null
+          card_id: string
+          created_at: string
+          event: string
+          id: string
+        }
+        Insert: {
+          actor_id?: string | null
+          card_id: string
+          created_at?: string
+          event: string
+          id?: string
+        }
+        Update: {
+          actor_id?: string | null
+          card_id?: string
+          created_at?: string
+          event?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "eco_card_events_card_id_fkey"
+            columns: ["card_id"]
+            isOneToOne: false
+            referencedRelation: "eco_cards"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      eco_cards: {
+        Row: {
+          card_number: string
+          created_at: string
+          id: string
+          participant_id: string
+          rules_snapshot: Json
+          snapshot: Json
+          status: string
+          template_id: string
+        }
+        Insert: {
+          card_number?: string
+          created_at?: string
+          id?: string
+          participant_id: string
+          rules_snapshot: Json
+          snapshot: Json
+          status?: string
+          template_id: string
+        }
+        Update: {
+          card_number?: string
+          created_at?: string
+          id?: string
+          participant_id?: string
+          rules_snapshot?: Json
+          snapshot?: Json
+          status?: string
+          template_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "eco_cards_participant_id_fkey"
+            columns: ["participant_id"]
+            isOneToOne: false
+            referencedRelation: "eco_participants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "eco_cards_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "eco_template_versions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      eco_contribution_snapshots: {
+        Row: {
+          activity_date: string
+          activity_id: string
+          category: string
+          comments: string
+          participant_id: string
+          photo_count: number
+          plastic_kg: number
+          reviewed_at: string | null
+          reviewed_by: string | null
+          saplings: number
+          status: string
+          version: number
+        }
+        Insert: {
+          activity_date: string
+          activity_id: string
+          category: string
+          comments?: string
+          participant_id: string
+          photo_count?: number
+          plastic_kg?: number
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          saplings?: number
+          status?: string
+          version?: number
+        }
+        Update: {
+          activity_date?: string
+          activity_id?: string
+          category?: string
+          comments?: string
+          participant_id?: string
+          photo_count?: number
+          plastic_kg?: number
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          saplings?: number
+          status?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "eco_contribution_snapshots_activity_id_fkey"
+            columns: ["activity_id"]
+            isOneToOne: true
+            referencedRelation: "eco_submission_outbox"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "eco_contribution_snapshots_participant_id_fkey"
+            columns: ["participant_id"]
+            isOneToOne: false
+            referencedRelation: "eco_participants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      eco_eligibility_settings: {
+        Row: {
+          id: number
+          published: boolean
+          rules: Json
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          id?: number
+          published?: boolean
+          rules: Json
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          id?: number
+          published?: boolean
+          rules?: Json
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
+      eco_participants: {
+        Row: {
+          consent_at: string
+          created_at: string
+          display_id: string
+          email: string
+          email_verified: boolean
+          hidden: boolean
+          id: string
+          name: string
+          profile_path: string | null
+          public_consent: boolean
+          removal_requested_at: string | null
+        }
+        Insert: {
+          consent_at?: string
+          created_at?: string
+          display_id?: string
+          email: string
+          email_verified?: boolean
+          hidden?: boolean
+          id?: string
+          name: string
+          profile_path?: string | null
+          public_consent?: boolean
+          removal_requested_at?: string | null
+        }
+        Update: {
+          consent_at?: string
+          created_at?: string
+          display_id?: string
+          email?: string
+          email_verified?: boolean
+          hidden?: boolean
+          id?: string
+          name?: string
+          profile_path?: string | null
+          public_consent?: boolean
+          removal_requested_at?: string | null
+        }
+        Relationships: []
+      }
+      eco_review_events: {
+        Row: {
+          activity_id: string
+          actor_id: string
+          created_at: string
+          id: string
+          new_values: Json
+          participant_id: string
+          previous_values: Json
+          reason: string
+        }
+        Insert: {
+          activity_id: string
+          actor_id: string
+          created_at?: string
+          id?: string
+          new_values: Json
+          participant_id: string
+          previous_values: Json
+          reason: string
+        }
+        Update: {
+          activity_id?: string
+          actor_id?: string
+          created_at?: string
+          id?: string
+          new_values?: Json
+          participant_id?: string
+          previous_values?: Json
+          reason?: string
+        }
+        Relationships: []
+      }
+      eco_sessions: {
+        Row: {
+          created_at: string
+          expires_at: string
+          participant_id: string
+          revoked: boolean
+          token_hash: string
+        }
+        Insert: {
+          created_at?: string
+          expires_at: string
+          participant_id: string
+          revoked?: boolean
+          token_hash: string
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string
+          participant_id?: string
+          revoked?: boolean
+          token_hash?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "eco_sessions_participant_id_fkey"
+            columns: ["participant_id"]
+            isOneToOne: false
+            referencedRelation: "eco_participants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      eco_submission_outbox: {
+        Row: {
+          created_at: string
+          drive_ids: string[]
+          id: string
+          idempotency_key: string
+          last_error: string | null
+          participant_id: string
+          payload: Json
+          sheet_ack: boolean
+          staged_paths: string[]
+          sync_status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          drive_ids?: string[]
+          id?: string
+          idempotency_key: string
+          last_error?: string | null
+          participant_id: string
+          payload: Json
+          sheet_ack?: boolean
+          staged_paths?: string[]
+          sync_status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          drive_ids?: string[]
+          id?: string
+          idempotency_key?: string
+          last_error?: string | null
+          participant_id?: string
+          payload?: Json
+          sheet_ack?: boolean
+          staged_paths?: string[]
+          sync_status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "eco_submission_outbox_participant_id_fkey"
+            columns: ["participant_id"]
+            isOneToOne: false
+            referencedRelation: "eco_participants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      eco_sync_state: {
+        Row: {
+          folder_id: string
+          id: number
+          last_error: string | null
+          last_synced_at: string | null
+          spreadsheet_id: string
+          tab: string
+        }
+        Insert: {
+          folder_id: string
+          id?: number
+          last_error?: string | null
+          last_synced_at?: string | null
+          spreadsheet_id: string
+          tab?: string
+        }
+        Update: {
+          folder_id?: string
+          id?: number
+          last_error?: string | null
+          last_synced_at?: string | null
+          spreadsheet_id?: string
+          tab?: string
+        }
+        Relationships: []
+      }
+      eco_template_versions: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          published: boolean
+          settings: Json
+          version: number
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          published?: boolean
+          settings: Json
+          version?: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          published?: boolean
+          settings?: Json
+          version?: number
+        }
+        Relationships: []
+      }
       knowledge_entries: {
         Row: {
           answer: Json
@@ -734,6 +1109,17 @@ export type Database = {
       admin_exists: { Args: never; Returns: boolean }
       blog_image_is_public: { Args: { _path: string }; Returns: boolean }
       claim_first_admin: { Args: never; Returns: boolean }
+      eco_review_activity: {
+        Args: {
+          _comments: string
+          _expected_version: number
+          _id: string
+          _plastic: number
+          _saplings: number
+          _status: string
+        }
+        Returns: boolean
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]

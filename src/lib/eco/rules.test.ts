@@ -1,0 +1,19 @@
+import { describe, expect, it } from "vitest";
+import { ECO_LIMITS, activitySchema, eligible, participantSchema, publicParticipant, sameSessionParticipant, summarize, validateImage, type Contribution, type Eligibility } from "./rules";
+const rules: Eligibility = { minimumActivities: 2, requiredCategories: ["plastic"], minimumDays: 2, minimumPlasticKg: 1, minimumSaplings: 0 };
+const activity: Contribution = { id: "one", category: "plastic", date: "2026-11-01", status: "approved", plasticKg: 1, saplings: 2, photoCount: 3 };
+describe("Clean & Eco recognition rules", () => {
+  it("does not count pending or rejected contributions", () => { expect(summarize([{ ...activity, status: "pending" }, { ...activity, status: "rejected" }])).toMatchObject({ approved: 0, plasticKg: 0, saplings: 0, photos: 0 }); });
+  it("uses first and latest approved activity dates", () => { expect(summarize([activity, { ...activity, date: "2026-11-04" }, { ...activity, status: "pending", date: "2026-11-30" }])).toMatchObject({ start: "2026-11-01", end: "2026-11-04", days: 3 }); });
+  it("one approval does not bypass all configured requirements", () => { expect(eligible([activity], rules)).toBe(false); });
+  it("requires every configured category", () => { expect(eligible([activity, { ...activity, date: "2026-11-04" }], { ...rules, requiredCategories: ["plantation"] })).toBe(false); });
+  it("requires minimum participation calendar span", () => { expect(eligible([activity, { ...activity, date: "2026-11-02" }], rules)).toBe(false); });
+  it("verified quantity threshold must be met", () => { expect(eligible([activity, { ...activity, date: "2026-11-04" }], { ...rules, minimumPlasticKg: 3 })).toBe(false); });
+  it("qualifies only when every rule is met", () => { expect(eligible([activity, { ...activity, date: "2026-11-04" }], rules)).toBe(true); });
+  it("revocation recalculates eligibility and photos", () => { const rows = [activity, { ...activity, status: "rejected" as const, date: "2026-11-04" }]; expect(eligible(rows, rules)).toBe(false); expect(summarize(rows).photos).toBe(3); });
+  it("public display requires consent and non-hidden approved participation", () => { expect(publicParticipant(false, false, 2)).toBe(false); expect(publicParticipant(true, true, 2)).toBe(false); expect(publicParticipant(true, false, 0)).toBe(false); expect(publicParticipant(true, false, 2)).toBe(true); });
+  it("email is not a participant session credential", () => { expect(sameSessionParticipant(null, "victim")).toBe(false); expect(sameSessionParticipant("attacker", "victim")).toBe(false); expect(sameSessionParticipant("owner", "owner")).toBe(true); });
+  it("requires collection consent and normalizes email", () => { expect(participantSchema.safeParse({ name: "Pilgrim", email: "P@example.com", consent: false, publicConsent: false }).success).toBe(false); expect(participantSchema.parse({ name: "Pilgrim", email: "P@example.com", consent: true, publicConsent: false }).email).toBe("p@example.com"); });
+  it("rejects impossible activity dates", () => { expect(activitySchema.safeParse({ category: "plastic", description: "Cleaned an area", date: "2026-02-30", location: "Area", idempotencyKey: "12345678-1234-4234-8234-123456789012" }).success).toBe(false); });
+  it("caps compressed images at 2 MB and rejects disguised content", () => { expect(ECO_LIMITS.photos).toBe(8); expect(ECO_LIMITS.incomingBytes).toBe(10 * 1024 * 1024); expect(() => validateImage(new Uint8Array(ECO_LIMITS.compressedBytes + 1), "image/png")).toThrow(); expect(() => validateImage(new Uint8Array(12), "image/webp")).toThrow(); });
+});
