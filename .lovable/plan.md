@@ -76,4 +76,4 @@ Run relevant/new tests and inspect automatic typecheck/build. Exercise real regi
 Report exact files/migrations, integrations/environment names, actual tests and blockers. Unavailable Google, owner or physical-device checks are unverified. No deployment.
 
 ## Approval boundary
-This turn changes planning/project requirements only. Implementation starts after approval of this revised plan. Google Drive authorization, chosen private folder/spreadsheet, owner Admin access and the two final images are the external dependencies; unavailable integrations must remain honest pending states, not simulated completions.
+Planning only; await approval before implementation. Drive authorization, folder/spreadsheet choice, owner Admin access and final images are dependencies. Never simulate unavailable integrations.
