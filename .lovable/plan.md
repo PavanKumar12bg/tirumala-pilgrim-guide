@@ -75,11 +75,9 @@ Add tables for participants, hashed sessions, durable outbox, review events, con
 - User supplies the two card branding photos; native review of seven-language safety/privacy wording remains a release prerequisite.
 
 ## Verification and delivery
-Add focused tests for session isolation/email non-ownership, consent/public filtering, file validation, idempotency, sync failure/retry, review authorization, count/quantity corrections, category/period eligibility, date bounds, unique card IDs, historical versioning and revocation.
-
-Run relevant/new tests and inspect automatic typecheck/build. Verify real registration → upload → owner Admin review → totals/leaderboard → card → PNG/PDF → revocation, plus cross-session denial. Check 360×527/desktop and existing Home/transport/map/audio/voice flows.
-
-Final report lists exact files/migrations, connector setup, required environment names, completed flows, actual test counts and blockers. Do not claim Google/owner-authenticated checks or physical-phone behavior passed unless exercised. No deployment.
+Test session isolation, email non-ownership, consent, image validation, retry/idempotency, review permissions, approved-only totals, eligibility/category/calendar-period rules, date bounds, unique cards, template history and revocation.
+Run relevant/new tests and inspect automatic typecheck/build. Exercise real registration → photo upload → owner Admin approval/rejection → leaderboard → eligible card → PNG/PDF downloads → revoke/recalculate; test another session cannot access private records. Check 360×527/desktop and existing Home/transport/map/announcements/voice.
+Report exact files/migrations, integrations/environment names, actual tests and blockers. Unavailable Google, owner or physical-device checks are unverified. No deployment.
 
 ## Approval boundary
 This turn changes planning/project requirements only. Implementation starts after approval of this revised plan. Google Drive authorization, chosen private folder/spreadsheet, owner Admin access and the two final images are the external dependencies; unavailable integrations must remain honest pending states, not simulated completions.
