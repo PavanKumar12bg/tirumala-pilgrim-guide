@@ -11,7 +11,8 @@ export type AgentIntent =
   | { kind: "open"; page: AgentPage }
   | { kind: "language"; language: Lang }
   | { kind: "nearest"; category: string }
-  | { kind: "freeFood" }
+  | { kind: "freeFood" | "darshanStatus" }
+  | { kind: "category"; category: string }
   | { kind: "blogsLatest" | "readBlog" }
   | { kind: "blogSearch"; query: string }
   | { kind: "navigate"; query: string }
@@ -105,11 +106,16 @@ export function parseIntent(raw: string): AgentIntent | null {
     if (rest.length > 1) return { kind: "blogSearch", query: rest };
     return { kind: "open", page: "/blogs" };
   }
+  // Status answers reuse actual guide figures; never infer live conditions.
+  if (rx("(?:darshan|waiting|wait|compartments?).*(?:time|today|current|how|count)|(?:today|current|how).*(?:darshan|compartments?)|దర్శన.*(?:సమయం|టైమింగ్|ఎంత)|కంపార్ట్.?మెంట్|తిరుమల.*(?:ప్రస్తుతం|పరిస్థితి)|தரிசன.*நேரம்|ದರ್ಶನ.*ಸಮಯ|ദർശന.*സമയം|दर्शन.*समय|ଦର୍ଶନ.*ସମୟ").test(text)) return { kind: "darshanStatus" };
+  const explicitInfo = firstGroup(text.match(INFO));
+  if (explicitInfo) return { kind: "info", query: explicitInfo };
   // Specific entities win over broad food/category matching; never substitute another food centre.
   if (rx("వెంగమాంబ|vengamamba|tarigonda|తరిగొండ").test(text)) return { kind: "navigate", query: text };
   if (FREE_FOOD.test(text) || rx("భోజనం ఎక్కడ దొరుకుతుంది|ఫ్రీ ఫుడ్").test(text)) return { kind: "freeFood" };
   if ((SYNONYM_GROUPS[0]?.re.test(text) || rx("^(గుడికి ఎలా వెళ్లాలి|i want to visit the temple)$").test(text)) && !rx("darshan|దర్శన|தரிசன|ದರ್ಶನ|ദർശന|दर्शन|ଦର୍ଶନ").test(text)) return { kind: "navigate", query: text === "గుడికి ఎలా వెళ్లాలి" || text === "i want to visit the temple" ? "main temple" : text };
   const cat = CATEGORY_WORDS.find(([, re]) => re.test(text))?.[0];
+  if (cat && OPEN_WORD.test(text) && !rx("near|nearest|closest|దగ్గర|సమీప|அருக|ಹತ್ತಿರ|അടുത്ത|नजदीक|नज़दीक|ନିକଟ").test(text)) return { kind: "category", category: cat };
   if (cat && (NEAR_WORD.test(text) || text.split(" ").length <= 3)) return { kind: "nearest", category: cat };
   const nav = firstGroup(text.match(NAV)) ?? firstGroup(text.match(NAV_SUFFIX));
   const info = firstGroup(text.match(INFO));

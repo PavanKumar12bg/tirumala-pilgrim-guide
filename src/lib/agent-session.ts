@@ -25,7 +25,8 @@ export function createCommandGate(opts: { now?: () => number; dupWindowMs?: numb
     if (!spoken) return false;
     if (!speaking && now() > speakingUntil) return false;
     const t = normalize(text);
-    return t.length > 0 && (spoken.includes(t) || t.includes(spoken));
+    // Short choices/destinations are legitimate commands, not echoes merely because a reply mentioned them.
+    return t === spoken || (t.length >= 20 && (spoken.includes(t) || t.includes(spoken)));
   };
 
   return {

@@ -3,7 +3,7 @@ import { useNavigate, useRouterState } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { Mic, MicOff, Pause, Play, Repeat, Send, Square, Volume2, VolumeX, Minus, Plus, X } from "lucide-react";
 import { DICTS, pickLocalized, useI18n, type Lang } from "@/lib/i18n";
-import { announcementsQuery, catKey, placesQuery, type Place } from "@/lib/places";
+import { officialStatusQuery, statusQuery, catKey, placesQuery, type Place } from "@/lib/places";
 import { transportListQuery } from "@/lib/transport";
 import { knowledgeQuery } from "@/lib/knowledge";
 import { voiceTrainingQuery } from "@/lib/voice-training-query";
@@ -19,6 +19,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
+import { checkMicrophone, SPEECH_LOCALES } from "@/lib/agent-microphone";
+import { MIC_FEEDBACK } from "@/lib/agent-feedback";
+import { formatWait, resolveDarshan } from "@/lib/darshan-display";
+import { isCurrentTtdReport } from "@/lib/ttd-report";
+import { supabase } from "@/integrations/supabase/client";
 
 type State = "init" | "off" | "permission" | "listening" | "thinking" | "speaking" | "paused" | "unavailable" | "denied" | "errors";
 type Prefs = { enabled?: boolean; denied?: boolean; muted?: boolean; rate?: number; glow?: boolean };
@@ -29,7 +34,7 @@ const RESUME_AFTER_SPEECH_MS = 450;
 const WATER: Record<Lang, string> = { en: "drinking water", te: "తాగునీరు", ta: "குடிநீர்", kn: "ಕುಡಿಯುವ ನೀರು", ml: "കുടിവെള്ളം", hi: "पीने का पानी", or: "ପାନୀୟ ଜଳ" };
 const STATE_KEY = { init: "agentStateInit", off: "agentStateOff", permission: "agentStatePermission", listening: "agentStateListening", thinking: "agentStateThinking", speaking: "agentStateSpeaking", paused: "agentStatePaused", unavailable: "agentStateUnavailable", denied: "agentMicDenied", errors: "agentTooManyErrors" } as const;
 
-type Rec = { lang: string; continuous: boolean; interimResults: boolean; start: () => void; abort: () => void; onstart: (() => void) | null; onresult: ((e: { resultIndex: number; results: ArrayLike<{ isFinal: boolean; 0: { transcript: string } }> }) => void) | null; onerror: ((e: { error: string }) => void) | null; onend: (() => void) | null };
+type Rec = { lang: string; continuous: boolean; interimResults: boolean; start: () => void; abort: () => void; onstart: (() => void) | null; onaudiostart: (() => void) | null; onspeechstart: (() => void) | null; onspeechend: (() => void) | null; onresult: ((e: { resultIndex: number; results: ArrayLike<{ isFinal: boolean; 0: { transcript: string } }> }) => void) | null; onerror: ((e: { error: string }) => void) | null; onend: (() => void) | null };
 type RecCtor = new () => Rec;
 const getCtor = () => { const w = window as unknown as { SpeechRecognition?: RecCtor; webkitSpeechRecognition?: RecCtor }; return w.SpeechRecognition ?? w.webkitSpeechRecognition; };
 const readPrefs = (): Prefs => { try { return JSON.parse(localStorage.getItem(PREF_KEY) ?? "{}") as Prefs; } catch { return {}; } };
@@ -44,8 +49,8 @@ export function VoiceAgent() {
   const navigate = useNavigate();
   const pathname = useRouterState({ select: s => s.location.pathname });
   const qc = useQueryClient();
-  const load = async <T,>(opts: { queryKey: readonly unknown[]; queryFn?: unknown }, fallback: T): Promise<T> => {
-    try { return (await qc.fetchQuery({ ...(opts as object), staleTime: 60_000 } as Parameters<typeof qc.fetchQuery>[0])) as T; } catch { return fallback; }
+  const load = async <T,>(opts: { queryKey: readonly unknown[]; queryFn?: unknown; staleTime?: unknown }, fallback: T): Promise<T> => {
+    try { return (await qc.fetchQuery({ ...(opts as object), staleTime: opts.staleTime ?? 60_000 } as Parameters<typeof qc.fetchQuery>[0])) as T; } catch { return fallback; }
   };
 
   const [state, setStateRaw] = useState<State>("init");
@@ -66,6 +71,9 @@ export function VoiceAgent() {
   const sessionRef = useRef(0);
   const errorsRef = useRef(0);
   const pausedRef = useRef(false);
+  const permissionBusyRef = useRef(false);
+  const permissionRequestRef = useRef(0);
+  const choiceInfoRef = useRef(false);
   const speakingRef = useRef(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const utterRef = useRef(0);
@@ -82,7 +90,7 @@ export function VoiceAgent() {
 
   const shouldListen = () => !!prefsRef.current.enabled && !prefsRef.current.denied && !pausedRef.current && !speakingRef.current && document.visibilityState === "visible" && !!getCtor() && stateRef.current !== "errors";
 
-  const stopRec = () => { clearTimeout(timerRef.current); const r = recRef.current; recRef.current = null; if (r) { r.onend = null; r.onerror = null; r.onresult = null; r.onstart = null; try { r.abort(); } catch { /* already stopped */ } } };
+  const stopRec = () => { clearTimeout(timerRef.current); const r = recRef.current; recRef.current = null; if (r) { r.onend = null; r.onerror = null; r.onresult = null; r.onstart = null; r.onaudiostart = null; r.onspeechstart = null; r.onspeechend = null; try { r.abort(); } catch { /* already stopped */ } } };
   const settleIdle = () => { if (!speakingRef.current && (stateRef.current === "thinking" || stateRef.current === "speaking" || stateRef.current === "listening")) setState(pausedRef.current ? "paused" : prefsRef.current.enabled && getCtor() ? "listening" : "off"); };
 
   const startRec = useCallback(() => {
@@ -94,10 +102,13 @@ export function VoiceAgent() {
     const session = ++sessionRef.current;
     let consumed = false;
     recRef.current = rec;
-    rec.lang = `${langRef.current}-IN`;
+    rec.lang = SPEECH_LOCALES[langRef.current];
     rec.continuous = true;
     rec.interimResults = true;
-    rec.onstart = () => { if (!speakingRef.current && stateRef.current !== "thinking") setState("listening"); };
+    rec.onstart = () => { announcementAudio.setAgentActive(true); if (!speakingRef.current && stateRef.current !== "thinking") setState("listening"); };
+    rec.onaudiostart = () => { if (!speakingRef.current) setState("listening"); };
+    rec.onspeechstart = () => { announcementAudio.setAgentActive(true); };
+    rec.onspeechend = () => { /* Wait for the final result; never abort on speechend. */ };
     rec.onresult = e => {
       if (consumed || speakingRef.current) return; // Never treat our own voice, or a re-delivered result, as a command.
       errorsRef.current = 0;
@@ -107,10 +118,13 @@ export function VoiceAgent() {
         if (!r) continue;
         if (r.isFinal) {
           // One final result = one command. End this session so Android cannot re-emit it cumulatively.
+          const transcript = r[0].transcript.trim();
+          if (!transcript) { setNote(MIC_FEEDBACK[langRef.current].empty); continue; }
           consumed = true;
-          setInterim("");
+          setInterim(transcript);
           stopRec();
-          dispatchRef.current?.(r[0].transcript, "voice", `${session}:${i}`);
+          const accepted = dispatchRef.current?.(transcript, "voice", `${session}:${i}`);
+          if (accepted == null) { announcementAudio.setAgentActive(false); resumeSoon(); }
           return;
         }
         partial += r[0].transcript;
@@ -122,11 +136,16 @@ export function VoiceAgent() {
       if (e.error === "not-allowed" || e.error === "service-not-allowed") {
         setPrefs({ ...prefsRef.current, denied: true });
         setState("denied");
-      } else if (e.error !== "no-speech" && e.error !== "aborted") errorsRef.current++;
+      } else if (["audio-capture", "language-not-supported"].includes(e.error)) {
+        pausedRef.current = true; setNote(MIC_FEEDBACK[langRef.current].unavailable); setState("errors");
+      } else if (e.error === "no-speech") { errorsRef.current++; setNote(MIC_FEEDBACK[langRef.current].empty); }
+      else if (e.error !== "aborted") { errorsRef.current++; setNote(MIC_FEEDBACK[langRef.current].network); }
     };
     rec.onend = () => {
+      if (recRef.current !== rec) return;
       recRef.current = null;
       setInterim("");
+      if (!consumed && !prefsRef.current.denied && !pausedRef.current) { errorsRef.current++; setNote(MIC_FEEDBACK[langRef.current].empty); }
       if (!speakingRef.current && stateRef.current !== "thinking") announcementAudio.setAgentActive(false);
       if (prefsRef.current.denied) return;
       if (errorsRef.current >= MAX_ERRORS) { pausedRef.current = true; setState("errors"); return; }
@@ -208,7 +227,8 @@ export function VoiceAgent() {
     goMap({ slug: p.slug, action: "navigate" });
     say(fill(t("agentOpening"), { name }));
   };
-  const offerChoices = (options: Place[], say: Say) => {
+  const offerChoices = (options: Place[], say: Say, info = false) => {
+    choiceInfoRef.current = info;
     choicesRef.current = options;
     say(fill(t("agentChoose"), { list: options.map((p, i) => `${i + 1}. ${pickLocalized(p.name, langRef.current)}`).join(", ") }));
   };
@@ -240,8 +260,30 @@ export function VoiceAgent() {
         return say(text || t("agentEmpty"));
       }
       case "announcement": {
-        const items = (await load(announcementsQuery(), [] as { active: boolean; text: unknown }[])).filter(a => a.active).map(a => pickLocalized(a.text, langRef.current)).filter(Boolean);
-        return say(items.length ? items.join(". ") : t("agentNoAnnouncement"));
+        const { data: published, error } = await supabase.from("voice_announcements").select("id").eq("status", "published").maybeSingle();
+        if (error) throw error;
+        const result = published ? await supabase.from("voice_announcement_langs").select("translated_text").eq("announcement_id", published.id).eq("lang", langRef.current).maybeSingle() : null;
+        if (result?.error) throw result.error;
+        if (!ctx.isCurrent()) return;
+        return say(result?.data?.translated_text || t("agentNoAnnouncement"));
+      }
+      case "darshanStatus": {
+        const [official, manual] = await Promise.all([load(officialStatusQuery(), null), load(statusQuery(), null)]);
+        if (!ctx.isCurrent()) return;
+        const shown = resolveDarshan(official?.report, manual);
+        goTo("/darshan");
+        if (!shown) return say(`${t("reportUnavailable")} ${t("reportNotLive")}`);
+        const date = shown.as_of ? new Date(shown.as_of.length === 10 ? `${shown.as_of}T00:00:00+05:30` : shown.as_of).toLocaleString(langRef.current, { timeZone: "Asia/Kolkata" }) : t("unavailable");
+        return say([`${t("darshanWait")}: ${formatWait(shown) || t("unavailable")} ${t("hours")}.`, `${t("queueCompartments")}: ${shown.waiting_compartments ?? t("unavailable")}.`, `${t(shown.source === "admin" ? "adminEntered" : "officialReport")}. ${t("reportDate")}: ${date}.`, t("reportNotLive"), official?.report && shown.source === "ttd" && !isCurrentTtdReport(official.report) ? t("reportStale") : ""].filter(Boolean).join(" "));
+      }
+      case "category": {
+        const found = nearestPlaces(intent.category, list, null);
+        const label = intent.category === "water" ? WATER[langRef.current] : t(catKey(intent.category));
+        if (!found.total) return say(fill(t("agentNoCategory"), { cat: label }));
+        if (intent.category !== "water") goMap({ category: intent.category });
+        const options = list.filter(p => p.visible && (intent.category === "water" ? found.mapped.some(x => x.place.id === p.id) : p.category === intent.category)).slice(0, 4);
+        if (options.length === 1 && options[0]) return describe(options[0], say);
+        return offerChoices(options, say, true);
       }
       case "outside": return say(t("agentOutside"));
       case "locate": goMap({ action: "location" }); return say(t("agentDone"));
@@ -289,7 +331,7 @@ export function VoiceAgent() {
       case "navigate": case "info": {
         const r = findPlaces(intent.query, list);
         if (r.match) return intent.kind === "navigate" ? openPlace(r.match, say, ctx) : describe(r.match, say);
-        if (r.options.length) return offerChoices(r.options, say);
+        if (r.options.length) return offerChoices(r.options, say, intent.kind === "info" || intent.kind === "query");
         const tc = await matchTransport(intent.query);
         if (!ctx.isCurrent()) return;
         if (tc) { goTo("/transport/$slug", { params: { slug: tc.slug } }); return say(fill(t("agentTransport"), { name: pickLocalized(tc.title, langRef.current) })); }
@@ -306,7 +348,7 @@ export function VoiceAgent() {
         }
         const r = findPlaces(intent.text, list);
         if (r.match) return describe(r.match, say);
-        if (r.options.length) return offerChoices(r.options, say);
+        if (r.options.length) return offerChoices(r.options, say, intent.kind === "info" || intent.kind === "query");
         const tc = await matchTransport(intent.text);
         if (!ctx.isCurrent()) return;
         if (tc) { goTo("/transport/$slug", { params: { slug: tc.slug } }); return say(fill(t("agentTransport"), { name: pickLocalized(tc.title, langRef.current) })); }
@@ -332,12 +374,12 @@ export function VoiceAgent() {
         choicesRef.current = [];
         const n = Number(clean.match(/\d+/)?.[0]);
         const pick = Number.isInteger(n) && options[n - 1] ? options[n - 1] : findPlaces(clean, options).match;
-        if (pick) { await openPlace(pick, ctx.say, ctx); return; }
+        if (pick) { if (choiceInfoRef.current) describe(pick, ctx.say); else await openPlace(pick, ctx.say, ctx); return; }
       }
       const intent = parseIntent(clean);
-      if (!intent) { ctx.say(t("agentNotUnderstood")); return; } // Unknown phrase: one honest fallback, never silence.
+      
       // Built-in control commands cannot be overridden by external training.
-      if (["query", "info", "navigate", "freeFood", "nearest"].includes(intent.kind)) {
+      if (!intent || !["stopSpeaking", "stopNav", "repeat", "slower", "faster", "pause", "language", "scrollDown", "scrollUp", "back", "readPage", "help", "locate", "darshanStatus", "announcement"].includes(intent.kind)) {
         const rows = await load(voiceTrainingQuery(), []);
         if (!ctx.isCurrent()) return;
         const trained = matchTraining(clean, rows);
@@ -360,28 +402,44 @@ export function VoiceAgent() {
           if (mapped) { await run(mapped, ctx); return; }
         }
       }
-      await run(intent, ctx);
+      await run(intent ?? { kind: "query", text: clean }, ctx);
     } finally {
       if (ctx.isCurrent()) { settleIdle(); if (!speakingRef.current) { announcementAudio.setAgentActive(false); resumeSoon(); } }
     }
   };
-  dispatchRef.current ??= createDispatcher({ gate: gateRef.current, cancelSpeech: () => { announcementAudio.setAgentActive(true); cancelSpeech(); }, speak: text => speakRef.current(text), handle: ctx => handleRef.current(ctx), onError: ctx => ctx.say(t("agentNotUnderstood")) });
+  dispatchRef.current ??= createDispatcher({ gate: gateRef.current, cancelSpeech: () => { stopRec(); announcementAudio.setAgentActive(true); cancelSpeech(); }, speak: text => speakRef.current(text), handle: ctx => handleRef.current(ctx), onError: ctx => ctx.say(t("agentNotUnderstood")) });
   const speakRef = useRef(speak); speakRef.current = speak;
   const pendingLanguageRef = useRef<Lang | null>(null);
   const handleRef = useRef(handle); handleRef.current = handle;
 
-  const enable = () => {
+  const enable = async () => {
+    if (permissionBusyRef.current) return;
     pausedRef.current = false;
     errorsRef.current = 0;
-    if (stateRef.current === "errors") setState("off");
-    setPrefs({ ...prefsRef.current, enabled: true });
-    if (!getCtor()) { setState("unavailable"); return speak(t("agentWelcome")); }
-    // Speak within the tap so mobile browsers allow audio; listening starts after speech ends.
-    speak(t("agentWelcome"));
-    if (!speakingRef.current) startRec();
+    setPrefs({ ...prefsRef.current, enabled: true, denied: false });
+    setNote("");
+    if (!getCtor()) { setState("unavailable"); return; }
+    permissionBusyRef.current = true;
+    const requestId = ++permissionRequestRef.current;
+    setState("permission");
+    stopRec(); cancelSpeech(); announcementAudio.setAgentActive(true);
+    const result = await checkMicrophone({ secure: window.isSecureContext,
+      query: navigator.permissions?.query ? () => navigator.permissions.query({ name: "microphone" as PermissionName }) : undefined,
+      request: navigator.mediaDevices?.getUserMedia ? () => navigator.mediaDevices.getUserMedia({ audio: true }) : undefined,
+    });
+    permissionBusyRef.current = false;
+    if (requestId !== permissionRequestRef.current || pausedRef.current || document.visibilityState !== "visible") { announcementAudio.setAgentActive(false); return; }
+    if (result !== "granted") {
+      announcementAudio.setAgentActive(false);
+      setPrefs({ ...prefsRef.current, denied: result === "denied" });
+      setState(result === "denied" ? "denied" : "errors");
+      setNote(result === "denied" ? t("agentMicDenied") : MIC_FEEDBACK[langRef.current][result]);
+      return;
+    }
+    setState("off"); startRec();
   };
-  const pause = () => { pausedRef.current = true; gateRef.current.invalidate(); stopRec(); cancelSpeech(); announcementAudio.setAgentActive(false); setState("paused"); };
-  const resume = () => { if (!prefsRef.current.enabled || stateRef.current === "errors") return enable(); pausedRef.current = false; errorsRef.current = 0; setState("listening"); startRec(); };
+  const pause = () => { permissionRequestRef.current++; pausedRef.current = true; gateRef.current.invalidate(); stopRec(); cancelSpeech(); announcementAudio.setAgentActive(false); setState("paused"); };
+  const resume = () => { void enable(); };
   const stopTalking = () => { gateRef.current.invalidate(); cancelSpeech(); announcementAudio.setAgentActive(false); settleIdle(); resumeSoon(); };
 
   // Initial load: restore preferences; auto-start only when the microphone is already granted. Never auto-open the panel.
@@ -407,7 +465,7 @@ export function VoiceAgent() {
       }).catch(() => { /* permission API unsupported: wait for Enable */ });
     }
     // Hidden page: stop everything; visible again: listen only — never replay a previous reply.
-    const onVisibility = () => { if (document.visibilityState === "hidden") { gateRef.current.invalidate(); stopRec(); cancelSpeech(); announcementAudio.setAgentActive(false); } else startRec(); };
+    const onVisibility = () => { if (document.visibilityState === "hidden") { permissionRequestRef.current++; gateRef.current.invalidate(); stopRec(); cancelSpeech(); announcementAudio.setAgentActive(false); } else startRec(); };
     const onOpen = () => { setOpen(true); if (stateRef.current === "off") enable(); };
     const onKey = (e: KeyboardEvent) => { if (e.altKey && e.key.toLowerCase() === "v") { e.preventDefault(); if (pausedRef.current || stateRef.current === "off" || stateRef.current === "errors") resume(); else pause(); } };
     document.addEventListener("visibilitychange", onVisibility);
@@ -428,6 +486,7 @@ export function VoiceAgent() {
     if (stateRef.current === "init") return;
     gateRef.current.invalidate();
     choicesRef.current = [];
+    blogChoicesRef.current = [];
     announcementAudio.setAgentActive(false);
     if (speakingRef.current) { cancelSpeech(); settleIdle(); resumeSoon(); }
   }, [pathname]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -449,14 +508,14 @@ export function VoiceAgent() {
   const isPaused = state === "paused" || state === "errors" || state === "off";
   const rate = prefs.rate ?? 1;
   const supported = state !== "unavailable";
-  const showEnable = (state === "off" || state === "errors") && supported;
+  const showEnable = (state === "off" || state === "errors" || state === "denied") && supported;
 
   return (
     <div data-voice-agent className="fixed left-3 z-[1250] print:hidden" style={{ bottom: "calc(var(--bottom-nav-height, 0px) + 0.75rem)" }}>
       {open ? (
         <section role="dialog" aria-modal="false" aria-label={t("agentName")} className="absolute bottom-14 left-0 flex max-h-[34svh] w-[min(19rem,calc(100vw-1.5rem))] flex-col overflow-hidden rounded-xl bg-card text-sm text-card-foreground shadow-lift ring-1 ring-gold/50">
           <div className="flex items-center justify-between gap-2 border-b border-border px-3 py-1.5">
-            <p role="status" aria-live="polite" className="min-w-0 truncate text-xs font-medium text-primary">{t("agentName")} · <span className="font-normal text-muted-foreground">{t(STATE_KEY[state])}</span></p>
+            <p role="status" aria-live="polite" className="min-w-0 truncate text-xs font-medium text-primary">{t("agentName")} · {SPEECH_LOCALES[lang]} · <span className="font-normal text-muted-foreground">{t(STATE_KEY[state])}</span></p>
             <Button variant="ghost" size="icon" className="size-9 shrink-0" aria-label={t("close")} onClick={() => setOpen(false)}><X className="size-4" /></Button>
           </div>
           <div className="min-h-0 flex-1 space-y-2 overflow-y-auto px-3 py-2">
@@ -505,9 +564,9 @@ export function VoiceAgent() {
           </div>
         </section>
       ) : null}
-      <button
+      <Button
         type="button"
-        onClick={() => setOpen(o => !o)}
+        onClick={() => { setOpen(o => !o); if (["off", "denied", "errors"].includes(stateRef.current)) void enable(); }}
         aria-expanded={open}
         aria-label={`${t("agentName")}: ${t(STATE_KEY[state])}`}
         title={t(STATE_KEY[state])}
@@ -516,7 +575,7 @@ export function VoiceAgent() {
       >
         {state === "denied" || state === "unavailable" ? <MicOff className="size-5" aria-hidden /> : state === "speaking" ? <Volume2 className="size-5" aria-hidden /> : isPaused ? <Mic className="size-5 opacity-70" aria-hidden /> : <Mic className="size-5" aria-hidden />}
         {state === "listening" ? <span aria-hidden className="absolute right-0.5 top-0.5 size-2.5 rounded-full bg-accent ring-2 ring-primary" /> : null}
-      </button>
+      </Button>
     </div>
   );
 }

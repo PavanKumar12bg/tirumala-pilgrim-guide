@@ -32,6 +32,12 @@ describe("page commands", () => {
 });
 
 describe("command lifecycle", () => {
+  it("accepts a short destination and numbered choice mentioned in the preceding reply", () => {
+    const gate = createCommandGate();
+    gate.speechStarted("I found 1. Temple, 2. Hotel. Which one?"); gate.speechEnded();
+    expect(gate.accept("temple", "voice", "1:0")).not.toBeNull();
+    expect(gate.accept("2", "voice", "2:0")).not.toBeNull();
+  });
   it("speaks an unknown-query fallback exactly once", async () => {
     const s = setup(ctx => ctx.say("FALLBACK"));
     s.dispatch("gibberish words", "voice", "1:0");
