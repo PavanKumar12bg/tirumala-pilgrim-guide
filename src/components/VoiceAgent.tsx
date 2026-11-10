@@ -160,6 +160,8 @@ export function VoiceAgent() {
       // A failed start() may never fire onend: schedule the same bounded retry so listening is not silently dead.
       if (errorsRef.current < MAX_ERRORS) timerRef.current = setTimeout(startRec, Math.min(1000 * 2 ** errorsRef.current, 15_000));
       else { pausedRef.current = true; setState("errors"); }
+      announcementAudio.setAgentActive(false);
+      setNote(MIC_FEEDBACK[langRef.current].unavailable);
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -436,7 +438,8 @@ export function VoiceAgent() {
       setNote(result === "denied" ? t("agentMicDenied") : MIC_FEEDBACK[langRef.current][result]);
       return;
     }
-    setState("off"); startRec();
+    speakRef.current(DICTS[langRef.current].agentWelcome);
+    if (!speakingRef.current) startRec();
   };
   const pause = () => { permissionRequestRef.current++; pausedRef.current = true; gateRef.current.invalidate(); stopRec(); cancelSpeech(); announcementAudio.setAgentActive(false); setState("paused"); };
   const resume = () => { void enable(); };
