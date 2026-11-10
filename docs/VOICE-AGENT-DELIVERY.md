@@ -1,5 +1,14 @@
 # Voice agent delivery
 
+## Latest focused correction
+- Root causes: a rejected duplicate/echo final stopped recognition without restarting; saved denial blocked explicit retries; typed commands could compete with active recognition; substring echo filtering swallowed short choices. Recognition also lacked explicit permission probing and useful lifecycle error handling.
+- Modified `VoiceAgent.tsx`, `agent-session.ts`, `voice-agent.ts`, `voice-training.ts` and their tests; added `agent-microphone.ts`/test and seven-language `agent-feedback.ts`. Permission probing releases temporary tracks, denial can be retried by tap, all seven locales are explicit, finals share the typed dispatcher, and stale replies remain cancelled. Announcements pause during microphone capture/processing/speech to prevent speaker echo; pause/disable releases priority.
+- Natural hotel/category discovery is distinct from GPS-nearest search. Information questions no longer become category shortcuts; Srivari/Swamivari variants resolve actual listings. Darshan replies use existing official/manual precedence, report date and not-live wording. Read announcement uses selected-language published announcement text, not legacy notices. Existing active training is fetched without overriding its zero stale time; protected controls/status cannot be overwritten by static training.
+- Ran 194 tests across nine voice/audio test files successfully. Automatic preview typecheck/build reports `build OK`. Controlled mobile Chromium requested microphone once and released its temporary track; a Telugu final opened the real temple map with Start Navigation still required; controlled TTS emitted `te-IN`. Typed Darshan request opened `/darshan` and read actual admin-entered 4–5 hours/10 compartments with date and not-live warning. No page errors.
+- These browser speech APIs were controlled, not physical microphone/audio tests. Actual device speech, native Android recognition and installed voices remain unverified. Fresh Google Sheets sync/read is not verified after the workspace move; its connection setup was interrupted. No Sheet data, database/RLS, Clean & Eco or production deployment changed. HTTPS endpoint responded over TLS but returned 404 in this environment, so production availability is unverified.
+
+The older sections below record previous work, not new verification during this correction.
+
 ## Existing behavior preserved
 Seven app languages, public-only places/transport/blogs/Q&A, canonical map, route confirmation,
 final-result deduplication, cancellation, echo suppression, compact helper, private announcement audio,

@@ -134,9 +134,12 @@ export function VoiceAgent() {
     };
     rec.onerror = e => {
       if (e.error === "not-allowed" || e.error === "service-not-allowed") {
+        stopRec(); announcementAudio.setAgentActive(false);
         setPrefs({ ...prefsRef.current, denied: true });
+        setNote(DICTS[langRef.current].agentMicDenied);
         setState("denied");
       } else if (["audio-capture", "language-not-supported"].includes(e.error)) {
+        stopRec(); announcementAudio.setAgentActive(false);
         pausedRef.current = true; setNote(MIC_FEEDBACK[langRef.current].unavailable); setState("errors");
       } else if (e.error === "no-speech") { errorsRef.current++; setNote(MIC_FEEDBACK[langRef.current].empty); }
       else if (e.error !== "aborted") { errorsRef.current++; setNote(MIC_FEEDBACK[langRef.current].network); }
@@ -367,14 +370,14 @@ export function VoiceAgent() {
       if (blogChoicesRef.current.length) {
         const options = blogChoicesRef.current;
         blogChoicesRef.current = [];
-        const n = Number(clean.match(/\d+/)?.[0]);
+        const n = Number(clean.match(/^(?:option\s*)?(\d+)$/iu)?.[1]);
         const pick = Number.isInteger(n) ? options[n - 1] : searchBlogs(clean, options)[0];
         if (pick) { goTo("/blogs/$slug", { params: { slug: pick.slug } }); ctx.say(fill(t("agentBlogOpening"), { name: pick.title })); return; }
       }
       if (choicesRef.current.length) {
         const options = choicesRef.current;
         choicesRef.current = [];
-        const n = Number(clean.match(/\d+/)?.[0]);
+        const n = Number(clean.match(/^(?:option\s*)?(\d+)$/iu)?.[1]);
         const pick = Number.isInteger(n) && options[n - 1] ? options[n - 1] : findPlaces(clean, options).match;
         if (pick) { if (choiceInfoRef.current) describe(pick, ctx.say); else await openPlace(pick, ctx.say, ctx); return; }
       }
