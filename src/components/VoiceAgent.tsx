@@ -268,7 +268,7 @@ export function VoiceAgent() {
         return say(result?.data?.text || t("agentNoAnnouncement"));
       }
       case "darshanStatus": {
-        const [official, manual] = await Promise.all([load<Awaited<ReturnType<NonNullable<ReturnType<typeof officialStatusQuery>["queryFn"]>>> | null>(officialStatusQuery(), null), load<import("@/lib/places").SiteStatus | null>(statusQuery(), null)]);
+        const [official, manual] = await Promise.all([load<{ report: import("@/lib/ttd-report").TtdReport | null; unavailable: boolean } | null>(officialStatusQuery(), null), load<import("@/lib/places").SiteStatus | null>(statusQuery(), null)]);
         if (!ctx.isCurrent()) return;
         const shown = resolveDarshan(official?.report, manual);
         goTo("/darshan");
