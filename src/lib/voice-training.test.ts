@@ -28,6 +28,16 @@ describe("secure dynamic query training", () => {
   });
 });
 describe("natural destination commands", () => {
+  it.each(["శ్రీవారి ఆలయానికి దారి చూపించు", "శ్రీవారి ఆలయానికి తీసుకెళ్లు", "వెంకటేశ్వర స్వామి గుడికి దారి చూపించు", "బాలాజీ గుడికి దారి చూపించు", "శ్రీవారి గుడి ఎక్కడ ఉంది", "తిరుమల ప్రధాన ఆలయం ఎక్కడ", "స్వామివారి ఆలయానికి తీసుకెళ్లు", "దయచేసి స్వామివారి ఆలయం వద్దకు తీసుకెళ్లు"])("resolves requested Telugu variant %s", text => {
+    const listing = { id: "e928f887-0a9c-4c24-a0b4-bf97b702e7b5", slug: "sri-venkateswara-temple", visible: true, category: "temple", name: { en: "Sri Venkateswara Swamy Temple" }, description: {} } as Place;
+    const intent = parseIntent(text);
+    expect(intent?.kind).toBe("navigate");
+    expect(intent?.kind === "navigate" && findPlaces(intent.query, [listing]).match?.id).toBe("e928f887-0a9c-4c24-a0b4-bf97b702e7b5");
+  });
+  it("trained food category discovers all food rather than claiming free meals", () => {
+    const rows = importTraining([TRAINING_COLUMNS, entry({ Destination_Type: "Category", Category: "food", Action_Type: "Search" })], new Set());
+    expect(rows[0] && trainingIntent(rows[0])).toEqual({ kind: "category", category: "food" });
+  });
   const temple = { id: destination, slug: "real-temple", visible: true, category: "temple", name: { en: "Sri Venkateswara Swamy Temple" }, description: {} } as Place;
   it.each(["శ్రీవారి ఆలయానికి తీసుకెళ్లు", "వెంకటేశ్వర స్వామి గుడికి దారి చూపించు", "శ్రీవారి గుడి ఎక్కడ ఉంది?", "బాలాజీ టెంపుల్ దగ్గరకు వెళ్ళాలి", "వెంకటేశ్వర ఆలయం చూపించు", "శ్రీవారి ఆలయం ముందుకు తీసుకెళ్లు", "గుడికి ఎలా వెళ్లాలి?", "Take me to Srivari Temple", "Show the way to Lord Venkateswara Temple", "Where is Balaji Temple", "Navigate to the main temple", "I want to visit the temple"])("%s resolves real temple", text => {
     const intent = parseIntent(text); expect(intent?.kind).toBe("navigate");
