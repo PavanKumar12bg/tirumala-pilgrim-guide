@@ -262,13 +262,13 @@ export function VoiceAgent() {
       case "announcement": {
         const { data: published, error } = await supabase.from("voice_announcements").select("id").eq("status", "published").maybeSingle();
         if (error) throw error;
-        const result = published ? await supabase.from("voice_announcement_langs").select("translated_text").eq("announcement_id", published.id).eq("lang", langRef.current).maybeSingle() : null;
+        const result = published ? await supabase.from("voice_announcement_langs").select("text").eq("announcement_id", published.id).eq("lang", langRef.current).maybeSingle() : null;
         if (result?.error) throw result.error;
         if (!ctx.isCurrent()) return;
-        return say(result?.data?.translated_text || t("agentNoAnnouncement"));
+        return say(result?.data?.text || t("agentNoAnnouncement"));
       }
       case "darshanStatus": {
-        const [official, manual] = await Promise.all([load(officialStatusQuery(), null), load(statusQuery(), null)]);
+        const [official, manual] = await Promise.all([load<Awaited<ReturnType<NonNullable<ReturnType<typeof officialStatusQuery>["queryFn"]>>> | null>(officialStatusQuery(), null), load<import("@/lib/places").SiteStatus | null>(statusQuery(), null)]);
         if (!ctx.isCurrent()) return;
         const shown = resolveDarshan(official?.report, manual);
         goTo("/darshan");
@@ -331,7 +331,7 @@ export function VoiceAgent() {
       case "navigate": case "info": {
         const r = findPlaces(intent.query, list);
         if (r.match) return intent.kind === "navigate" ? openPlace(r.match, say, ctx) : describe(r.match, say);
-        if (r.options.length) return offerChoices(r.options, say, intent.kind === "info" || intent.kind === "query");
+        if (r.options.length) return offerChoices(r.options, say, intent.kind === "info");
         const tc = await matchTransport(intent.query);
         if (!ctx.isCurrent()) return;
         if (tc) { goTo("/transport/$slug", { params: { slug: tc.slug } }); return say(fill(t("agentTransport"), { name: pickLocalized(tc.title, langRef.current) })); }
@@ -348,7 +348,7 @@ export function VoiceAgent() {
         }
         const r = findPlaces(intent.text, list);
         if (r.match) return describe(r.match, say);
-        if (r.options.length) return offerChoices(r.options, say, intent.kind === "info" || intent.kind === "query");
+        if (r.options.length) return offerChoices(r.options, say, true);
         const tc = await matchTransport(intent.text);
         if (!ctx.isCurrent()) return;
         if (tc) { goTo("/transport/$slug", { params: { slug: tc.slug } }); return say(fill(t("agentTransport"), { name: pickLocalized(tc.title, langRef.current) })); }
