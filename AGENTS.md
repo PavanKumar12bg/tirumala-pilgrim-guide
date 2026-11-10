@@ -38,3 +38,4 @@
 - Blogs: `blogs` rows + private `blog-images` bucket, public only when published; admin writes via `has_role`.
 - Voice search uses place `aliases` + `SYNONYM_GROUPS` over real listings, so new data needs no code.
 - Android = Capacitor shell loading hosted site; `platform.ts` detects `window.Capacitor` at runtime, no background listening.
+- Mic probes release tracks; commands stop recognition before async work to avoid competing inputs.

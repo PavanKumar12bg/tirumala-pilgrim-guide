@@ -14,6 +14,13 @@ const places = [
 ];
 
 describe("voice intents", () => {
+  it.each(["ఈరోజు దర్శనానికి ఎంత సమయం పడుతుంది?", "దర్శనం టైమింగ్స్ ఎంత?", "తిరుమలలో ప్రస్తుతం ఎన్ని కంపార్ట్‌మెంట్స్ ఉన్నాయి?", "how long is darshan today?", "தரிசன நேரம்", "ದರ್ಶನ ಸಮಯ", "ദർശന സമയം", "दर्शन समय", "ଦର୍ଶନ ସମୟ"])("retrieves actual status for %s", text => expect(parseIntent(text)).toEqual({ kind: "darshanStatus" }));
+  it("distinguishes hotel discovery from nearest-location requests", () => {
+    expect(parseIntent("హోటల్స్ చూపించు")).toEqual({ kind: "category", category: "hotel" });
+    expect(parseIntent("nearest hotel")).toEqual({ kind: "nearest", category: "hotel" });
+  });
+  it("does not treat parking information as a nearby search", () => expect(parseIntent("what is parking")).toEqual({ kind: "info", query: "parking" }));
+  it("does not reject a booking information question as a payment action", () => expect(parseIntent("tell me about booking rules")).toEqual({ kind: "info", query: "booking rules" }));
   it("understands bathroom requests in English, Telugu and Hindi", () => {
     expect(parseIntent("I need a bathroom")).toEqual({ kind: "nearest", category: "toilet" });
     expect(parseIntent("దగ్గరలో టాయిలెట్ ఎక్కడ")).toEqual({ kind: "nearest", category: "toilet" });

@@ -48,6 +48,6 @@ export function matchTraining(text: string, rows: Training[]) {
 }
 export function trainingIntent(row: Training): AgentIntent | null {
   if (row.destinationType === "Page" && pages.some(p => p === row.route)) return { kind: "open", page: row.route as typeof pages[number] };
-  if (row.destinationType === "Category") return row.category.toLowerCase() === "food" ? { kind: "freeFood" } : { kind: "nearest", category: row.category.toLowerCase() };
+  if (row.destinationType === "Category") return { kind: "category", category: row.category.toLowerCase() };
   return null;
 }

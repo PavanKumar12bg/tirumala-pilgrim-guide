@@ -81,7 +81,7 @@ export const normalize = (s: string) => s.normalize("NFC").replace(/[\u200b-\u20
 
 /** Spoken phrases that mean the same real place; expanded into search terms matched against actual listings only. */
 export const SYNONYM_GROUPS: { re: RegExp; terms: string[] }[] = [
-  { re: rx("శ్రీవారి|srivari|sri ?vari|balaji|బాలాజీ|main temple|ప్రధాన ఆలయ|venkateswara|వేంకటేశ్వర|వెంకటేశ్వర|ஏழுமலையான்|வெங்கடேச|ಶ್ರೀವಾರಿ|ವೆಂಕಟೇಶ್ವರ|ശ്രീവാരി|വെങ്കിടേശ്വര|श्रीवारी|बालाजी|वेंकटेश्वर|ଶ୍ରୀବାରି|ବାଲାଜୀ|ଭେଙ୍କଟେଶ୍ୱର"), terms: ["srivari", "venkateswara", "balaji", "శ్రీవారి", "వేంకటేశ్వర", "main temple", "sri venkateswara swamy"] },
+  { re: rx("శ్రీవారి|స్వామివారి|srivari|sri ?vari|balaji|బాలాజీ|main temple|ప్రధాన ఆలయ|venkateswara|వేంకటేశ్వర|వెంకటేశ్వర|ஏழுமலையான்|வெங்கடேச|ಶ್ರೀವಾರಿ|ವೆಂಕಟೇಶ್ವರ|ശ്രീവാരി|വെങ്കിടേശ്വര|श्रीवारी|बालाजी|वेंकटेश्वर|ଶ୍ରୀବାରି|ବାଲାଜୀ|ଭେଙ୍କଟେଶ୍ୱର"), terms: ["srivari", "venkateswara", "balaji", "శ్రీవారి", "వేంకటేశ్వర", "main temple", "sri venkateswara swamy"] },
   { re: FREE_FOOD_RE(), terms: ["annaprasadam", "annadanam", "anna satram", "అన్నసత్రం", "అన్నప్రసాద", "అన్నదాన", "vengamamba", "వెంగమాంబ"] },
   { re: rx("వెంగమాంబ|vengamamba|tarigonda|తరిగొండ|మాతృశ్రీ"), terms: ["vengamamba", "వెంగమాంబ", "tarigonda", "తరిగొండ"] },
 ];
@@ -99,7 +99,8 @@ export function parseIntent(raw: string): AgentIntent | null {
   const lang = interpretCommand(text);
   if (lang?.kind === "language") return { kind: "language", language: lang.language };
   if (READ_WORD.test(text) && rx("this blog|ఈ బ్లాగ్|blog").test(text)) return { kind: "readBlog" };
-  for (const [intent, re] of CONTROL) if (re.test(text)) return intent;
+  const informationQuestion = rx("what|how|tell|rules|details|policy|గురించి|వివర|ఎలా|నియమ|பற்றி|ಬಗ್ಗೆ|കുറിച്ച്|बारे|नियम|ବିଷୟ").test(text);
+  for (const [intent, re] of CONTROL) if (re.test(text) && !(intent.kind === "outside" && informationQuestion)) return intent;
   if (BLOG_WORD.test(text)) {
     if (LATEST_WORD.test(text)) return { kind: "blogsLatest" };
     const rest = text.replace(new RegExp(BLOG_FILLER.source, "giu"), " ").replace(/\s+/g, " ").trim();

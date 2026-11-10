@@ -134,9 +134,12 @@ export function VoiceAgent() {
     };
     rec.onerror = e => {
       if (e.error === "not-allowed" || e.error === "service-not-allowed") {
+        stopRec(); announcementAudio.setAgentActive(false);
         setPrefs({ ...prefsRef.current, denied: true });
+        setNote(DICTS[langRef.current].agentMicDenied);
         setState("denied");
       } else if (["audio-capture", "language-not-supported"].includes(e.error)) {
+        stopRec(); announcementAudio.setAgentActive(false);
         pausedRef.current = true; setNote(MIC_FEEDBACK[langRef.current].unavailable); setState("errors");
       } else if (e.error === "no-speech") { errorsRef.current++; setNote(MIC_FEEDBACK[langRef.current].empty); }
       else if (e.error !== "aborted") { errorsRef.current++; setNote(MIC_FEEDBACK[langRef.current].network); }
@@ -160,6 +163,8 @@ export function VoiceAgent() {
       // A failed start() may never fire onend: schedule the same bounded retry so listening is not silently dead.
       if (errorsRef.current < MAX_ERRORS) timerRef.current = setTimeout(startRec, Math.min(1000 * 2 ** errorsRef.current, 15_000));
       else { pausedRef.current = true; setState("errors"); }
+      announcementAudio.setAgentActive(false);
+      setNote(MIC_FEEDBACK[langRef.current].unavailable);
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -262,13 +267,13 @@ export function VoiceAgent() {
       case "announcement": {
         const { data: published, error } = await supabase.from("voice_announcements").select("id").eq("status", "published").maybeSingle();
         if (error) throw error;
-        const result = published ? await supabase.from("voice_announcement_langs").select("translated_text").eq("announcement_id", published.id).eq("lang", langRef.current).maybeSingle() : null;
+        const result = published ? await supabase.from("voice_announcement_langs").select("text").eq("announcement_id", published.id).eq("lang", langRef.current).maybeSingle() : null;
         if (result?.error) throw result.error;
         if (!ctx.isCurrent()) return;
-        return say(result?.data?.translated_text || t("agentNoAnnouncement"));
+        return say(result?.data?.text || t("agentNoAnnouncement"));
       }
       case "darshanStatus": {
-        const [official, manual] = await Promise.all([load(officialStatusQuery(), null), load(statusQuery(), null)]);
+        const [official, manual] = await Promise.all([load<{ report: import("@/lib/ttd-report").TtdReport | null; unavailable: boolean } | null>(officialStatusQuery(), null), load<import("@/lib/places").SiteStatus | null>(statusQuery(), null)]);
         if (!ctx.isCurrent()) return;
         const shown = resolveDarshan(official?.report, manual);
         goTo("/darshan");
@@ -331,7 +336,7 @@ export function VoiceAgent() {
       case "navigate": case "info": {
         const r = findPlaces(intent.query, list);
         if (r.match) return intent.kind === "navigate" ? openPlace(r.match, say, ctx) : describe(r.match, say);
-        if (r.options.length) return offerChoices(r.options, say, intent.kind === "info" || intent.kind === "query");
+        if (r.options.length) return offerChoices(r.options, say, intent.kind === "info");
         const tc = await matchTransport(intent.query);
         if (!ctx.isCurrent()) return;
         if (tc) { goTo("/transport/$slug", { params: { slug: tc.slug } }); return say(fill(t("agentTransport"), { name: pickLocalized(tc.title, langRef.current) })); }
@@ -348,7 +353,7 @@ export function VoiceAgent() {
         }
         const r = findPlaces(intent.text, list);
         if (r.match) return describe(r.match, say);
-        if (r.options.length) return offerChoices(r.options, say, intent.kind === "info" || intent.kind === "query");
+        if (r.options.length) return offerChoices(r.options, say, true);
         const tc = await matchTransport(intent.text);
         if (!ctx.isCurrent()) return;
         if (tc) { goTo("/transport/$slug", { params: { slug: tc.slug } }); return say(fill(t("agentTransport"), { name: pickLocalized(tc.title, langRef.current) })); }
@@ -365,14 +370,14 @@ export function VoiceAgent() {
       if (blogChoicesRef.current.length) {
         const options = blogChoicesRef.current;
         blogChoicesRef.current = [];
-        const n = Number(clean.match(/\d+/)?.[0]);
+        const n = Number(clean.match(/^(?:option\s*)?(\d+)$/iu)?.[1]);
         const pick = Number.isInteger(n) ? options[n - 1] : searchBlogs(clean, options)[0];
         if (pick) { goTo("/blogs/$slug", { params: { slug: pick.slug } }); ctx.say(fill(t("agentBlogOpening"), { name: pick.title })); return; }
       }
       if (choicesRef.current.length) {
         const options = choicesRef.current;
         choicesRef.current = [];
-        const n = Number(clean.match(/\d+/)?.[0]);
+        const n = Number(clean.match(/^(?:option\s*)?(\d+)$/iu)?.[1]);
         const pick = Number.isInteger(n) && options[n - 1] ? options[n - 1] : findPlaces(clean, options).match;
         if (pick) { if (choiceInfoRef.current) describe(pick, ctx.say); else await openPlace(pick, ctx.say, ctx); return; }
       }
@@ -436,7 +441,8 @@ export function VoiceAgent() {
       setNote(result === "denied" ? t("agentMicDenied") : MIC_FEEDBACK[langRef.current][result]);
       return;
     }
-    setState("off"); startRec();
+    speakRef.current(DICTS[langRef.current].agentWelcome);
+    if (!speakingRef.current) startRec();
   };
   const pause = () => { permissionRequestRef.current++; pausedRef.current = true; gateRef.current.invalidate(); stopRec(); cancelSpeech(); announcementAudio.setAgentActive(false); setState("paused"); };
   const resume = () => { void enable(); };
