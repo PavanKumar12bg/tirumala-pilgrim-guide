@@ -1,0 +1,15 @@
+import {createFileRoute,Link} from '@tanstack/react-router';
+import {useSuspenseQuery} from '@tanstack/react-query';
+import {ecoPublicQuery} from '@/lib/eco/queries';
+import {EcoShell,ecoHead,categoryKeys} from '@/components/eco/EcoShared';
+import {Button} from '@/components/ui/button';
+import {useI18n} from '@/lib/i18n';
+import hills from '@/assets/tirumala-hills.jpg';
+export const Route=createFileRoute('/clean-eco-tirumala/')({head:()=>ecoHead('Clean & Eco Tirumala','Independent environmental participation and appreciation by Tirumala Guide.'),loader:({context})=>context.queryClient.ensureQueryData(ecoPublicQuery()),component:EcoHome});
+function EcoHome(){const {t}=useI18n();const {data}=useSuspenseQuery(ecoPublicQuery());return <EcoShell>
+  <section className="relative min-h-64 overflow-hidden"><img src={hills} alt={t('ecoTitle')} className="absolute inset-0 h-full w-full object-cover"/><div className="absolute inset-0 bg-hero-fade"/><div className="relative flex min-h-64 flex-col justify-end gap-3 p-5 text-primary-foreground"><h1 className="text-2xl">{t('ecoTitle')}</h1><p className="max-w-lg text-sm">{t('ecoIntro')}</p><Button asChild className="w-fit"><Link to="/clean-eco-tirumala/participate">{t('ecoJoin')}</Link></Button></div></section>
+  <section className="space-y-3 border-b py-6"><h2 className="text-xl text-primary">{t('ecoAbout')}</h2><p>{t('ecoIntro')}</p><h2 className="text-xl text-primary">{t('ecoHow')}</h2><p>{t('ecoSteps')}</p><h2 className="text-xl text-primary">{t('ecoRules')}</h2><p className="text-sm">{t('ecoSafety')}</p></section>
+  <section id="contributors" className="py-6"><h2 className="mb-4 text-xl text-primary">{t('ecoContributors')}</h2>{!data.leaders.length?<p className="text-muted-foreground">{t('ecoEmpty')}</p>:<ol className="divide-y">{data.leaders.map((p,index)=><li key={p.displayId} className="flex flex-wrap items-center gap-3 py-4"><span className="font-semibold text-gold">{index+1}</span>{p.photo?<img src={p.photo} alt={p.name} className="size-14 rounded-md object-cover"/>:null}<div className="min-w-0 flex-1"><p className="break-words font-semibold">{p.name}</p><p className="text-xs text-muted-foreground">{p.displayId}</p><p className="text-sm">{t('ecoTotals')}: {p.totals.approved} · {t('ecoCleaning')}: {p.totals.cleaning}</p><p className="text-xs">{t('ecoPlastic')}: {p.totals.plasticKg} kg · {t('ecoPlantation')}: {p.totals.saplings}</p></div></li>)}</ol>}</section>
+  <section className="space-y-3 border-y py-5"><h2 className="text-xl text-primary">{t('ecoCard')}</h2><p className="text-sm">{t('ecoCardNote')}</p><Button asChild variant="outline"><Link to="/clean-eco-tirumala/card">{t('ecoCard')}</Link></Button></section>
+  <section className="py-6"><h2 className="mb-3 text-xl text-primary">{t('ecoRecent')}</h2>{!data.recent.length?<p className="text-muted-foreground">{t('ecoEmpty')}</p>:data.recent.map(a=><div key={a.id} className="border-b py-3"><p>{a.name} · {t(categoryKeys[a.category as keyof typeof categoryKeys]??'ecoOther')}</p><p className="text-xs text-muted-foreground">{a.date} · {t('ecoApproved')}</p></div>)}</section>
+</EcoShell>}
