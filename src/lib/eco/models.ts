@@ -1,0 +1,4 @@
+import { ECO_CATEGORIES, type Contribution } from './rules';
+export function contributionRows(rows: { activity_id: string; category: string; activity_date: string; status: string; plastic_kg: number; saplings: number; photo_count: number }[]): Contribution[] {
+  return rows.flatMap(row => ECO_CATEGORIES.includes(row.category as Contribution['category']) && ['pending','approved','rejected'].includes(row.status) ? [{ id: row.activity_id, category: row.category as Contribution['category'], date: row.activity_date, status: row.status as Contribution['status'], plasticKg: Number(row.plastic_kg), saplings: row.saplings, photoCount: row.photo_count }] : []);
+}

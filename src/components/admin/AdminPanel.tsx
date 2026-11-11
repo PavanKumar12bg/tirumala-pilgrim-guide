@@ -22,6 +22,7 @@ import { TransportAdmin } from "./TransportAdmin";
 import { VoiceAnnouncementAdmin } from "./VoiceAnnouncementAdmin";
 import { KnowledgeAdmin } from "./KnowledgeAdmin";
 import { BlogsAdmin } from "./BlogsAdmin";
+import { CleanEcoAdmin } from './CleanEcoAdmin';
 
 const selectCls = "h-11 w-full rounded-md border border-input bg-card px-3 text-base";
 
@@ -41,6 +42,7 @@ export function AdminPanel() {
         <TabsTrigger value="transport" className="min-h-10">{t("transportTitle")}</TabsTrigger>
         <TabsTrigger value="knowledge" className="min-h-10">Voice Q&amp;A</TabsTrigger>
         <TabsTrigger value="blogs" className="min-h-10">Blogs</TabsTrigger>
+        <TabsTrigger value="eco" className="min-h-10">Clean &amp; Eco</TabsTrigger>
       </TabsList>
       <TabsContent value="overview" className="mt-6">
         <h1 className="text-2xl">{t("admin")} · {t("appName")}</h1>
@@ -64,6 +66,7 @@ export function AdminPanel() {
       <TabsContent value="transport" className="mt-4"><TransportAdmin /></TabsContent>
       <TabsContent value="knowledge" className="mt-4"><KnowledgeAdmin /></TabsContent>
       <TabsContent value="blogs" className="mt-4"><BlogsAdmin /></TabsContent>
+      <TabsContent value="eco" className="mt-4"><CleanEcoAdmin /></TabsContent>
     </Tabs>
   );
 }

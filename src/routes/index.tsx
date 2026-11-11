@@ -6,6 +6,7 @@ import { useI18n } from "@/lib/i18n";
 import heroImage from "@/assets/venkateswara-swamy-hero.jpg";
 import { ReliableImage } from "@/components/ReliableImage";
 import { Button } from "@/components/ui/button";
+import { EcoPromo } from '@/components/eco/EcoShared';
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -54,6 +55,7 @@ function Index() {
           <Button variant="secondary" className="h-auto min-h-16 flex-col gap-1 whitespace-normal px-2 text-xs" onClick={() => window.dispatchEvent(new CustomEvent("tg-agent-open"))}><Mic className="size-5" />{t("voiceAssistant")}</Button>
           {[{ category: "medical", icon: Hospital, label: "cat_medical" }, { category: "food", icon: Utensils, label: "cat_food" }, { category: "amenity", icon: Building2, label: "cat_amenity" }].map(action => <Button key={action.category} asChild variant="outline" className="h-auto min-h-14 flex-col gap-1 whitespace-normal px-2 text-xs"><Link to="/map" search={{ category: action.category }}><action.icon className="size-5" />{t(action.label as "cat_medical" | "cat_food" | "cat_amenity")}</Link></Button>)}
         </section>
+        <EcoPromo />
         <PlacesGrid />
       </div>
     </AppShell>
