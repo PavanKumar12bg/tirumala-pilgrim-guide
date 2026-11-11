@@ -25,6 +25,7 @@ import { Route as BlogsIndexRouteImport } from './routes/blogs.index'
 import { Route as BlogsSlugRouteImport } from './routes/blogs.$slug'
 import { Route as CleanEcoTirumalaIndexRouteImport } from './routes/clean-eco-tirumala.index'
 import { Route as CleanEcoTirumalaActivitiesRouteImport } from './routes/clean-eco-tirumala.activities'
+import { Route as CleanEcoTirumalaCardRouteImport } from './routes/clean-eco-tirumala.card'
 import { Route as CleanEcoTirumalaDashboardRouteImport } from './routes/clean-eco-tirumala.dashboard'
 import { Route as CleanEcoTirumalaNewActivityRouteImport } from './routes/clean-eco-tirumala.new-activity'
 import { Route as CleanEcoTirumalaParticipateRouteImport } from './routes/clean-eco-tirumala.participate'
@@ -113,6 +114,11 @@ const CleanEcoTirumalaActivitiesRoute =
     path: '/clean-eco-tirumala/activities',
     getParentRoute: () => rootRouteImport,
   } as any)
+const CleanEcoTirumalaCardRoute = CleanEcoTirumalaCardRouteImport.update({
+  id: '/clean-eco-tirumala/card',
+  path: '/clean-eco-tirumala/card',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const CleanEcoTirumalaDashboardRoute =
   CleanEcoTirumalaDashboardRouteImport.update({
     id: '/clean-eco-tirumala/dashboard',
@@ -162,6 +168,7 @@ export interface FileRoutesByFullPath {
   '/ttd': typeof TtdRoute
   '/blogs/$slug': typeof BlogsSlugRoute
   '/clean-eco-tirumala/activities': typeof CleanEcoTirumalaActivitiesRoute
+  '/clean-eco-tirumala/card': typeof CleanEcoTirumalaCardRoute
   '/clean-eco-tirumala/dashboard': typeof CleanEcoTirumalaDashboardRoute
   '/clean-eco-tirumala/new-activity': typeof CleanEcoTirumalaNewActivityRoute
   '/clean-eco-tirumala/participate': typeof CleanEcoTirumalaParticipateRoute
@@ -186,6 +193,7 @@ export interface FileRoutesByTo {
   '/ttd': typeof TtdRoute
   '/blogs/$slug': typeof BlogsSlugRoute
   '/clean-eco-tirumala/activities': typeof CleanEcoTirumalaActivitiesRoute
+  '/clean-eco-tirumala/card': typeof CleanEcoTirumalaCardRoute
   '/clean-eco-tirumala/dashboard': typeof CleanEcoTirumalaDashboardRoute
   '/clean-eco-tirumala/new-activity': typeof CleanEcoTirumalaNewActivityRoute
   '/clean-eco-tirumala/participate': typeof CleanEcoTirumalaParticipateRoute
@@ -211,6 +219,7 @@ export interface FileRoutesById {
   '/ttd': typeof TtdRoute
   '/blogs/$slug': typeof BlogsSlugRoute
   '/clean-eco-tirumala/activities': typeof CleanEcoTirumalaActivitiesRoute
+  '/clean-eco-tirumala/card': typeof CleanEcoTirumalaCardRoute
   '/clean-eco-tirumala/dashboard': typeof CleanEcoTirumalaDashboardRoute
   '/clean-eco-tirumala/new-activity': typeof CleanEcoTirumalaNewActivityRoute
   '/clean-eco-tirumala/participate': typeof CleanEcoTirumalaParticipateRoute
@@ -237,6 +246,7 @@ export interface FileRouteTypes {
     | '/ttd'
     | '/blogs/$slug'
     | '/clean-eco-tirumala/activities'
+    | '/clean-eco-tirumala/card'
     | '/clean-eco-tirumala/dashboard'
     | '/clean-eco-tirumala/new-activity'
     | '/clean-eco-tirumala/participate'
@@ -261,6 +271,7 @@ export interface FileRouteTypes {
     | '/ttd'
     | '/blogs/$slug'
     | '/clean-eco-tirumala/activities'
+    | '/clean-eco-tirumala/card'
     | '/clean-eco-tirumala/dashboard'
     | '/clean-eco-tirumala/new-activity'
     | '/clean-eco-tirumala/participate'
@@ -285,6 +296,7 @@ export interface FileRouteTypes {
     | '/ttd'
     | '/blogs/$slug'
     | '/clean-eco-tirumala/activities'
+    | '/clean-eco-tirumala/card'
     | '/clean-eco-tirumala/dashboard'
     | '/clean-eco-tirumala/new-activity'
     | '/clean-eco-tirumala/participate'
@@ -310,6 +322,7 @@ export interface RootRouteChildren {
   TtdRoute: typeof TtdRoute
   BlogsSlugRoute: typeof BlogsSlugRoute
   CleanEcoTirumalaActivitiesRoute: typeof CleanEcoTirumalaActivitiesRoute
+  CleanEcoTirumalaCardRoute: typeof CleanEcoTirumalaCardRoute
   CleanEcoTirumalaDashboardRoute: typeof CleanEcoTirumalaDashboardRoute
   CleanEcoTirumalaNewActivityRoute: typeof CleanEcoTirumalaNewActivityRoute
   CleanEcoTirumalaParticipateRoute: typeof CleanEcoTirumalaParticipateRoute
@@ -434,6 +447,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CleanEcoTirumalaActivitiesRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/clean-eco-tirumala/card': {
+      id: '/clean-eco-tirumala/card'
+      path: '/clean-eco-tirumala/card'
+      fullPath: '/clean-eco-tirumala/card'
+      preLoaderRoute: typeof CleanEcoTirumalaCardRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/clean-eco-tirumala/dashboard': {
       id: '/clean-eco-tirumala/dashboard'
       path: '/clean-eco-tirumala/dashboard'
@@ -494,6 +514,7 @@ const rootRouteChildren: RootRouteChildren = {
   TtdRoute: TtdRoute,
   BlogsSlugRoute: BlogsSlugRoute,
   CleanEcoTirumalaActivitiesRoute: CleanEcoTirumalaActivitiesRoute,
+  CleanEcoTirumalaCardRoute: CleanEcoTirumalaCardRoute,
   CleanEcoTirumalaDashboardRoute: CleanEcoTirumalaDashboardRoute,
   CleanEcoTirumalaNewActivityRoute: CleanEcoTirumalaNewActivityRoute,
   CleanEcoTirumalaParticipateRoute: CleanEcoTirumalaParticipateRoute,
