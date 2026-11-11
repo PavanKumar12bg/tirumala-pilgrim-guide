@@ -22,7 +22,16 @@ export const ecoDashboard = createServerFn({ method: "GET" }).handler(async () =
   const { supabaseAdmin: db } = await import("@/integrations/supabase/client.server");
   const [participant, contributions, cards, submissions] = await Promise.all([db.from("eco_participants").select("id,display_id,name,email,email_verified,public_consent,removal_requested_at,profile_path").eq("id", id).single(), db.from("eco_contribution_snapshots").select("*").eq("participant_id", id), db.from("eco_cards").select("*").eq("participant_id", id).order("created_at", { ascending: false }).limit(1), db.from("eco_submission_outbox").select("id,payload,sync_status,last_error,created_at").eq("participant_id", id).order("created_at", { ascending: false })]);
   for (const result of [participant, contributions, cards, submissions]) if (result.error) throw new Error("Participant information could not be loaded");
-  return { participant: participant.data, contributions: contributions.data ?? [], card: cards.data?.[0] ?? null, submissions: submissions.data ?? [] };
+  const p = participant.data;
+  const profile = p?.profile_path ? await db.storage.from('eco-staging').createSignedUrl(p.profile_path,300) : null;
+  const card = cards.data?.[0] ?? null;
+  const template = card ? (card.snapshot as Record<string,unknown>).template as Record<string,unknown> : null;
+  const cardImages: Record<string,string> = {};
+  for (const key of ['devotional','temple']) {
+    const path = template?.[key];
+    if(typeof path === 'string') { const {data:url}=await db.storage.from('eco-staging').createSignedUrl(path,300); if(url) cardImages[key]=url.signedUrl; }
+  }
+  return { participant: p, profile:profile?.data?.signedUrl ?? null, contributions: contributions.data ?? [], card, cardImages, submissions: submissions.data ?? [] };
 });
 export const submitEcoActivity = createServerFn({ method: "POST" }).inputValidator((input: unknown) => z.instanceof(FormData).parse(input)).handler(async ({ data }) => {
   const { requireParticipant } = await import("./session.server"); const participantId = await requireParticipant();

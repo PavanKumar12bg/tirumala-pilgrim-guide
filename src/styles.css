@@ -304,3 +304,13 @@ html:lang(or) {
 }
 .agent-glow-still { animation: none; }
 @media (prefers-reduced-motion: reduce) { .agent-glow, .agent-orb-active::before { animation: none; } }
+
+.eco-theme {
+  --primary: oklch(0.38 0.085 155);
+  --primary-foreground: oklch(0.98 0.008 90);
+  --secondary: oklch(0.94 0.025 145);
+  --secondary-foreground: var(--primary);
+  --background: oklch(0.98 0.008 90);
+}
+.eco-card { background: var(--background); border: 3px solid var(--gold); color: var(--foreground); }
+.eco-card-inner { border: 1px solid var(--gold); }
