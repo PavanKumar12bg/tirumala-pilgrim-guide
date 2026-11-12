@@ -106,6 +106,13 @@
       "when": 1794100593157,
       "tag": "0014_clean_eco_participant_foundation",
       "breakpoints": true
+    },
+    {
+      "idx": 15,
+      "version": "7",
+      "when": 1794443564696,
+      "tag": "0015_eco_public_projection",
+      "breakpoints": true
     }
   ]
 }
