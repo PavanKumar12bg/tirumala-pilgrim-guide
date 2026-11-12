@@ -1,6 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { participantSchema, activitySchema, validateImage } from "./rules";
+import { participantSchema, activitySchema, validateImage, validateActivityPhotos } from "./rules";
 export const registerEco = createServerFn({ method: "POST" }).inputValidator((input: unknown) => z.instanceof(FormData).parse(input)).handler(async ({ data }) => {
   const input = participantSchema.parse({ name: data.get("name"), email: data.get("email"), consent: data.get("consent") === "true", publicConsent: data.get("publicConsent") === "true" });
   const { participantSession, issueParticipantSession } = await import("./session.server");
@@ -40,7 +40,7 @@ export const submitEcoActivity = createServerFn({ method: "POST" }).inputValidat
   const { supabaseAdmin: db } = await import("@/integrations/supabase/client.server");
   const { data: previous, error: previousError } = await db.from("eco_submission_outbox").select("id,participant_id").eq("idempotency_key", input.idempotencyKey).maybeSingle();
   if (previousError) throw new Error("Could not check submission"); if (previous) { if (previous.participant_id !== participantId) throw new Error("Invalid submission"); return { id: previous.id, synced: false }; }
-  const files = data.getAll("photos"); if (files.length < 2 || files.length > 8) throw new Error("Upload before/after photos and no more than 8 photos");
+  const files = validateActivityPhotos(data.getAll('photos'));
   const id = crypto.randomUUID(); const paths: string[] = [];
   for (const [index, file] of files.entries()) { if (!(file instanceof File)) throw new Error("Photo required"); validateImage(new Uint8Array(await file.arrayBuffer()), file.type); const path = `${participantId}/${id}/${index}.webp`; const { error } = await db.storage.from("eco-staging").upload(path, file, { contentType: file.type }); if (error) throw new Error("Image upload failed; your form remains available to retry"); paths.push(path); }
   const { error } = await db.from("eco_submission_outbox").insert({ id, participant_id: participantId, idempotency_key: input.idempotencyKey, payload: input, staged_paths: paths }); if (error) throw new Error("Submission not confirmed; retry with the same form");

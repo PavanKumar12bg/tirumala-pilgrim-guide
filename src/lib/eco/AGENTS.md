@@ -4,3 +4,4 @@
 - Drive media remains private; all participant/admin/public media access checks ownership, approval and display consent before returning bytes.
 - Shared syncSubmission runs after submission and review; Sheets URLs are private Drive links, while local staging retains recoverable originals.
 - Appreciation cards snapshot template settings and approved totals; reviews supersede/revoke previous records without changing their stored fields.
+- Card reconciliation is atomic and checks contribution versions; admin retries are idempotent so refresh/retry never issues duplicate cards.
