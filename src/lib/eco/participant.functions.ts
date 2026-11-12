@@ -25,7 +25,7 @@ export const ecoDashboard = createServerFn({ method: "GET" }).handler(async () =
   const p = participant.data;
   const profile = p?.profile_path ? await db.storage.from('eco-staging').createSignedUrl(p.profile_path,300) : null;
   const card = cards.data?.[0] ?? null;
-  const template = card ? (card.snapshot as Record<string,unknown>).template as Record<string,unknown> : null;
+  const template = card ? (card.snapshot as Record<string,unknown>)['template'] as Record<string,unknown> : null;
   const cardImages: Record<string,string> = {};
   for (const key of ['devotional','temple']) {
     const path = template?.[key];
