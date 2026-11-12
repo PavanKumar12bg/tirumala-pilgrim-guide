@@ -14,6 +14,11 @@ describe("secure dynamic query training", () => {
     const rows = importTraining([TRAINING_COLUMNS, entry({ Alternative_Queries: "show the big shrine" })], new Set([destination]));
     expect(matchTraining("show the big shrine", rows).match?.intentId).toBe("temple");
   });
+  it.each(['శ్రీ వారి ఆలయం చూపించు','శ్రీ వెంకటేశ్వర స్వామి ఆలయం','వెంకటేశ్వర స్వామి దేవాలయం','శ్రీ వారి టెంపుల్ కి తీసుకెళ్లు','బాలాజీ ఆలయం ఎక్కడ','మెయిన్ టెంపుల్ చూపించు'])('new Telugu sheet command %s maps to the published listing', query => {
+    const id = 'e928f887-0a9c-4c24-a0b4-bf97b702e7b5';
+    const rows = importTraining([TRAINING_COLUMNS, entry({ Destination_ID:id, Telugu_Queries:query })],new Set([id]));
+    expect(matchTraining(query,rows).match?.destinationId).toBe(id);
+  });
   it("rejects invalid or unpublished ids", () => expect(() => importTraining([TRAINING_COLUMNS, entry()], new Set())).toThrow("published listing"));
   it("rejects arbitrary actions", () => expect(() => importTraining([TRAINING_COLUMNS, entry({ Action_Type: "eval" })], new Set([destination]))).toThrow());
   it("rejects arbitrary routes", () => expect(() => importTraining([TRAINING_COLUMNS, entry({ Destination_Route: "https://evil.test" })], new Set([destination]))).toThrow("route"));
