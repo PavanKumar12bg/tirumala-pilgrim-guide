@@ -1,0 +1,1 @@
+ALTER POLICY eco_consented_profile_read ON storage.objects USING(bucket_id='eco-staging' AND EXISTS(SELECT 1 FROM public.eco_public_contributors() p WHERE p.profile_path=storage.objects.name));
