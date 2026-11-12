@@ -1,19 +1,15 @@
 import { createServerFn } from '@tanstack/react-start';
-import { contributionRows } from './models';
-import { summarize } from './rules';
 export const ecoPublic = createServerFn({method:'GET'}).handler(async () => {
-  // Privileged projection is necessary: participant tables are never publicly readable.
-  const { supabaseAdmin: db } = await import('@/integrations/supabase/client.server');
-  const {data: people,error} = await db.from('eco_participants').select('id,display_id,name,profile_path').eq('public_consent',true).eq('hidden',false).is('removal_requested_at',null);
-  if(error) throw new Error('Contributions unavailable');
-  if(!people?.length) return {leaders:[],recent:[]};
-  const {data: rows,error: ce} = await db.from('eco_contribution_snapshots').select('*').eq('status','approved').in('participant_id',people.map(p=>p.id));
-  if(ce) throw new Error('Contributions unavailable');
-  const leaders = await Promise.all(people.map(async p=>{
-    const totals = summarize(contributionRows((rows ?? []).filter(c=>c.participant_id===p.id)));
-    const photo = p.profile_path ? await db.storage.from('eco-staging').createSignedUrl(p.profile_path,300) : null;
-    return {displayId:p.display_id,name:p.name,photo:photo?.data?.signedUrl ?? null,totals};
+  const { createClient } = await import('@supabase/supabase-js');
+  const url=process.env['SUPABASE_URL'] || import.meta.env['VITE_SUPABASE_URL'];
+  const key=process.env['SUPABASE_PUBLISHABLE_KEY'] || import.meta.env['VITE_SUPABASE_PUBLISHABLE_KEY'];
+  if(!url||!key)throw new Error('Public contributions unavailable');
+  const db=createClient(url,key,{auth:{persistSession:false},global:{fetch:(input,init)=>{const h=new Headers(init?.headers);if(key.startsWith('sb_')&&h.get('Authorization')===`Bearer ${key}`)h.delete('Authorization');h.set('apikey',key);return fetch(input,{...init,headers:h});}}});
+  const [leaders,recent]=await Promise.all([db.rpc('eco_public_contributors'),db.rpc('eco_public_recent')]);
+  if(leaders.error||recent.error)throw new Error('Public contributions unavailable');
+  const people=await Promise.all((leaders.data as {display_id:string;name:string;profile_path:string|null;approved:number;cleaning:number;plastic_kg:number;saplings:number;photos:number}[]).map(async p=>{
+    const photo=p.profile_path?await db.storage.from('eco-staging').createSignedUrl(p.profile_path,300):null;
+    return {displayId:p.display_id,name:p.name,photo:photo?.data?.signedUrl??null,totals:{approved:Number(p.approved),cleaning:Number(p.cleaning),plasticKg:Number(p.plastic_kg),saplings:Number(p.saplings),photos:Number(p.photos)}};
   }));
-  const recent=(rows ?? []).sort((a,b)=>b.activity_date.localeCompare(a.activity_date)).slice(0,12).map(c=>({id:c.activity_id,category:c.category,date:c.activity_date,name:people.find(p=>p.id===c.participant_id)?.name ?? ''}));
-  return {leaders:leaders.filter(p=>p.totals.approved>0).sort((a,b)=>b.totals.approved-a.totals.approved||a.displayId.localeCompare(b.displayId)),recent};
+  return {leaders:people,recent:(recent.data as {id:string;category:string;activity_date:string;name:string}[]).map(c=>({id:c.id,category:c.category,date:c.activity_date,name:c.name}))};
 });
