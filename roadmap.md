@@ -1,4 +1,5 @@
 # Tirumala Guide work
+- [ ] Install requested Capacitor packages and complete signed-in Clean & Eco inbox, review/photo handoff and card reconciliation; test participant → admin → card flow without deployment.
 - [x] Synced six current Voice Training records, preserving sheet; new Telugu temple and Blogs commands verified through live app without deployment.
 - [x] Added Clean & Eco public/registration/dashboard/activity/card pages, admin review and retry, private consent-filtered leaderboard projection, shared Google sync and versioned master card export code. Real registration and two-photo submission confirmed in Drive and Sheets; no deployment.
 - [ ] Verify admin approval/rejection, leaderboard after approval, card eligibility/export/revocation and template settings through authorized UI: admin sign-in needed, own-session mint unavailable. Reference images pending; card sample and title/stat labels still English-first.

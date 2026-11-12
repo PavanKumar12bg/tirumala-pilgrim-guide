@@ -6,6 +6,12 @@ export const participantSchema = z.object({ name: z.string().trim().min(2).max(1
 export const activitySchema = z.object({ category: z.enum(ECO_CATEGORIES), description: z.string().trim().min(5).max(2000), date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).refine(value => Number.isFinite(Date.parse(value)) && new Date(value).toISOString().slice(0, 10) === value, "Invalid activity date"), location: z.string().trim().min(2).max(200), idempotencyKey: z.string().uuid() });
 export const eligibilitySchema = z.object({ minimumActivities: z.number().int().min(1).max(10000), requiredCategories: z.array(z.enum(ECO_CATEGORIES)).max(6), minimumDays: z.number().int().min(0).max(36500), minimumPlasticKg: z.number().min(0).max(1000000), minimumSaplings: z.number().int().min(0).max(1000000) });
 export type Eligibility = z.infer<typeof eligibilitySchema>;
+export const reviewSchema = z.object({ id:z.string().uuid(), status:z.enum(['pending','approved','rejected']), plastic:z.number().min(0).max(1000000), saplings:z.number().int().min(0).max(1000000), comments:z.string().trim().max(2000), version:z.number().int().min(0) }).refine(v=>v.status!=='rejected'||v.comments.length>0,{message:'A rejection reason is required',path:['comments']});
+export function validateActivityPhotos(files: unknown[]) {
+  if(files.length<2||files.length>ECO_LIMITS.photos)throw new Error('Upload before/after photos and no more than 8 photos');
+  for(const file of files) if(!(file instanceof File))throw new Error('Before and after photos are required');
+  return files as File[];
+}
 export type Contribution = { id: string; category: typeof ECO_CATEGORIES[number]; date: string; status: "pending" | "approved" | "rejected"; plasticKg: number; saplings: number; photoCount: number };
 export function summarize(rows: Contribution[]) {
   const approved = rows.filter(row => row.status === "approved");
