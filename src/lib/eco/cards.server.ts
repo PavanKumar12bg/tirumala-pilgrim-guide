@@ -13,12 +13,12 @@ export async function recalculateCard(participantId: string, actorId: string) {
   const rules = eligibilitySchema.safeParse(r.data?.rules);
   const rows = contributionRows(c.data ?? []);
   const qualifies = r.data?.published && rules.success && eligible(rows,rules.data);
-  if(old.data?.status === 'generated' || old.data?.status === 'under_review') {
-    const {error} = await db.from('eco_cards').update({status: qualifies ? 'superseded' : 'revoked'}).eq('id',old.data.id); if(error) throw error;
-    const {error: ee} = await db.from('eco_card_events').insert({card_id:old.data.id,event:qualifies?'superseded':'revoked',actor_id:actorId}); if(ee) throw ee;
-  }
-  if(!qualifies || !rules.success || !p.data || !t.data) return;
-  const {data: card,error} = await db.from('eco_cards').insert({participant_id:participantId,template_id:t.data.id,snapshot:{...p.data,totals:summarize(rows),template:t.data.settings},rules_snapshot:rules.data}).select('id').single();
-  if(error || !card) throw new Error('Card generation not confirmed');
-  const {error: ee} = await db.from('eco_card_events').insert({card_id:card.id,event:'generated',actor_id:actorId}); if(ee) throw ee;
+  const versions = Object.fromEntries((c.data ?? []).map(row=>[row.activity_id,row.version]));
+  const historical = old.data && ['generated','under_review'].includes(old.data.status) ? old.data : null;
+  const templateId = historical?.template_id ?? t.data?.id ?? null;
+  const template = historical ? (historical.snapshot as Record<string,unknown>)['template'] : t.data?.settings;
+  const snapshot = p.data ? {...p.data, totals:summarize(rows), template:template ?? {}} : {};
+  const {data:result,error} = await db.rpc('eco_commit_card',{_participant:participantId,_versions:versions,_snapshot:snapshot,_rules:rules.success?rules.data:{},_template:templateId as string,_eligible:Boolean(qualifies),_actor:actorId});
+  if(error)throw new Error(error.message);
+  return result;
 }

@@ -1,8 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { ECO_LIMITS, activitySchema, eligible, participantSchema, publicParticipant, sameSessionParticipant, summarize, validateImage, type Contribution, type Eligibility } from "./rules";
+import { ECO_LIMITS, activitySchema, eligible, participantSchema, publicParticipant, sameSessionParticipant, summarize, validateImage, validateActivityPhotos, reviewSchema, type Contribution, type Eligibility } from "./rules";
 const rules: Eligibility = { minimumActivities: 2, requiredCategories: ["plastic"], minimumDays: 2, minimumPlasticKg: 1, minimumSaplings: 0 };
 const activity: Contribution = { id: "one", category: "plastic", date: "2026-11-01", status: "approved", plasticKg: 1, saplings: 2, photoCount: 3 };
 describe("Clean & Eco recognition rules", () => {
+  it('requires before and after photos before sending to the admin inbox',()=>{const photo=new File(['photo'],'before.webp',{type:'image/webp'});expect(()=>validateActivityPhotos([photo])).toThrow();expect(validateActivityPhotos([photo,photo])).toHaveLength(2);});
+  it('rejects a review without the participant-visible rejection reason',()=>{const input={id:'12345678-1234-4234-8234-123456789012',status:'rejected',plastic:0,saplings:0,comments:'',version:0};expect(reviewSchema.safeParse(input).success).toBe(false);expect(reviewSchema.safeParse({...input,comments:'Before photo is missing evidence'}).success).toBe(true);});
   it("does not count pending or rejected contributions", () => { expect(summarize([{ ...activity, status: "pending" }, { ...activity, status: "rejected" }])).toMatchObject({ approved: 0, plasticKg: 0, saplings: 0, photos: 0 }); });
   it("uses first and latest approved activity dates", () => { expect(summarize([activity, { ...activity, date: "2026-11-04" }, { ...activity, status: "pending", date: "2026-11-30" }])).toMatchObject({ start: "2026-11-01", end: "2026-11-04", days: 3 }); });
   it("one approval does not bypass all configured requirements", () => { expect(eligible([activity], rules)).toBe(false); });
