@@ -1109,6 +1109,18 @@ export type Database = {
       admin_exists: { Args: never; Returns: boolean }
       blog_image_is_public: { Args: { _path: string }; Returns: boolean }
       claim_first_admin: { Args: never; Returns: boolean }
+      eco_commit_card: {
+        Args: {
+          _actor: string
+          _eligible: boolean
+          _participant: string
+          _rules: Json
+          _snapshot: Json
+          _template: string
+          _versions: Json
+        }
+        Returns: Json
+      }
       eco_public_contributors: {
         Args: never
         Returns: {

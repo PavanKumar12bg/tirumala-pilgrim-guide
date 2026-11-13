@@ -120,6 +120,13 @@
       "when": 1794443627183,
       "tag": "0016_eco_profile_policy_path",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1794574887885,
+      "tag": "0017_eco_atomic_card_reconciliation",
+      "breakpoints": true
     }
   ]
 }
