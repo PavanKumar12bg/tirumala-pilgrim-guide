@@ -1,5 +1,6 @@
 # Tirumala Guide work
-- [ ] Install requested Capacitor packages and complete signed-in Clean & Eco inbox, review/photo handoff and card reconciliation; test participant → admin → card flow without deployment.
+- [x] Installed Capacitor core/Android/CLI 8.6; added pending/approved/rejected admin inbox filters and refresh, card recheck, separate review/sync/card error handling, rejection reason validation and atomic idempotent card reconciliation. 316 tests passed, automatic build OK, mobile public pages/admin sign-in verified. No deployment or APK build.
+- [ ] Final signed-in participant → admin decision → generated card/download acceptance check: current preview is signed out and own-session mint failed; owner must sign in again. Eligibility rules are not yet published.
 - [x] Synced six current Voice Training records, preserving sheet; new Telugu temple and Blogs commands verified through live app without deployment.
 - [x] Added Clean & Eco public/registration/dashboard/activity/card pages, admin review and retry, private consent-filtered leaderboard projection, shared Google sync and versioned master card export code. Real registration and two-photo submission confirmed in Drive and Sheets; no deployment.
 - [ ] Verify admin approval/rejection, leaderboard after approval, card eligibility/export/revocation and template settings through authorized UI: admin sign-in needed, own-session mint unavailable. Reference images pending; card sample and title/stat labels still English-first.

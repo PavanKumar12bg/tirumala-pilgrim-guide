@@ -1,6 +1,9 @@
 # Clean & Eco continuation
 
 ## Added
+- Capacitor core/Android/CLI 8.6 installed as requested; no APK built and no production deployment.
+- Admin inbox filters pending/approved/rejected/all, refreshes on focus or Refresh Inbox, retains before/after photo review and Google sync retry, and exposes Recheck Card.
+- Rejections require a reason. Card reconciliation uses migration 0017 for an atomic version-checked commit and idempotent retries; review success is reported separately from Google/card failures.
 - Public `/clean-eco-tirumala`, `/participate`, `/dashboard`, `/new-activity`, `/activities`, `/card` under that prefix; seven-language page copy merged into existing dictionaries.
 - Existing Admin Panel now has Clean & Eco: review, verified quantities, before/after photos, retry sync, participant hiding, eligibility and template publication.
 - Shared server-only synchronization writes private Drive URLs and confirms Sheets records; retained staging/outbox protects retries.
@@ -15,10 +18,11 @@ Google Drive and Google Sheets are linked. Server-only environment names: `GOOGL
 - Live typed Telugu “శ్రీ వారి ఆలయం చూపించు” selected `/map?place=sri-venkateswara-temple`; “బ్లాగ్ సెక్షన్ ఓపెన్ చేయి” opened `/blogs`.
 - Actual browser registration created private QA participant TG-CET-P-000001, email explicitly unverified.
 - Two-photo cleaning submission e38127f8-9c30-4ca2-b61a-f29f58ca3bbf recorded in Drive and Sheets; dashboard status pending, zero approved totals. Synthetic test photos are explicitly QA-only, not real contributions. No public consent granted.
-- Automatic build/typecheck OK; existing 308 tests passed before adding six more targeted training cases.
+- Automatic build/typecheck OK; 316 regression tests passed, including before/after requirement and rejection reason validation. Mobile public registration/new-activity and signed-out admin gate checked without overflow or runtime errors.
 
 ## Not yet verified / incomplete
-- Authorized admin approval/rejection, confirmed leaderboard appearance, generation/export/revocation flow: requesting user's account could not be minted; admin sign-in required. No false approvals performed.
+- Signed-in admin inbox was inspected while the owner's session was available: the prior QA contribution was already approved by the owner, and existing template reference uploads were preserved. The session is now signed out and own-session mint failed; final approval/rejection → leaderboard → generated-card/export/revocation checks need another admin sign-in. No test contribution was falsely approved by the agent.
+- Eligibility rules have not been published; card generation intentionally remains gated until the owner sets and publishes them.
 - Reference images are pending. Sample is labeled not issued; card title/stat/photo-placeholder labels are English-first, so seven-language card presentation remains incomplete.
 - Card HTML export can vary with device fonts; actual PNG/PDF download requires testing with a legitimately generated card.
 - No automatic Sheet polling: use existing Admin Voice Q&A Sync Now after edits; each command reads fresh active training rows. Sheets quotas respected. No deployment.
