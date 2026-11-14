@@ -1,4 +1,5 @@
 # Tirumala Guide work
+- [x] Organized desktop header links into a separate row and mobile links into an icon menu; shortened Places labels in all seven languages and improved navigation spacing. Phone/desktop menu-to-Blogs verified without overflow/runtime errors; two display regressions passed. No deployment.
 - [x] Added latest uploaded image as a root opening splash with automatic dismissal and error timeout; phone/desktop image and Home return checked, admin excluded. No deployment.
 - [ ] Resume requested voice-training Sync Now verification and assistant self-listening/error correction; interrupted by opening-screen request.
 - [x] Installed Capacitor core/Android/CLI 8.6; added pending/approved/rejected admin inbox filters and refresh, card recheck, separate review/sync/card error handling, rejection reason validation and atomic idempotent card reconciliation. 316 tests passed, automatic build OK, mobile public pages/admin sign-in verified. No deployment or APK build.
