@@ -1,0 +1,4 @@
+update public.places set image_path = id::text || '/default.webp', image_width = 1200, image_height = 675, image_bytes = 166504 where slug = 'swami-pushkarini';
+update public.places set image_path = id::text || '/default.webp', image_width = 588, image_height = 321, image_bytes = 60798 where slug = 'cro-office';
+update public.places set image_path = id::text || '/default.webp', image_width = 519, image_height = 385, image_bytes = 29924 where slug = 'annaprasadam-bhavan';
+update public.places set image_path = id::text || '/default.webp', image_width = 516, image_height = 387, image_bytes = 44414 where slug = 'adi-varahaswamy-temple';

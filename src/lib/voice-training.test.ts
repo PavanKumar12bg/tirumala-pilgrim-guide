@@ -1,0 +1,60 @@
+import { describe, expect, it } from "vitest";
+import { importTraining, matchTraining, TRAINING_COLUMNS, trainingIntent } from "./voice-training";
+import { findPlaces, parseIntent } from "./voice-agent";
+import type { Place } from "./places";
+const destination = "00000000-0000-4000-8000-000000000001";
+const entry = (fields: Record<string, string> = {}) => TRAINING_COLUMNS.map(h => ({ Intent_ID: "temple", Category: "Temple", Canonical_Name: "Srivari Temple", Primary_Query: "Take me to Srivari Temple", Telugu_Queries: "శ్రీవారి ఆలయానికి తీసుకెళ్లు", Destination_Type: "Listing", Destination_ID: destination, Action_Type: "Navigate", Status: "Active", ...fields } as Record<string, string>)[h] ?? "");
+describe("secure dynamic query training", () => {
+  it("imports all language columns and resolves actual destination id", () => {
+    const rows = importTraining([TRAINING_COLUMNS, entry({ Hindi_Queries: "बालाजी मंदिर", Tamil_Queries: "கோவில்", Kannada_Queries: "ದೇವಾಲಯ", Malayalam_Queries: "ക്ഷേത്രം", Odia_Queries: "ମନ୍ଦିର" })], new Set([destination]));
+    expect(matchTraining("శ్రీవారి ఆలయానికి తీసుకెళ్లు", rows).match?.destinationId).toBe(destination);
+    expect(rows[0]?.queries).toHaveLength(7);
+  });
+  it("new synced patterns match without retraining", () => {
+    const rows = importTraining([TRAINING_COLUMNS, entry({ Alternative_Queries: "show the big shrine" })], new Set([destination]));
+    expect(matchTraining("show the big shrine", rows).match?.intentId).toBe("temple");
+  });
+  it.each(['శ్రీ వారి ఆలయం చూపించు','శ్రీ వెంకటేశ్వర స్వామి ఆలయం','వెంకటేశ్వర స్వామి దేవాలయం','శ్రీ వారి టెంపుల్ కి తీసుకెళ్లు','బాలాజీ ఆలయం ఎక్కడ','మెయిన్ టెంపుల్ చూపించు'])('new Telugu sheet command %s maps to the published listing', query => {
+    const id = 'e928f887-0a9c-4c24-a0b4-bf97b702e7b5';
+    const rows = importTraining([TRAINING_COLUMNS, entry({ Destination_ID:id, Telugu_Queries:query })],new Set([id]));
+    expect(matchTraining(query,rows).match?.destinationId).toBe(id);
+  });
+  it("rejects invalid or unpublished ids", () => expect(() => importTraining([TRAINING_COLUMNS, entry()], new Set())).toThrow("published listing"));
+  it("rejects arbitrary actions", () => expect(() => importTraining([TRAINING_COLUMNS, entry({ Action_Type: "eval" })], new Set([destination]))).toThrow());
+  it("rejects arbitrary routes", () => expect(() => importTraining([TRAINING_COLUMNS, entry({ Destination_Route: "https://evil.test" })], new Set([destination]))).toThrow("route"));
+  it("inactive entries never match", () => expect(matchTraining("take me to srivari temple", importTraining([TRAINING_COLUMNS, entry({ Status: "Inactive" })], new Set([destination]))).match).toBeNull());
+  it("asks for clarification for equal mappings", () => {
+    const rows = importTraining([TRAINING_COLUMNS, entry(), entry({ Intent_ID: "other" })], new Set([destination]));
+    expect(matchTraining("Take me to Srivari Temple", rows).ambiguous).toBe(true);
+  });
+  it("allows only existing page actions", () => {
+    const rows = importTraining([TRAINING_COLUMNS, entry({ Destination_Type: "Page", Destination_ID: "", Destination_Route: "/transport", Action_Type: "Open Page" })], new Set());
+    expect(rows[0] && trainingIntent(rows[0])).toEqual({ kind: "open", page: "/transport" });
+  });
+});
+describe("natural destination commands", () => {
+  it.each(["శ్రీవారి ఆలయానికి దారి చూపించు", "శ్రీవారి ఆలయానికి తీసుకెళ్లు", "వెంకటేశ్వర స్వామి గుడికి దారి చూపించు", "బాలాజీ గుడికి దారి చూపించు", "శ్రీవారి గుడి ఎక్కడ ఉంది", "తిరుమల ప్రధాన ఆలయం ఎక్కడ", "స్వామివారి ఆలయానికి తీసుకెళ్లు", "దయచేసి స్వామివారి ఆలయం వద్దకు తీసుకెళ్లు"])("resolves requested Telugu variant %s", text => {
+    const listing = { id: "e928f887-0a9c-4c24-a0b4-bf97b702e7b5", slug: "sri-venkateswara-temple", visible: true, category: "temple", name: { en: "Sri Venkateswara Swamy Temple" }, description: {} } as Place;
+    const intent = parseIntent(text);
+    expect(intent?.kind).toBe("navigate");
+    expect(intent?.kind === "navigate" && findPlaces(intent.query, [listing]).match?.id).toBe("e928f887-0a9c-4c24-a0b4-bf97b702e7b5");
+  });
+  it("trained food category discovers all food rather than claiming free meals", () => {
+    const rows = importTraining([TRAINING_COLUMNS, entry({ Destination_Type: "Category", Category: "food", Action_Type: "Search" })], new Set());
+    expect(rows[0] && trainingIntent(rows[0])).toEqual({ kind: "category", category: "food" });
+  });
+  const temple = { id: destination, slug: "real-temple", visible: true, category: "temple", name: { en: "Sri Venkateswara Swamy Temple" }, description: {} } as Place;
+  it.each(["శ్రీవారి ఆలయానికి తీసుకెళ్లు", "వెంకటేశ్వర స్వామి గుడికి దారి చూపించు", "శ్రీవారి గుడి ఎక్కడ ఉంది?", "బాలాజీ టెంపుల్ దగ్గరకు వెళ్ళాలి", "వెంకటేశ్వర ఆలయం చూపించు", "శ్రీవారి ఆలయం ముందుకు తీసుకెళ్లు", "గుడికి ఎలా వెళ్లాలి?", "Take me to Srivari Temple", "Show the way to Lord Venkateswara Temple", "Where is Balaji Temple", "Navigate to the main temple", "I want to visit the temple"])("%s resolves real temple", text => {
+    const intent = parseIntent(text); expect(intent?.kind).toBe("navigate");
+    expect(intent?.kind === "navigate" && findPlaces(intent.query, [temple]).match?.id).toBe(destination);
+  });
+  it.each(["భోజనం ఎక్కడ దొరుకుతుంది?", "ఉచిత అన్నం ఎక్కడ?", "ఫ్రీ ఫుడ్ ఎక్కడ ఉంది?"])("%s finds food", text => expect(parseIntent(text)?.kind).toBe("freeFood"));
+  it("specific absent Vengamamba never substitutes an unrelated food place", () => {
+    const food = { ...temple, category: "food", name: { en: "Annaprasadam Bhavan" } };
+    expect(findPlaces("Vengamamba Annasatram", [food]).match).toBeNull();
+  });
+  it("does not confuse generic Swamy/name fragments with the main temple", () => {
+    const varaha = { ...temple, id: "different", slug: "varaha", name: { te: "శ్రీ ఆది వరాహస్వామి ఆలయం", en: "Sri Adi Varaha Swamy Temple" } };
+    expect(findPlaces("వెంకటేశ్వర స్వామి గుడికి దారి చూపించు", [temple, varaha]).match?.id).toBe(destination);
+  });
+});
