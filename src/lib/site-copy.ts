@@ -15,7 +15,10 @@ export const SITE_COPY = {
     contactBody: "For corrections, suggestions or privacy requests, email us. We usually reply within a few days.",
     ttdPageBody: "Read TTD's own daily report and official news. This guide only shows the darshan waiting time and queue compartments from that report.",
     openTtdSite: "Open TTD News (news.tirumala.org)", readFullReport: "Read today's full report",
+<<<<<<< HEAD
     exitHint: "Press back again to exit",
+=======
+>>>>>>> ee9d4d9ca32ea65cf744bbd09086f0dd3725d916
   },
   te: {
     ttdWebsite: "టీటీడీ అధికారిక వెబ్‌సైట్",
@@ -31,7 +34,10 @@ export const SITE_COPY = {
     contactBody: "సవరణలు, సూచనలు లేదా గోప్యతా అభ్యర్థనల కోసం ఈమెయిల్ చేయండి. సాధారణంగా కొన్ని రోజుల్లో జవాబిస్తాం.",
     ttdPageBody: "టీటీడీ స్వంత రోజువారీ నివేదిక, అధికారిక వార్తలు చదవండి. ఈ గైడ్ ఆ నివేదికలోని దర్శన సమయం, క్యూ కంపార్ట్‌మెంట్లను మాత్రమే చూపిస్తుంది.",
     openTtdSite: "టీటీడీ వార్తలు తెరవండి (news.tirumala.org)", readFullReport: "నేటి పూర్తి నివేదిక చదవండి",
+<<<<<<< HEAD
     exitHint: "మళ్లీ వెనుకకు నొక్కితే యాప్ మూసివేయబడుతుంది",
+=======
+>>>>>>> ee9d4d9ca32ea65cf744bbd09086f0dd3725d916
   },
   ta: {
     ttdWebsite: "TTD அதிகாரப்பூர்வ இணையதளம்",
@@ -47,7 +53,10 @@ export const SITE_COPY = {
     contactBody: "திருத்தங்கள், பரிந்துரைகள் அல்லது தனியுரிமை கோரிக்கைகளுக்கு மின்னஞ்சல் அனுப்புங்கள்.",
     ttdPageBody: "TTD இன் சொந்த தினசரி அறிக்கை மற்றும் செய்திகளைப் படியுங்கள். இந்த வழிகாட்டி அதிலிருந்து காத்திருப்பு நேரம், வரிசை அறைகளை மட்டுமே காட்டுகிறது.",
     openTtdSite: "TTD செய்திகளைத் திற (news.tirumala.org)", readFullReport: "இன்றைய முழு அறிக்கையைப் படி",
+<<<<<<< HEAD
     exitHint: "வெளியேற மீண்டும் பின்செல் அழுத்தவும்",
+=======
+>>>>>>> ee9d4d9ca32ea65cf744bbd09086f0dd3725d916
   },
   kn: {
     ttdWebsite: "TTD ಅಧಿಕೃತ ವೆಬ್‌ಸೈಟ್",
@@ -63,7 +72,10 @@ export const SITE_COPY = {
     contactBody: "ತಿದ್ದುಪಡಿಗಳು, ಸಲಹೆಗಳು ಅಥವಾ ಗೌಪ್ಯತಾ ವಿನಂತಿಗಳಿಗೆ ಇಮೇಲ್ ಮಾಡಿ.",
     ttdPageBody: "TTD ಯ ಸ್ವಂತ ದೈನಂದಿನ ವರದಿ ಮತ್ತು ಸುದ್ದಿ ಓದಿ. ಈ ಮಾರ್ಗದರ್ಶಿ ಅದರಿಂದ ಕಾಯುವ ಸಮಯ ಮತ್ತು ಸರತಿ ಕಂಪಾರ್ಟ್‌ಮೆಂಟ್‌ಗಳನ್ನು ಮಾತ್ರ ತೋರಿಸುತ್ತದೆ.",
     openTtdSite: "TTD ಸುದ್ದಿ ತೆರೆಯಿರಿ (news.tirumala.org)", readFullReport: "ಇಂದಿನ ಪೂರ್ಣ ವರದಿ ಓದಿ",
+<<<<<<< HEAD
     exitHint: "ನಿರ್ಗಮಿಸಲು ಮತ್ತೊಮ್ಮೆ ಹಿಂದೆ ಒತ್ತಿ",
+=======
+>>>>>>> ee9d4d9ca32ea65cf744bbd09086f0dd3725d916
   },
   ml: {
     ttdWebsite: "TTD ഔദ്യോഗിക വെബ്‌സൈറ്റ്",
@@ -79,7 +91,10 @@ export const SITE_COPY = {
     contactBody: "തിരുത്തലുകൾ, നിർദ്ദേശങ്ങൾ, സ്വകാര്യതാ അഭ്യർത്ഥനകൾ എന്നിവയ്ക്ക് ഇമെയിൽ ചെയ്യുക.",
     ttdPageBody: "TTD-യുടെ സ്വന്തം ദിവസ റിപ്പോർട്ടും വാർത്തകളും വായിക്കുക. ഈ ഗൈഡ് അതിൽ നിന്ന് കാത്തിരിപ്പ് സമയവും ക്യൂ കമ്പാർട്ട്മെന്റുകളും മാത്രം കാണിക്കുന്നു.",
     openTtdSite: "TTD വാർത്തകൾ തുറക്കുക (news.tirumala.org)", readFullReport: "ഇന്നത്തെ പൂർണ്ണ റിപ്പോർട്ട് വായിക്കുക",
+<<<<<<< HEAD
     exitHint: "പുറത്തുകടക്കാൻ വീണ്ടും ബാക്ക് അമർത്തുക",
+=======
+>>>>>>> ee9d4d9ca32ea65cf744bbd09086f0dd3725d916
   },
   hi: {
     ttdWebsite: "TTD आधिकारिक वेबसाइट",
@@ -95,7 +110,10 @@ export const SITE_COPY = {
     contactBody: "सुधार, सुझाव या गोपनीयता अनुरोधों के लिए हमें ईमेल करें।",
     ttdPageBody: "TTD की अपनी दैनिक रिपोर्ट और आधिकारिक समाचार पढ़ें। यह गाइड उसमें से केवल प्रतीक्षा समय और कतार कम्पार्टमेंट दिखाता है।",
     openTtdSite: "TTD समाचार खोलें (news.tirumala.org)", readFullReport: "आज की पूरी रिपोर्ट पढ़ें",
+<<<<<<< HEAD
     exitHint: "बाहर निकलने के लिए फिर से बैक दबाएँ",
+=======
+>>>>>>> ee9d4d9ca32ea65cf744bbd09086f0dd3725d916
   },
   or: {
     ttdWebsite: "TTD ଅଧିକୃତ ୱେବସାଇଟ୍",
@@ -111,6 +129,9 @@ export const SITE_COPY = {
     contactBody: "ସଂଶୋଧନ, ପରାମର୍ଶ କିମ୍ବା ଗୋପନୀୟତା ଅନୁରୋଧ ପାଇଁ ଇମେଲ୍ କରନ୍ତୁ।",
     ttdPageBody: "TTD ର ନିଜ ଦୈନିକ ରିପୋର୍ଟ ଓ ଅଧିକୃତ ସମ୍ବାଦ ପଢ଼ନ୍ତୁ। ଏହି ଗାଇଡ୍ ସେଥିରୁ କେବଳ ଅପେକ୍ଷା ସମୟ ଓ ଧାଡି କମ୍ପାର୍ଟମେଣ୍ଟ ଦେଖାଏ।",
     openTtdSite: "TTD ସମ୍ବାଦ ଖୋଲନ୍ତୁ (news.tirumala.org)", readFullReport: "ଆଜିର ପୂର୍ଣ୍ଣ ରିପୋର୍ଟ ପଢ଼ନ୍ତୁ",
+<<<<<<< HEAD
     exitHint: "ବାହାରିବା ପାଇଁ ପୁଣି ବ୍ୟାକ୍ ଦବାନ୍ତୁ",
+=======
+>>>>>>> ee9d4d9ca32ea65cf744bbd09086f0dd3725d916
   },
 };
