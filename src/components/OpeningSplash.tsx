@@ -16,7 +16,7 @@ export function OpeningSplash() {
 
   if (!visible) return null;
   return (
-    <div className="fixed inset-0 z-[1000] flex h-dvh items-center justify-center bg-background" role="status" aria-label={t("appName")}>
+    <div className="fixed inset-0 z-[2000] flex h-dvh items-center justify-center bg-background" role="status" aria-label={t("appName")}>
       <img
         src={openingImage.url}
         alt={t("appName")}

@@ -1,5 +1,5 @@
 # Tirumala Guide work
-- [ ] Verify uploaded-image opening splash on phone and desktop; preserve existing pages and dismiss automatically.
+- [x] Added latest uploaded image as a root opening splash with automatic dismissal and error timeout; phone/desktop image and Home return checked, admin excluded. No deployment.
 - [ ] Resume requested voice-training Sync Now verification and assistant self-listening/error correction; interrupted by opening-screen request.
 - [x] Installed Capacitor core/Android/CLI 8.6; added pending/approved/rejected admin inbox filters and refresh, card recheck, separate review/sync/card error handling, rejection reason validation and atomic idempotent card reconciliation. 316 tests passed, automatic build OK, mobile public pages/admin sign-in verified. No deployment or APK build.
 - [ ] Final signed-in participant → admin decision → generated card/download acceptance check: current preview is signed out and own-session mint failed; owner must sign in again. Eligibility rules are not yet published.
