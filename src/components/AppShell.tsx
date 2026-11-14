@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { Home, Map as MapIcon, CalendarDays, Bus, BookOpen } from "lucide-react";
+import { Home, Map as MapIcon, CalendarDays, Bus, BookOpen, Menu, Leaf } from "lucide-react";
 import { useEffect, useRef, type ReactNode } from "react";
 import { useI18n } from "@/lib/i18n";
 import { LanguageSwitcher } from "./LanguageSwitcher";
@@ -7,23 +7,31 @@ import { AnnouncementTicker } from "./AnnouncementTicker";
 import { CookieNotice } from "./CookieNotice";
 import logo from "@/assets/tirumala-logo.jpg";
 import { ReliableImage } from "./ReliableImage";
+import { Button } from "./ui/button";
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "./ui/dropdown-menu";
 
 export function TopBar() {
   const { t } = useI18n();
   return (
     <header className="sticky top-0 z-[1100] shrink-0 border-b border-gold/50 bg-primary text-primary-foreground">
-      <div className="mx-auto grid max-w-5xl grid-cols-[minmax(0,1fr)_auto] items-center gap-2 px-3 py-1 sm:flex sm:justify-between">
+      <div className="mx-auto grid max-w-5xl grid-cols-[minmax(0,1fr)_auto] items-center gap-2 px-3 py-2 sm:px-4">
         <Link to="/" className="flex min-h-11 min-w-0 items-center gap-2">
           <ReliableImage src={logo} alt="" width={36} height={36} className="size-9 shrink-0 rounded-md object-cover object-center ring-1 ring-accent/50" />
-          <span className="min-w-0 truncate font-display text-lg leading-tight">{t("appName")}</span>
+          <span className="min-w-0 font-display text-base leading-normal">{t("appName")}</span>
         </Link>
-        <div className="flex items-center gap-3">
-          <Link to="/transport" className="hidden min-h-11 items-center gap-2 text-sm md:flex"><Bus className="size-4" />{t("transportTitle")}</Link>
-          <Link to="/journey" className="hidden min-h-11 items-center gap-2 text-sm md:flex"><CalendarDays className="size-4" />{t("journey")}</Link>
-          <Link to="/blogs" className="hidden min-h-11 items-center gap-2 text-sm md:flex"><BookOpen className="size-4" />{t("blogs")}</Link>
+        <div className="flex shrink-0 items-center gap-1">
           <LanguageSwitcher />
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="size-11 text-primary-foreground hover:bg-primary-foreground/10 hover:text-primary-foreground md:hidden" aria-label={t("moreCats")} title={t("moreCats")}><Menu className="size-5" /></Button></DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="z-[1300] w-64 max-w-[calc(100vw-2rem)]">
+              {([{to:"/",key:"home",icon:Home},{to:"/map",key:"map",icon:MapIcon},{to:"/transport",key:"transportNav",icon:Bus},{to:"/journey",key:"journey",icon:CalendarDays},{to:"/blogs",key:"blogs",icon:BookOpen},{to:"/clean-eco-tirumala",key:"ecoTitle",icon:Leaf}] as const).map(item=><DropdownMenuItem key={item.to} asChild className="min-h-11 whitespace-normal leading-relaxed"><Link to={item.to}><item.icon />{t(item.key)}</Link></DropdownMenuItem>)}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
+      <nav aria-label={t("places")} className="mx-auto hidden max-w-5xl flex-wrap items-center gap-x-6 border-t border-primary-foreground/15 px-4 md:flex">
+        {([{to:"/",key:"home",icon:Home},{to:"/map",key:"map",icon:MapIcon},{to:"/transport",key:"transportNav",icon:Bus},{to:"/journey",key:"journey",icon:CalendarDays},{to:"/blogs",key:"blogs",icon:BookOpen},{to:"/clean-eco-tirumala",key:"ecoTitle",icon:Leaf}] as const).map(item=><Link key={item.to} to={item.to} activeOptions={{exact:item.to==='/'}} activeProps={{className:"border-marigold"}} className="flex min-h-11 items-center gap-2 border-b-2 border-transparent py-2 text-sm leading-relaxed hover:border-marigold"><item.icon className="size-4 shrink-0" aria-hidden />{t(item.key)}</Link>)}
+      </nav>
       <AnnouncementTicker />
     </header>
   );
@@ -35,13 +43,23 @@ export function BottomNav() {
   useEffect(() => {
     const nav = ref.current;
     if (!nav) return;
-    const update = () => document.documentElement.style.setProperty("--bottom-nav-height", `${nav.getBoundingClientRect().height}px`);
+    let frame = 0;
+    let previous = "";
+    const update = () => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() => {
+        const height = `${nav.getBoundingClientRect().height}px`;
+        if (height === previous) return;
+        previous = height;
+        document.documentElement.style.setProperty("--bottom-nav-height", height);
+      });
+    };
     update();
     const observer = new ResizeObserver(update);
     observer.observe(nav);
-    return () => { observer.disconnect(); document.documentElement.style.removeProperty("--bottom-nav-height"); };
+    return () => { cancelAnimationFrame(frame); observer.disconnect(); document.documentElement.style.removeProperty("--bottom-nav-height"); };
   }, []);
-  const item = "flex min-h-14 min-w-0 flex-1 flex-col items-center justify-center gap-1 border-t-2 border-transparent px-1 py-1 text-center text-xs leading-snug font-semibold text-muted-foreground transition-colors";
+  const item = "flex min-h-16 min-w-0 flex-1 flex-col items-center justify-center gap-1 border-t-2 border-transparent px-1 py-2 text-center text-xs leading-relaxed font-medium text-muted-foreground transition-colors";
   return (
     <nav ref={ref} aria-label={t("appName")} className="fixed inset-x-0 bottom-0 z-[1100] border-t bg-card pb-[env(safe-area-inset-bottom)] md:hidden">
       <div className="mx-auto flex max-w-md">
