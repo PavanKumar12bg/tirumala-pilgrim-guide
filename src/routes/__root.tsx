@@ -1,4 +1,5 @@
 import { VoiceAgent } from "@/components/VoiceAgent";
+import { OpeningSplash } from "@/components/OpeningSplash";
 import { BackgroundDarshanAudio } from "@/components/BackgroundDarshanAudio";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
@@ -141,6 +142,7 @@ function RootComponent() {
     <QueryClientProvider client={queryClient}>
       {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
       <I18nProvider>
+        {!adminPage && <OpeningSplash />}
         <Outlet />
         {!adminPage && <BackgroundDarshanAudio />}
         <VoiceAgent />
